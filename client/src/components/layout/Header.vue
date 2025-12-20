@@ -1,0 +1,731 @@
+<template>
+  <header class="header">
+    <div class="header-container">
+      <!-- Logo -->
+      <router-link to="/" class="logo" @click="emitTabChange('home')">
+        <img src="/icon.png" alt="Fenerbahçe Sözlük" class="logo-icon" />
+        <span class="logo-text">fenerbahçe sözlük</span>
+      </router-link>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button 
+          class="nav-tab" 
+          :class="{ 'active': activeTab === 'gundem' }"
+          @click="setTab('gundem')"
+        >
+          gündem
+        </button>
+        <button 
+          class="nav-tab"
+          :class="{ 'active': activeTab === 'popular' }"
+          @click="setTab('popular')"
+        >
+          popüler
+        </button>
+        <button 
+          class="nav-tab"
+          :class="{ 'active': activeTab === 'son' }"
+          @click="setTab('son')"
+        >
+          son
+        </button>
+        
+        <!-- Channels Dropdown -->
+        <div class="nav-channels desktop-only" 
+             @mouseenter="showChannels = true" 
+             @mouseleave="showChannels = false"
+        >
+          <button class="nav-tab" :class="{'active': route.query.category}">
+            kanallar
+          </button>
+          <div v-if="showChannels" class="channels-dropdown">
+            <button 
+              v-for="cat in categories" 
+              :key="cat.id" 
+              class="channel-item"
+              @click="selectCategory(cat)"
+            >
+              {{ cat.name }}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Search with Dropdown -->
+      <div class="search-container desktop-only" ref="searchContainerRef">
+        <div class="search-box">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="ara"
+            @focus="showSearchDropdown = true"
+            @input="handleSearchInput"
+          />
+          <button @click="navigateToSearch">
+            <Search class="icon" />
+          </button>
+        </div>
+
+        <!-- Search Dropdown -->
+        <div v-if="showSearchDropdown && searchQuery.length >= 2" class="search-dropdown">
+          <div v-if="searchResults.length === 0" class="dropdown-empty">
+            sonuç bulunamadı
+          </div>
+          <template v-else>
+            <!-- Topics -->
+            <div v-if="topicResults.length > 0" class="dropdown-section">
+              <div class="section-title">başlıklar</div>
+              <router-link 
+                v-for="topic in topicResults.slice(0, 5)" 
+                :key="topic.id"
+                :to="`/baslik/${topic.slug}`"
+                class="dropdown-item"
+                @click="closeSearch"
+              >
+                <FileText class="item-icon" />
+                {{ topic.title }}
+              </router-link>
+            </div>
+
+            <!-- Authors -->
+            <div v-if="authorResults.length > 0" class="dropdown-section">
+              <div class="section-title">yazarlar</div>
+              <router-link 
+                v-for="author in authorResults.slice(0, 3)" 
+                :key="author"
+                :to="`/biri/${author}`"
+                class="dropdown-item"
+                @click="closeSearch"
+              >
+                <User class="item-icon" />
+                {{ author }}
+              </router-link>
+            </div>
+
+            <!-- View All -->
+            <router-link 
+              :to="{ path: '/arama', query: { q: searchQuery } }"
+              class="dropdown-footer"
+              @click="closeSearch"
+            >
+              tüm sonuçları gör
+            </router-link>
+          </template>
+        </div>
+      </div>
+
+      <!-- Create Topic Button -->
+      <button v-if="authStore.isAuthenticated" class="create-topic-btn desktop-only" @click="showTopicModal = true">
+        <Edit3 class="icon" />
+        <span>başlık aç</span>
+      </button>
+
+      <!-- Auth -->
+      <div class="auth-area desktop-only">
+        <template v-if="!authStore.isAuthenticated">
+          <router-link to="/giris" class="auth-link">giriş</router-link>
+          <router-link to="/kayit" class="auth-btn">kayıt</router-link>
+        </template>
+        <template v-else>
+          <button class="user-btn" @click="showMenu = !showMenu">
+            <span class="avatar">{{ authStore.username.charAt(0) }}</span>
+          </button>
+          <div v-if="showMenu" class="dropdown">
+            <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
+            <button @click="logout">çıkış</button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Mobile Auth -->
+      <div class="mobile-auth">
+        <button v-if="authStore.isAuthenticated" class="mobile-auth-icon" @click="showTopicModal = true">
+          <Edit3 class="icon" />
+        </button>
+
+        <template v-if="!authStore.isAuthenticated">
+          <router-link to="/giris" class="mobile-auth-icon" title="giriş">
+            <LogIn class="icon" />
+          </router-link>
+          <router-link to="/kayit" class="mobile-auth-icon highlight" title="kayıt">
+            <UserPlus class="icon" />
+          </router-link>
+        </template>
+        <template v-else>
+          <button class="user-btn" @click="showMenu = !showMenu">
+            <span class="avatar">{{ authStore.username.charAt(0) }}</span>
+          </button>
+          <div v-if="showMenu" class="dropdown mobile-dropdown">
+            <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
+            <button @click="logout">çıkış</button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Mobile Search -->
+      <button class="mobile-search-btn mobile-only" @click="showMobileSearch = !showMobileSearch">
+        <Search class="icon" />
+      </button>
+    </div>
+
+    <!-- Mobile Search Bar -->
+    <div v-if="showMobileSearch" class="mobile-search">
+      <input
+        type="text"
+        v-model="searchQuery"
+        placeholder="ara..."
+        @keyup.enter="navigateToSearch"
+      />
+    </div>
+
+    <!-- New Topic Modal -->
+    <NewTopicModal 
+      v-if="showTopicModal" 
+      @close="showTopicModal = false" 
+      @created="handleTopicCreated"
+    />
+  </header>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { Search, FileText, User, LogIn, UserPlus, Edit3 } from 'lucide-vue-next'
+import { useAuthStore } from '@/stores/auth'
+import { useTopicsStore } from '@/stores/topics'
+import { useEntriesStore } from '@/stores/entries'
+import { categoriesApi } from '@/services/api'
+import NewTopicModal from '@/components/NewTopicModal.vue'
+
+const emit = defineEmits(['tab-change'])
+
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+const topicsStore = useTopicsStore()
+const entriesStore = useEntriesStore()
+
+const searchQuery = ref('')
+const showMenu = ref(false)
+const showMobileSearch = ref(false)
+const showSearchDropdown = ref(false)
+const activeTab = ref('')
+const searchContainerRef = ref(null)
+const showChannels = ref(false)
+const categories = ref([])
+const showTopicModal = ref(false)
+
+// Route değişince tab'ı temizle
+watch(() => route.path, (newPath) => {
+  if (newPath !== '/') {
+    activeTab.value = ''
+  }
+})
+
+// Search results
+const topicResults = computed(() => {
+  if (searchQuery.value.length < 2) return []
+  return topicsStore.topics.filter(t => 
+    t.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+const authorResults = computed(() => {
+  if (searchQuery.value.length < 2) return []
+  const getUsername = (e) => e.authorUsername || e.author?.username
+  const authors = [...new Set(entriesStore.entries.map(getUsername).filter(Boolean))]
+  return authors.filter(a => a.toLowerCase().includes(searchQuery.value.toLowerCase()))
+})
+
+const searchResults = computed(() => [...topicResults.value, ...authorResults.value])
+
+const activeChannel = computed(() => {
+  return route.query.category ? { id: route.query.category, name: route.query.name } : null
+})
+
+function setTab(tab) {
+  activeTab.value = tab
+  emit('tab-change', tab)
+  router.push('/')
+}
+
+function emitTabChange(tab) {
+  activeTab.value = ''
+  emit('tab-change', tab)
+  // Reset filter by pushing to root without query
+  router.push('/').then(() => {
+    // Force reload if needed or just let watchers handle it
+    topicsStore.fetchTrendingTopics(0, 10)
+    topicsStore.fetchPopularTopics(0, 10)
+  })
+}
+
+async function selectCategory(cat) {
+  showChannels.value = false
+  // Navigate to home with category query
+  activeTab.value = '' // Clear other tabs
+  router.push({ path: '/', query: { category: cat.id, name: cat.name } })
+  emit('tab-change', 'channel') 
+}
+
+function handleSearchInput() {
+  showSearchDropdown.value = true
+}
+
+function navigateToSearch() {
+  if (searchQuery.value.trim()) {
+    router.push({ path: '/arama', query: { q: searchQuery.value } })
+    closeSearch()
+  }
+}
+
+function closeSearch() {
+  showSearchDropdown.value = false
+  searchQuery.value = ''
+  showMobileSearch.value = false
+}
+
+function logout() {
+  authStore.logout()
+  showMenu.value = false
+  router.push('/')
+}
+
+// Click outside to close
+function handleClickOutside(e) {
+  if (searchContainerRef.value && !searchContainerRef.value.contains(e.target)) {
+    showSearchDropdown.value = false
+  }
+}
+
+onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  topicsStore.fetchTopics()
+  entriesStore.fetchLatestEntries()
+  
+  // Fetch categories
+  try {
+    const res = await categoriesApi.getAll()
+    categories.value = res.data
+  } catch (err) {
+    console.error('Categories fetch error:', err)
+  }
+})
+
+function handleTopicCreated() {
+  topicsStore.fetchTopics() // Refresh sidebar
+}
+
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+// Tab'ı temizlemek için dışarıya aç
+function clearActiveTab() {
+  activeTab.value = ''
+}
+
+defineExpose({
+  clearActiveTab
+})
+</script>
+
+<style scoped>
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #1a1a2e;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 50px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #d4c84a;
+}
+
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+@media (min-width: 769px) {
+  .nav-tabs {
+    overflow: visible; /* Allow dropsown to show */
+  }
+}
+
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.nav-tab {
+  height: 100%;
+  padding: 0 0.75rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.8rem;
+  color: #888;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.nav-tab:hover { color: #d4c84a; }
+.nav-tab.active { color: #d4c84a; border-bottom-color: #d4c84a; }
+
+.nav-channels {
+  position: relative;
+  height: 100%;
+}
+
+.channels-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 0 0 6px 6px;
+  padding: 0.5rem 0;
+  min-width: 150px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.channel-item {
+  text-align: left;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.channel-item:hover {
+  background: rgba(255, 237, 0, 0.1);
+  color: #d4c84a;
+}
+
+.create-topic-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: #d4c84a;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.create-topic-btn:hover {
+  opacity: 0.9;
+}
+
+/* Search Container */
+.search-container {
+  position: relative;
+  margin-left: auto;
+}
+
+.search-box {
+  display: flex;
+  background: #0d0d1a;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.search-box input {
+  width: 180px;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.search-box input:focus { outline: none; }
+.search-box input::placeholder { color: #555; }
+
+.search-box button {
+  padding: 0.4rem 0.6rem;
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+}
+
+.search-box button:hover { color: #d4c84a; }
+.icon { width: 14px; height: 14px; }
+
+/* Search Dropdown */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  min-width: 280px;
+}
+
+.dropdown-empty {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.dropdown-section {
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.dropdown-section:last-of-type {
+  border-bottom: none;
+}
+
+.section-title {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #555;
+  background: #0d0d1a;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  color: #ccc;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background 0.1s;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 237, 0, 0.1);
+  color: #d4c84a;
+}
+
+.item-icon {
+  width: 14px;
+  height: 14px;
+  color: #555;
+}
+
+.dropdown-footer {
+  display: block;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #d4c84a;
+  text-decoration: none;
+  background: #0d0d1a;
+  border-top: 1px solid #2a2a4a;
+}
+
+.dropdown-footer:hover {
+  background: rgba(255, 237, 0, 0.1);
+}
+
+/* Auth */
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.auth-link {
+  font-size: 0.8rem;
+  color: #888;
+  text-decoration: none;
+}
+
+.auth-link:hover { color: #d4c84a; }
+
+.auth-btn {
+  padding: 0.35rem 0.75rem;
+  background: #d4c84a;
+  color: #1a1a2e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.user-btn {
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  background: #d4c84a;
+  color: #1a1a2e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  padding: 0.5rem 0;
+  min-width: 120px;
+}
+
+.dropdown a,
+.dropdown button {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 0.8rem;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown a:hover,
+.dropdown button:hover {
+  background: rgba(255, 237, 0, 0.1);
+  color: #d4c84a;
+}
+
+/* Mobile */
+.mobile-only { display: none; }
+.mobile-auth { display: none; }
+
+.mobile-search-btn {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+}
+
+.mobile-search-btn .icon { width: 20px; height: 20px; }
+
+.mobile-search {
+  padding: 0.5rem 1rem;
+  background: #0d0d1a;
+  border-top: 1px solid #2a2a4a;
+}
+
+.mobile-search input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 0.875rem;
+}
+
+.mobile-search input:focus { outline: none; border-color: #d4c84a; }
+
+/* Mobile Auth - base styles */
+.mobile-auth {
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+}
+
+.mobile-auth-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  color: #888;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.mobile-auth-icon:hover {
+  color: #d4c84a;
+  background: rgba(255, 237, 0, 0.1);
+}
+
+.mobile-auth-icon.highlight {
+  color: #d4c84a;
+}
+
+.mobile-auth-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.mobile-dropdown {
+  right: 0;
+  min-width: 100px;
+}
+
+@media (max-width: 768px) {
+  .desktop-only { display: none; }
+  .mobile-only { display: flex; }
+  .mobile-auth { display: flex; }
+  .logo-text { display: none; }
+  .nav-tabs { flex: 1; justify-content: center; }
+  .nav-tab { padding: 0 0.6rem; font-size: 0.75rem; }
+}
+</style>

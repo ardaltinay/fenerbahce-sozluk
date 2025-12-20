@@ -1,0 +1,31 @@
+{
+  "name": "client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@vuelidate/core": "^2.0.3",
+    "@vuelidate/validators": "^2.0.4",
+    "@vueuse/core": "^14.1.0",
+    "axios": "^1.13.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^0.561.0",
+    "pinia": "^3.0.4",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.2.4"
+  }
+}

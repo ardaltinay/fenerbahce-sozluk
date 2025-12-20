@@ -1,0 +1,44 @@
+#!/bin/sh
+# Maven Wrapper script for Unix/Linux/macOS
+# Downloads Maven if not present and runs it
+
+set -e
+
+MAVEN_PROJECTBASEDIR="$(cd "$(dirname -- "$0")" && pwd)"
+WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+
+# Maven version
+MAVEN_VERSION="3.9.6"
+MAVEN_DIST_URL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-bin.zip"
+
+# Where to install Maven
+MAVEN_HOME="$HOME/.m2/wrapper/dists/apache-maven-$MAVEN_VERSION"
+
+if [ ! -d "$MAVEN_HOME/bin" ]; then
+    echo "Downloading Maven $MAVEN_VERSION..."
+    
+    mkdir -p "$MAVEN_HOME"
+    TMP_DIR=$(mktemp -d)
+    MAVEN_ZIP="$TMP_DIR/apache-maven-$MAVEN_VERSION-bin.zip"
+    
+    if command -v curl > /dev/null 2>&1; then
+        curl -sL -o "$MAVEN_ZIP" "$MAVEN_DIST_URL"
+    elif command -v wget > /dev/null 2>&1; then
+        wget -q -O "$MAVEN_ZIP" "$MAVEN_DIST_URL"
+    else
+        echo "Error: Neither curl nor wget found. Cannot download Maven."
+        exit 1
+    fi
+    
+    echo "Extracting Maven..."
+    unzip -q "$MAVEN_ZIP" -d "$TMP_DIR"
+    cp -r "$TMP_DIR/apache-maven-$MAVEN_VERSION/"* "$MAVEN_HOME/"
+    rm -rf "$TMP_DIR"
+    
+    echo "Maven $MAVEN_VERSION installed successfully."
+fi
+
+export MAVEN_HOME
+export PATH="$MAVEN_HOME/bin:$PATH"
+
+exec "$MAVEN_HOME/bin/mvn" "$@"

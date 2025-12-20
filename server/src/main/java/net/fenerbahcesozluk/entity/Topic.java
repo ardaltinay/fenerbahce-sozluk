@@ -1,0 +1,66 @@
+package net.fenerbahcesozluk.entity;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "topics")
+public class Topic extends BaseEntity {
+
+  @Column(nullable = false)
+  private String title;
+
+  @Column(name = "slug", nullable = false, unique = true)
+  private String slug;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "category_id")
+  private Category category;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "author_id", nullable = false)
+  private User author;
+
+  @Column(name = "entry_count")
+  @Builder.Default
+  private Integer entryCount = 0;
+
+  @Column(name = "view_count")
+  @Builder.Default
+  private Long viewCount = 0L;
+
+  @Column(name = "is_locked")
+  @Builder.Default
+  private boolean isLocked = false;
+
+  @Column(name = "is_pinned")
+  @Builder.Default
+  private boolean isPinned = false;
+
+  @Column(name = "is_active")
+  @Builder.Default
+  private boolean isActive = true;
+
+  @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<Entry> entries = new ArrayList<>();
+}
