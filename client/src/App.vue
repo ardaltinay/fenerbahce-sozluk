@@ -1,7 +1,8 @@
 <template>
   <router-view />
+  <ToastNotification />
 </template>
 
 <script setup>
-// App is just a router view wrapper
+import ToastNotification from '@/components/ui/ToastNotification.vue'
 </script>

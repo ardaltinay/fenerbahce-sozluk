@@ -225,12 +225,14 @@ import Header from '@/components/layout/Header.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
 const authStore = useAuthStore()
+const toast = useToast()
 
 function goBack() {
   // Use browser history to go back
@@ -272,7 +274,7 @@ function formatDate(date) {
 
 async function vote(entryId, voteType) {
   if (!authStore.isAuthenticated) {
-    alert('Oy vermek için giriş yapmalısınız')
+    toast.warning('Oy vermek için giriş yapmalısınız')
     return
   }
   await entriesStore.vote(entryId, voteType)
@@ -281,7 +283,7 @@ async function vote(entryId, voteType) {
 function shareEntry(entryId) {
   const url = `${window.location.origin}/entry/${entryId}`
   navigator.clipboard.writeText(url)
-  alert('Link kopyalandı!')
+  toast.success('Link kopyalandı!')
 }
 
 // Edit state
@@ -306,7 +308,7 @@ async function saveEdit(entryId) {
     editingEntryId.value = null
     editContent.value = ''
   } else {
-    alert(result.message || 'Entry güncellenemedi')
+    toast.error(result.message || 'Entry güncellenemedi')
   }
 }
 
@@ -328,7 +330,7 @@ async function confirmDeleteEntry() {
   if (result.success) {
     closeDeleteModal()
   } else {
-    alert(result.message || 'Entry silinemedi')
+    toast.error(result.message || 'Entry silinemedi')
   }
 }
 
@@ -351,7 +353,7 @@ async function confirmDeleteTopic() {
     closeTopicDeleteModal()
     router.push('/')
   } else {
-    alert(result.message || 'Başlık silinemedi')
+    toast.error(result.message || 'Başlık silinemedi')
   }
 }
 
@@ -372,7 +374,7 @@ async function submitEntry() {
   if (result.success) {
     newEntry.value = ''
   } else {
-    alert(result.message || 'Entry gönderilemedi')
+    toast.error(result.message || 'Entry gönderilemedi')
   }
   submitting.value = false
   submitting.value = false

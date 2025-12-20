@@ -232,11 +232,13 @@ import Header from '@/components/layout/Header.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
 const authStore = useAuthStore()
+const toast = useToast()
 
 const headerRef = ref(null)
 const selectedTopic = ref(null)
@@ -308,7 +310,7 @@ function openMobileEntries(topic) {
 
 async function vote(entryId, voteType) {
   if (!authStore.isAuthenticated) {
-    alert('Oy vermek için giriş yapmalısınız')
+    toast.warning('Oy vermek için giriş yapmalısınız')
     return
   }
   await entriesStore.vote(entryId, voteType)
@@ -317,7 +319,7 @@ async function vote(entryId, voteType) {
 function shareEntry(entryId) {
   const url = `${window.location.origin}/entry/${entryId}`
   navigator.clipboard.writeText(url)
-  alert('Link kopyalandı!')
+  toast.success('Link kopyalandı!')
 }
 
 function formatCount(n) {

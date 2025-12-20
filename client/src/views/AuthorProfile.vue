@@ -275,11 +275,13 @@ import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
 import { useTopicsStore } from '@/stores/topics'
 import { usersApi } from '@/services/api'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const entriesStore = useEntriesStore()
 const topicsStore = useTopicsStore()
+const toast = useToast()
 
 const loading = ref(true)
 const isFollowing = ref(false)
@@ -392,7 +394,7 @@ async function saveEdit(entryId) {
     editingEntryId.value = null
     editContent.value = ''
   } else {
-    alert(result.message || 'Entry güncellenemedi')
+    toast.error(result.message || 'Entry güncellenemedi')
   }
 }
 
@@ -414,7 +416,7 @@ async function confirmDeleteEntry() {
   if (result.success) {
     closeDeleteModal()
   } else {
-    alert(result.message || 'Entry silinemedi')
+    toast.error(result.message || 'Entry silinemedi')
   }
 }
 
@@ -428,11 +430,11 @@ async function confirmBanUser() {
   if (confirmed) {
     try {
       await usersApi.ban(username.value)
-      alert('Kullanıcı başarıyla kaldırıldı')
+      toast.success('Kullanıcı başarıyla kaldırıldı')
       // Redirect to home
       window.location.href = '/'
     } catch (err) {
-      alert(err.response?.data?.message || 'Kullanıcı kaldırılamadı')
+      toast.error(err.response?.data?.message || 'Kullanıcı kaldırılamadı')
     }
   }
 }
