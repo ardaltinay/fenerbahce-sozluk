@@ -17,7 +17,7 @@ import java.util.UUID;
 public class TopicRequest {
 
   @NotBlank(message = "Başlık boş olamaz")
-  @Size(min = 3, max = 255, message = "Başlık 3-255 karakter arasında olmalıdır")
+  @Size(min = 3, max = 50, message = "Başlık 3-50 karakter arasında olmalıdır")
   private String title;
 
   @NotNull(message = "Kategori seçimi zorunludur")

@@ -29,18 +29,11 @@ public class CategoryService {
     return toResponse(category);
   }
 
-  public CategoryResponse getCategoryBySlug(String slug) {
-    Category category = categoryRepository.findBySlug(slug)
-        .orElseThrow(() -> new RuntimeException("Kategori bulunamadı: " + slug));
-    return toResponse(category);
-  }
-
   private CategoryResponse toResponse(Category category) {
     return CategoryResponse.builder()
         .id(category.getId())
         .name(category.getName())
         .description(category.getDescription())
-        .slug(category.getSlug())
         .icon(category.getIcon())
         .displayOrder(category.getDisplayOrder())
         .topicCount(category.getTopics() != null ? category.getTopics().size() : 0)

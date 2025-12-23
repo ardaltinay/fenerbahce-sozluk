@@ -62,11 +62,6 @@ public class TopicController {
     return ResponseEntity.ok(topicService.searchTopics(keyword, pageable));
   }
 
-  @GetMapping("/slug/{slug}")
-  public ResponseEntity<TopicResponse> getTopicBySlug(@PathVariable String slug) {
-    return ResponseEntity.ok(topicService.getTopicBySlug(slug));
-  }
-
   @GetMapping("/{id}")
   public ResponseEntity<TopicResponse> getTopicById(@PathVariable UUID id) {
     topicService.incrementViewCount(id);

@@ -8,11 +8,13 @@ import net.fenerbahcesozluk.entity.Topic;
 import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.entity.Vote;
 import net.fenerbahcesozluk.enums.VoteType;
+import net.fenerbahcesozluk.exception.BusinessException;
 import net.fenerbahcesozluk.repository.EntryRepository;
 import net.fenerbahcesozluk.repository.TopicRepository;
 import net.fenerbahcesozluk.repository.VoteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,17 +62,17 @@ public class EntryService {
 
   public EntryResponse getEntryById(UUID id, User currentUser) {
     Entry entry = entryRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Entry bulunamadı"));
+        .orElseThrow(() -> new BusinessException("Entry bulunamadı", HttpStatus.NOT_FOUND));
     return toResponse(entry, currentUser);
   }
 
   @Transactional
   public EntryResponse createEntry(EntryRequest request, User author) {
     Topic topic = topicRepository.findById(request.getTopicId())
-        .orElseThrow(() -> new RuntimeException("Başlık bulunamadı"));
+        .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
 
     if (topic.isLocked()) {
-      throw new RuntimeException("Bu başlık kilitli, entry yazılamaz");
+      throw new BusinessException("Bu başlık kilitli, entry yazılamaz", HttpStatus.FORBIDDEN);
     }
 
     Entry entry = Entry.builder()
@@ -88,7 +90,7 @@ public class EntryService {
   @Transactional
   public EntryResponse updateEntry(UUID entryId, String newContent, User currentUser) {
     Entry entry = entryRepository.findById(entryId)
-        .orElseThrow(() -> new RuntimeException("Entry bulunamadı"));
+        .orElseThrow(() -> new BusinessException("Entry bulunamadı", HttpStatus.NOT_FOUND));
 
     // Allow edit if: owner, MODERATOR, or ADMIN
     boolean isOwner = entry.getAuthor().getId().equals(currentUser.getId());
@@ -96,7 +98,7 @@ public class EntryService {
     boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
 
     if (!isOwner && !isModerator && !isAdmin) {
-      throw new RuntimeException("Bu entry'yi düzenleme yetkiniz yok");
+      throw new BusinessException("Bu entry'yi düzenleme yetkiniz yok", HttpStatus.FORBIDDEN);
     }
 
     entry.setContent(newContent);
@@ -109,7 +111,7 @@ public class EntryService {
   @Transactional
   public void deleteEntry(UUID entryId, String reason, User currentUser) {
     Entry entry = entryRepository.findById(entryId)
-        .orElseThrow(() -> new RuntimeException("Entry bulunamadı"));
+        .orElseThrow(() -> new BusinessException("Entry bulunamadı", HttpStatus.NOT_FOUND));
 
     // Allow delete if: owner, MODERATOR, or ADMIN
     boolean isOwner = entry.getAuthor().getId().equals(currentUser.getId());
@@ -117,7 +119,7 @@ public class EntryService {
     boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
 
     if (!isOwner && !isModerator && !isAdmin) {
-      throw new RuntimeException("Bu işlem için yetkiniz yok");
+      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
     }
 
     entry.setActive(false);

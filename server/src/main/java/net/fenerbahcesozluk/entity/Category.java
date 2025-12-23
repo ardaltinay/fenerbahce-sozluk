@@ -30,9 +30,6 @@ public class Category extends BaseEntity {
   @Column(length = 500)
   private String description;
 
-  @Column(name = "slug", nullable = false, unique = true)
-  private String slug;
-
   @Column(name = "icon")
   private String icon;
 

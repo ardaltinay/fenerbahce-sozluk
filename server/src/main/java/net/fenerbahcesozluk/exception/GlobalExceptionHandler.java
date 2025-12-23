@@ -1,5 +1,6 @@
 package net.fenerbahcesozluk.exception;
 
+import net.fenerbahcesozluk.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,7 +18,7 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+  public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
     Map<String, String> errors = new HashMap<>();
     ex.getBindingResult().getAllErrors().forEach((error) -> {
       String fieldName = ((FieldError) error).getField();
@@ -25,45 +26,61 @@ public class GlobalExceptionHandler {
       errors.put(fieldName, errorMessage);
     });
 
-    Map<String, Object> response = new HashMap<>();
-    response.put("timestamp", LocalDateTime.now());
-    response.put("status", HttpStatus.BAD_REQUEST.value());
-    response.put("error", "Validation Failed");
-    response.put("errors", errors);
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.BAD_REQUEST.value())
+        .error("Validation Failed")
+        .message("Giriş verileri geçersiz")
+        .errors(errors)
+        .build();
 
     return ResponseEntity.badRequest().body(response);
   }
 
+  @ExceptionHandler(BusinessException.class)
+  public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(ex.getStatus().value())
+        .error(ex.getStatus().getReasonPhrase())
+        .message(ex.getMessage())
+        .build();
+
+    return ResponseEntity.status(ex.getStatus()).body(response);
+  }
+
   @ExceptionHandler(RuntimeException.class)
-  public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
-    Map<String, Object> response = new HashMap<>();
-    response.put("timestamp", LocalDateTime.now());
-    response.put("status", HttpStatus.BAD_REQUEST.value());
-    response.put("error", "Bad Request");
-    response.put("message", ex.getMessage());
+  public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.BAD_REQUEST.value())
+        .error("Bad Request")
+        .message(ex.getMessage())
+        .build();
 
     return ResponseEntity.badRequest().body(response);
   }
 
   @ExceptionHandler(BadCredentialsException.class)
-  public ResponseEntity<Map<String, Object>> handleBadCredentialsException(BadCredentialsException ex) {
-    Map<String, Object> response = new HashMap<>();
-    response.put("timestamp", LocalDateTime.now());
-    response.put("status", HttpStatus.UNAUTHORIZED.value());
-    response.put("error", "Unauthorized");
-    response.put("message", "Kullanıcı adı veya şifre hatalı");
+  public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.UNAUTHORIZED.value())
+        .error("Unauthorized")
+        .message("Kullanıcı adı veya şifre hatalı")
+        .build();
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
   }
 
   @ExceptionHandler(RateLimitExceededException.class)
-  public ResponseEntity<Map<String, Object>> handleRateLimitExceededException(RateLimitExceededException ex) {
-    Map<String, Object> response = new HashMap<>();
-    response.put("timestamp", LocalDateTime.now());
-    response.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
-    response.put("error", "Too Many Requests");
-    response.put("message", ex.getMessage());
-    response.put("retryAfterSeconds", ex.getRetryAfterSeconds());
+  public ResponseEntity<ErrorResponse> handleRateLimitExceededException(RateLimitExceededException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.TOO_MANY_REQUESTS.value())
+        .error("Too Many Requests")
+        .message(ex.getMessage())
+        .build();
 
     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
         .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
@@ -71,23 +88,25 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(UsernameNotFoundException.class)
-  public ResponseEntity<Map<String, Object>> handleUsernameNotFoundException(UsernameNotFoundException ex) {
-    Map<String, Object> response = new HashMap<>();
-    response.put("timestamp", LocalDateTime.now());
-    response.put("status", HttpStatus.NOT_FOUND.value());
-    response.put("error", "Not Found");
-    response.put("message", ex.getMessage());
+  public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.NOT_FOUND.value())
+        .error("Not Found")
+        .message(ex.getMessage())
+        .build();
 
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-    Map<String, Object> response = new HashMap<>();
-    response.put("timestamp", LocalDateTime.now());
-    response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-    response.put("error", "Internal Server Error");
-    response.put("message", "Beklenmeyen bir hata oluştu");
+  public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+        .error("Internal Server Error")
+        .message("Beklenmeyen bir hata oluştu")
+        .build();
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
   }

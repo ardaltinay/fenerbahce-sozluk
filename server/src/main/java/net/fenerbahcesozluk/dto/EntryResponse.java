@@ -19,7 +19,6 @@ public class EntryResponse {
   private String content;
   private UUID topicId;
   private String topicTitle;
-  private String topicSlug;
   private String authorUsername;
   private UUID authorId;
   private Integer likeCount;

@@ -9,15 +9,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, UUID> {
-
-  Optional<Topic> findBySlug(String slug);
-
-  boolean existsBySlug(String slug);
 
   Page<Topic> findByIsActiveTrueOrderByCreatedAtDesc(Pageable pageable);
 

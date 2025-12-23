@@ -26,11 +26,8 @@ import java.util.List;
 @Table(name = "topics")
 public class Topic extends BaseEntity {
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 50)
   private String title;
-
-  @Column(name = "slug", nullable = false, unique = true)
-  private String slug;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id")

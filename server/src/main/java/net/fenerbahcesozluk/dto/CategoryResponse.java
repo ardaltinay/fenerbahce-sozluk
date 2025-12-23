@@ -16,7 +16,6 @@ public class CategoryResponse {
   private UUID id;
   private String name;
   private String description;
-  private String slug;
   private String icon;
   private Integer displayOrder;
   private Integer topicCount;

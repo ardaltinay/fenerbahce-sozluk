@@ -6,7 +6,9 @@ import net.fenerbahcesozluk.dto.LoginRequest;
 import net.fenerbahcesozluk.dto.RegisterRequest;
 import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.enums.Role;
+import net.fenerbahcesozluk.exception.BusinessException;
 import net.fenerbahcesozluk.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,12 +26,12 @@ public class AuthService {
   public AuthResponse register(RegisterRequest request) {
     // Check if username already exists
     if (userRepository.existsByUsername(request.getUsername())) {
-      throw new RuntimeException("Bu kullanıcı adı zaten kullanılıyor");
+      throw new BusinessException("Bu kullanıcı adı zaten kullanılıyor", HttpStatus.CONFLICT);
     }
 
     // Check if email already exists
     if (userRepository.existsByEmail(request.getEmail())) {
-      throw new RuntimeException("Bu email adresi zaten kullanılıyor");
+      throw new BusinessException("Bu email adresi zaten kullanılıyor", HttpStatus.CONFLICT);
     }
 
     // Create new user
@@ -62,11 +64,11 @@ public class AuthService {
 
     var user = userRepository.findByUsername(request.getUsername())
         .or(() -> userRepository.findByEmail(request.getUsername()))
-        .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+        .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
 
     if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(java.time.LocalDateTime.now())) {
       String reason = user.getBanReason() != null ? user.getBanReason() : "Belirtilmedi";
-      throw new RuntimeException("Hesabınız yasaklanmıştır. Sebep: " + reason + " Bitiş: " + user.getBannedUntil());
+      throw new BusinessException("Hesabınız yasaklanmıştır. Sebep: " + reason, HttpStatus.FORBIDDEN);
     }
 
     var token = jwtService.generateToken(user);
