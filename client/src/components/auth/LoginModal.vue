@@ -1,28 +1,21 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-container">
-      <!-- Logo -->
-      <router-link to="/" class="logo">
-        <img src="/icon.png" alt="Fenerbahçe Sözlük" class="logo-icon" />
-        <div class="logo-text">
-          <span class="logo-title">fenerbahçe sözlük</span>
-          <span class="logo-subtitle">kutlu adın yüreklerde</span>
-        </div>
-      </router-link>
-
-      <!-- Login Form -->
-      <div class="auth-card">
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-content">
+      <div class="modal-header">
         <h1>giriş yap</h1>
+        <button class="close-btn" @click="$emit('close')"><X class="icon text-white" /></button>
+      </div>
 
+      <div class="modal-body">
         <form @submit.prevent="handleLogin">
           <div class="form-group">
-            <label>e-posta veya kullanıcı adı</label>
+            <label>kullanıcı adı</label>
             <div class="input-group">
               <User class="input-icon" />
               <input
                 v-model="form.email"
                 type="text"
-                placeholder="ornek@email.com"
+                placeholder="kullanıcı adınızı giriniz"
                 required
               />
             </div>
@@ -50,7 +43,7 @@
               <input type="checkbox" v-model="form.remember" />
               <span>beni hatırla</span>
             </label>
-            <router-link to="/sifremi-unuttum" class="forgot-link">şifremi unuttum</router-link>
+            <router-link to="/sifremi-unuttum" class="forgot-link" @click="$emit('close')">şifremi unuttum</router-link>
           </div>
 
           <div v-if="error" class="error-box">{{ error }}</div>
@@ -63,13 +56,13 @@
 
         <div class="divider"><span>veya</span></div>
 
-        <button class="social-btn">
+        <button class="social-btn" @click="handleGoogleClick">
           <img src="https://www.google.com/favicon.ico" alt="Google" />
           google ile devam et
         </button>
 
         <p class="switch-link">
-          hesabın yok mu? <router-link to="/kayit">kayıt ol</router-link>
+          hesabın yok mu? <a href="#" @click.prevent="$emit('switch-to-register')">kayıt ol</a>
         </p>
       </div>
     </div>
@@ -79,11 +72,14 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Lock, Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { User, Lock, Eye, EyeOff, Loader2, X } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 
+const emit = defineEmits(['close', 'switch-to-register'])
 const router = useRouter()
 const authStore = useAuthStore()
+const toast = useToast()
 
 const form = reactive({
   email: '',
@@ -106,7 +102,9 @@ async function handleLogin() {
     })
     
     if (result.success) {
-      router.push('/')
+      toast.success('Giriş başarılı!')
+      emit('close')
+      // router.push('/') // No need to push if already on page, or reload?
     } else {
       error.value = typeof result.message === 'string' 
         ? result.message 
@@ -118,67 +116,67 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+function handleGoogleClick() {
+  toast.info('Google ile giriş yakında aktif olacak!')
+}
 </script>
 
 <style scoped>
-.auth-page {
-  min-height: 100vh;
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
-  background: #0f0f1a;
+  z-index: 2000;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
-.auth-container {
+.modal-content {
+  background: rgba(26, 26, 46, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   width: 100%;
   max-width: 400px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  margin-bottom: 2rem;
-  justify-content: center;
-}
-
-.logo-icon {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-}
-
-.logo-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.logo-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #d4c84a;
-}
-
-.logo-subtitle {
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.auth-card {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
   border-radius: 16px;
-  padding: 2rem;
+  border: 1px solid rgba(212, 200, 74, 0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.auth-card h1 {
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.modal-header h1 {
   font-size: 1.25rem;
   font-weight: 600;
   color: #e0e0e0;
-  text-align: center;
-  margin: 0 0 1.5rem;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 0;
+}
+.close-btn:hover { color: #fff; }
+
+.modal-body {
+  padding: 1.5rem;
 }
 
 .form-group {
@@ -380,11 +378,5 @@ async function handleLogin() {
 
 .switch-link a:hover {
   text-decoration: underline;
-}
-
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 1.5rem;
-  }
 }
 </style>

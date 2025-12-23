@@ -16,9 +16,12 @@
               v-model="form.title" 
               type="text" 
               placeholder="başlık giriniz..."
-              required
-              minlength="3"
+              @blur="v$.title.$touch"
+              :class="{ 'has-error': v$.title.$error }"
             />
+            <span class="error" v-if="v$.title.$error">
+              {{ v$.title.$errors[0].$message }}
+            </span>
           </div>
 
           <div class="form-group">
@@ -27,6 +30,7 @@
           v-model="form.categoryId" 
           :options="categories" 
           placeholder="Kategori seçiniz"
+          :error="v$.categoryId.$error"
         />
         <span class="error" v-if="v$.categoryId.$error">
           {{ v$.categoryId.$errors[0].$message }}
@@ -40,6 +44,7 @@
           placeholder="ilk entry içeriği..."
           rows="6"
           @blur="v$.content.$touch"
+          :class="{ 'has-error': v$.content.$error }"
         ></textarea>
         <span class="error" v-if="v$.content.$error">
           {{ v$.content.$errors[0].$message }}
@@ -65,7 +70,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, helpers } from '@vuelidate/validators'
-import { categoriesApi } from '@/services/api'
+import { categoriesApi, entriesApi } from '@/services/api'
 import { useTopicsStore } from '@/stores/topics'
 import { useRouter } from 'vue-router'
 import SelectBox from '@/components/ui/SelectBox.vue'
@@ -121,47 +126,66 @@ onMounted(async () => {
 })
 
 async function handleSubmit() {
-  if (!isValid.value) return
+  const isFormValid = await v$.value.$validate()
+  if (!isFormValid) {
+    // Show validation errors if needed, v$ should handle UI
+    return
+  }
   
   loading.value = true
   error.value = null
 
   try {
     // 1. Create Topic
+    console.log('Creating topic with:', { title: form.title, categoryId: form.categoryId })
     const newTopic = await topicsStore.createTopic({
-      title: form.value.title,
-      categoryId: form.value.categoryId
+      title: form.title,
+      categoryId: form.categoryId
     })
-
-    // 2. Create First Entry handled by backend? No, createTopic usually just creates topic?
-    // User request implies creating topic AND entry.
-    // If backend verify: TopicService.createTopic takes TopicRequest (title, categoryId).
-    // It creates TOPIC. It does NOT create entry.
-    // So we need to create Entry separately?
-    // Or update Backend to accept initial entry?
-    // Standard Sozluk flow: Create Topic -> Redirect to Topic -> User enters entry?
-    // OR Atomic: Create Topic + Entry.
-    // User said "yeni topic ekleme kısmını da implemente edelim... bizim için bu değer category olacak".
-    // I will assume simple: Create Topic, then Create Entry.
-    // BUT if I create topic without entry, it might be empty/deleted?
-    // Actually, Topic usually needs an entry to exist in lists.
-    // I should create entry immediately.
+    console.log('Topic created successfully:', newTopic)
     
-    // I will use store action if available, or API calls.
-        
-    // Create Entry
-    const { entriesApi } = await import('@/services/api') // Dynamic import to avoid circular dep if any
+    // 2. Create First Entry
+    if (!newTopic || !newTopic.id) {
+      throw new Error('Başlık ID alınamadı')
+    }
+
+    console.log('Creating first entry for topic:', newTopic.id)
     await entriesApi.create({
       topicId: newTopic.id,
-      content: form.value.content
+      content: form.content
     })
+    console.log('Entry created successfully')
     
     emit('created')
     router.push(`/baslik/${newTopic.slug}`)
     emit('close')
     
   } catch (err) {
-    error.value = err.response?.data?.message || 'Bir hata oluştu'
+    console.error('Topic creation error full object:', err)
+    
+    // Handle Duplicate Topic Error
+    // We look for the "duplicate_topic:slug" pattern in the error message
+    // Since backend might wrap it in a generic 500 or 400 depending on handler
+    const errorMsg = err.response?.data?.message || err.message || ''
+    
+    if (errorMsg.includes('duplicate_topic:')) {
+      const slug = errorMsg.split('duplicate_topic:')[1]
+      const shouldRedirect = confirm('Bu başlık zaten var. Oraya gitmek ister misiniz?')
+      if (shouldRedirect) {
+        emit('close')
+        router.push(`/baslik/${slug}`)
+      } else {
+        error.value = 'Bu başlık zaten mevcut.'
+      }
+      return
+    }
+
+    if (err.response) {
+      console.error('Error response data:', err.response.data)
+      error.value = `Hata: ${err.response.data.message || 'Sunucu hatası'}`
+    } else {
+      error.value = err.message || 'Bir hata oluştu'
+    }
   } finally {
     loading.value = false
   }
@@ -175,20 +199,26 @@ async function handleSubmit() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .modal-content {
-  background: #1a1a2e;
+  background: rgba(26, 26, 46, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   width: 90%;
   max-width: 500px;
-  border-radius: 8px;
-  border: 1px solid #2a2a4a;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 200, 74, 0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -245,6 +275,17 @@ async function handleSubmit() {
 .form-group textarea:focus {
   outline: none;
   border-color: #d4c84a;
+}
+
+.has-error {
+  border-color: #e74c3c !important;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
 }
 
 .modal-actions {

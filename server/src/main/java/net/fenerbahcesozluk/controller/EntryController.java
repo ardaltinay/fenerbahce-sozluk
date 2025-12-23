@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -68,6 +69,13 @@ public class EntryController {
     return ResponseEntity.ok(entryService.getLatestEntries(currentUser, pageable));
   }
 
+  @GetMapping("/random")
+  public ResponseEntity<Page<EntryResponse>> getRandomEntries(
+      @AuthenticationPrincipal User currentUser,
+      @PageableDefault(size = 3) Pageable pageable) {
+    return ResponseEntity.ok(entryService.getRandomEntries(currentUser, pageable));
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<EntryResponse> getEntryById(
       @PathVariable UUID id,
@@ -94,8 +102,9 @@ public class EntryController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteEntry(
       @PathVariable UUID id,
+      @RequestParam(required = false) String reason,
       @AuthenticationPrincipal User currentUser) {
-    entryService.deleteEntry(id, currentUser);
+    entryService.deleteEntry(id, reason, currentUser);
     return ResponseEntity.noContent().build();
   }
 }

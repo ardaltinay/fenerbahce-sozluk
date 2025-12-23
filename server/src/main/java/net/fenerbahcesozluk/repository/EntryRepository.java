@@ -40,6 +40,9 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
   Page<Entry> findHistoryEntries(@Param("day") int day, @Param("month") int month, @Param("year") int year,
       Pageable pageable);
 
+  @Query(value = "SELECT * FROM entries WHERE is_active = true ORDER BY RANDOM()", nativeQuery = true)
+  Page<Entry> findRandomEntries(Pageable pageable);
+
   @Modifying
   @Query("UPDATE Entry e SET e.likeCount = e.likeCount + 1 WHERE e.id = :entryId")
   void incrementLikeCount(@Param("entryId") UUID entryId);

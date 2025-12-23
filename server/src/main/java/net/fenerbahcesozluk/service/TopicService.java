@@ -74,7 +74,7 @@ public class TopicService {
 
     // Make slug unique if exists
     if (topicRepository.existsBySlug(slug)) {
-      slug = slug + "-" + System.currentTimeMillis();
+      throw new RuntimeException("duplicate_topic:" + slug);
     }
 
     Category category = categoryRepository.findById(request.getCategoryId())
@@ -97,7 +97,7 @@ public class TopicService {
   }
 
   @Transactional
-  public void deleteTopic(UUID topicId, User currentUser) {
+  public void deleteTopic(UUID topicId, String reason, User currentUser) {
     Topic topic = topicRepository.findById(topicId)
         .orElseThrow(() -> new RuntimeException("Başlık bulunamadı"));
 
@@ -109,8 +109,10 @@ public class TopicService {
       throw new RuntimeException("Bu işlem için yetkiniz yok");
     }
 
-    // Hard delete - remove from database
-    topicRepository.delete(topic);
+    // Soft delete
+    topic.setActive(false);
+    topic.setDeleteReason(reason);
+    topicRepository.save(topic);
   }
 
   private TopicResponse toResponse(Topic topic) {

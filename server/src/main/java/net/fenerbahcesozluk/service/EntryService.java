@@ -53,6 +53,11 @@ public class EntryService {
         .map(entry -> toResponse(entry, currentUser));
   }
 
+  public Page<EntryResponse> getRandomEntries(User currentUser, Pageable pageable) {
+    return entryRepository.findRandomEntries(pageable)
+        .map(entry -> toResponse(entry, currentUser));
+  }
+
   public EntryResponse getEntryById(UUID id, User currentUser) {
     Entry entry = entryRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Entry bulunamadı"));
@@ -102,7 +107,7 @@ public class EntryService {
   }
 
   @Transactional
-  public void deleteEntry(UUID entryId, User currentUser) {
+  public void deleteEntry(UUID entryId, String reason, User currentUser) {
     Entry entry = entryRepository.findById(entryId)
         .orElseThrow(() -> new RuntimeException("Entry bulunamadı"));
 
@@ -116,6 +121,7 @@ public class EntryService {
     }
 
     entry.setActive(false);
+    entry.setDeleteReason(reason);
     entryRepository.save(entry);
     topicRepository.decrementEntryCount(entry.getTopic().getId());
   }

@@ -57,12 +57,13 @@ export const topicsApi = {
     api.get(`/api/topics/trends`, { params: { page, size } }),
   getByCategory: (categoryId, page = 0, size = 20) =>
     api.get(`/api/topics/category/${categoryId}`, { params: { page, size } }),
-  getBySlug: (slug) => api.get(`/api/topics/slug/${slug}`),
   getById: (id) => api.get(`/api/topics/${id}`),
+  getBySlug: (slug) => api.get(`/api/topics/slug/${slug}`),
+
   search: (keyword, page = 0, size = 20) =>
     api.get(`/api/topics/search`, { params: { keyword, page, size } }),
   create: (topicData) => api.post('/api/topics', topicData),
-  delete: (id) => api.delete(`/api/topics/${id}`),
+  delete: (id, reason) => api.delete(`/api/topics/${id}`, { params: { reason } }),
 }
 
 // Entries API
@@ -75,25 +76,25 @@ export const entriesApi = {
     api.get(`/api/entries/popular`, { params: { page, size } }),
   getLatest: (page = 0, size = 20) =>
     api.get(`/api/entries/latest`, { params: { page, size } }),
-  getHistory: (page = 0, size = 20) =>
-    api.get(`/api/entries/history`, { params: { page, size } }),
+  getRandom: (page = 0, size = 3) =>
+    api.get(`/api/entries/random`, { params: { page, size } }),
+
   getById: (id) => api.get(`/api/entries/${id}`),
   create: (entryData) => api.post('/api/entries', entryData),
   update: (id, content) => api.put(`/api/entries/${id}`, { content }),
-  delete: (id) => api.delete(`/api/entries/${id}`),
+  delete: (id, reason) => api.delete(`/api/entries/${id}`, { params: { reason } }),
 }
 
 // Votes API
 export const votesApi = {
   vote: (voteData) => api.post('/api/votes', voteData),
-  removeVote: (entryId) => api.delete(`/api/votes/${entryId}`),
+
 }
 
 // Categories API
 export const categoriesApi = {
   getAll: () => api.get('/api/categories'),
-  getById: (id) => api.get(`/api/categories/${id}`),
-  getBySlug: (slug) => api.get(`/api/categories/slug/${slug}`),
+
 }
 
 // Users API
@@ -101,7 +102,7 @@ export const usersApi = {
   getByUsername: (username) => api.get(`/api/users/${username}`),
   getMe: () => api.get('/api/users/me'),
   delete: (id) => api.delete(`/api/users/${id}`),
-  ban: (username) => api.post(`/api/users/${username}/ban`),
+  ban: (id, duration, reason) => api.post(`/api/users/${id}/ban`, { duration, reason }),
 }
 
 export default api

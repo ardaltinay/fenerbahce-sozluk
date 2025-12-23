@@ -60,6 +60,9 @@ public class Topic extends BaseEntity {
   @Builder.Default
   private boolean isActive = true;
 
+  @Column(name = "delete_reason")
+  private String deleteReason;
+
   @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @Builder.Default
   private List<Entry> entries = new ArrayList<>();

@@ -7,7 +7,7 @@ const routes = [
     component: () => import('@/views/Home.vue'),
   },
   {
-    path: '/baslik/:slug',
+    path: '/baslik/:id',
     name: 'TopicDetail',
     component: () => import('@/views/TopicDetail.vue'),
   },
@@ -16,16 +16,7 @@ const routes = [
     name: 'AuthorProfile',
     component: () => import('@/views/AuthorProfile.vue'),
   },
-  {
-    path: '/giris',
-    name: 'Login',
-    component: () => import('@/views/Login.vue'),
-  },
-  {
-    path: '/kayit',
-    name: 'Register',
-    component: () => import('@/views/Register.vue'),
-  },
+
   {
     path: '/entry/:id',
     name: 'EntryDetail',

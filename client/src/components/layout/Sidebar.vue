@@ -1,13 +1,13 @@
 <template>
   <aside class="sidebar">
-    <!-- Başlık Listesi -->
+    <div class="sidebar-header">bugünün konuları</div>
     <nav class="topic-list">
       <button
-        v-for="topic in topics"
+        v-for="topic in topicsStore.sidebarTopics"
         :key="topic.id"
         class="topic-item"
-        :class="{ 'active': selectedTopicId === topic.id }"
-        @click="selectTopic(topic)"
+        :class="{ 'active': isTopicActive(topic) }"
+        @click="navigateToTopic(topic)"
       >
         <span class="topic-title">{{ topic.title }}</span>
         <span class="topic-count">{{ formatCount(topic.entryCount) }}</span>
@@ -17,71 +17,105 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useTopicsStore } from '@/stores/topics'
 
-const emit = defineEmits(['select-topic'])
-
+const router = useRouter()
+const route = useRoute()
 const topicsStore = useTopicsStore()
+const refreshInterval = ref(null)
 
-const topics = computed(() => topicsStore.topics)
-const selectedTopicId = computed(() => topicsStore.currentTopic?.id)
-
-function selectTopic(topic) {
-  topicsStore.setCurrentTopic(topic)
-  emit('select-topic', topic)
+function navigateToTopic(topic) {
+  // Always navigate to the topic detail page
+  router.push(`/baslik/${topic.id}`)
 }
 
-function formatCount(num) {
-  if (num >= 1000) {
-    return Math.floor(num / 1000) + 'b'
+function isTopicActive(topic) {
+  // Check if current route is topic detail and slug matches
+  if (route.name === 'TopicDetail') {
+    const currentId = route.params.id
+    return currentId === topic.id
   }
-  return num.toString()
+  return false
 }
+
+function formatCount(n) {
+  return n >= 1000 ? Math.floor(n/1000) + 'b' : n
+}
+
+function fetchTopics() {
+  topicsStore.fetchSidebarTopics(0, 50)
+}
+
+onMounted(() => {
+  // Ensure sidebar topics are loaded
+  if (topicsStore.sidebarTopics.length === 0) {
+    fetchTopics()
+  }
+
+  // Auto Refresh every 60 seconds
+  refreshInterval.value = setInterval(() => {
+    fetchTopics()
+  }, 60000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+  }
+})
 </script>
 
 <style scoped>
 .sidebar {
-  position: fixed;
-  left: 0;
-  top: 56px;
-  bottom: 0;
-  width: 300px;
-  background: #001232;
-  border-right: 1px solid rgba(255, 237, 0, 0.1);
-  overflow-y: auto;
-  z-index: 40;
+  width: 280px;
+  min-height: calc(100vh - 50px);
+  background: rgba(10, 10, 25, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(212, 200, 74, 0.1);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-header {
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  border-bottom: 1px solid #1a1a2e;
 }
 
 .topic-list {
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
 }
 
 .topic-item {
-  width: 100%;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
   background: none;
   border: none;
+  border-left: 3px solid transparent;
+  color: #d4c84a;
+  font-size: 0.875rem;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: all 0.1s ease;
-  font-size: 0.875rem;
-  color: #81C784;
-  border-left: 2px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .topic-item:hover {
-  background: rgba(255, 237, 0, 0.05);
-  color: #FFED00;
+  background: rgba(255, 237, 0, 0.03);
+  color: #d4c84a;
 }
 
 .topic-item.active {
-  background: rgba(255, 237, 0, 0.08);
-  color: #FFED00;
-  border-left-color: #FFED00;
+  background: rgba(255, 237, 0, 0.05);
+  color: #d4c84a;
+  border-left-color: #d4c84a;
 }
 
 .topic-title {
@@ -89,42 +123,10 @@ function formatCount(num) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-right: 0.5rem;
 }
 
 .topic-count {
-  font-size: 0.75rem;
-  color: #4B5563;
-  flex-shrink: 0;
-}
-
-.topic-item:hover .topic-count,
-.topic-item.active .topic-count {
-  color: #94A3B8;
-}
-
-/* Scrollbar */
-.sidebar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(255, 237, 0, 0.15);
-  border-radius: 4px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 237, 0, 0.3);
-}
-
-/* Mobile */
-@media (max-width: 1024px) {
-  .sidebar {
-    display: none;
-  }
+  font-size: 0.7rem;
+  color: #444;
 }
 </style>

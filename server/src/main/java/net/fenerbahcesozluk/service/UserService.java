@@ -51,7 +51,7 @@ public class UserService {
   }
 
   @Transactional
-  public void banUser(UUID userId, User currentUser) {
+  public void banUser(UUID userId, long durationSeconds, String reason, User currentUser) {
     // Only ADMIN can ban users
     if (!currentUser.getRole().equals(Role.ADMIN)) {
       throw new RuntimeException("Bu işlem için yetkiniz yok");
@@ -64,10 +64,8 @@ public class UserService {
       throw new RuntimeException("Admin kullanıcılar yasaklanamaz");
     }
 
-    // Release username for future use
-    String deletedUsername = "_deleted_" + System.currentTimeMillis();
-    userToBan.setUsername(deletedUsername);
-    userToBan.setActive(false);
+    userToBan.setBannedUntil(java.time.LocalDateTime.now().plusSeconds(durationSeconds));
+    userToBan.setBanReason(reason);
     userRepository.save(userToBan);
   }
 }

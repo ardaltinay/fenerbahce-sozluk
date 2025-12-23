@@ -3,7 +3,7 @@
     <div class="header-container">
       <!-- Logo -->
       <router-link to="/" class="logo" @click="emitTabChange('home')">
-        <img src="/icon.png" alt="Fenerbahçe Sözlük" class="logo-icon" />
+        <img src="/logo.jpeg" alt="Fenerbahçe Sözlük" class="logo-icon" />
         <span class="logo-text">fenerbahçe sözlük</span>
       </router-link>
 
@@ -22,6 +22,13 @@
           @click="setTab('popular')"
         >
           popüler
+        </button>
+        <button 
+          class="nav-tab"
+          :class="{ 'active': activeTab === 'random' }"
+          @click="setTab('random')"
+        >
+          rastgele
         </button>
         <button 
           class="nav-tab"
@@ -124,8 +131,8 @@
       <!-- Auth -->
       <div class="auth-area desktop-only">
         <template v-if="!authStore.isAuthenticated">
-          <router-link to="/giris" class="auth-link">giriş</router-link>
-          <router-link to="/kayit" class="auth-btn">kayıt</router-link>
+          <button class="auth-btn secondary" @click="showLoginModal = true">giriş</button>
+          <button class="auth-btn primary" @click="showRegisterModal = true">kayıt</button>
         </template>
         <template v-else>
           <button class="user-btn" @click="showMenu = !showMenu">
@@ -145,12 +152,12 @@
         </button>
 
         <template v-if="!authStore.isAuthenticated">
-          <router-link to="/giris" class="mobile-auth-icon" title="giriş">
+          <button class="mobile-auth-icon" @click="showLoginModal = true" title="giriş">
             <LogIn class="icon" />
-          </router-link>
-          <router-link to="/kayit" class="mobile-auth-icon highlight" title="kayıt">
+          </button>
+          <button class="mobile-auth-icon highlight" @click="showRegisterModal = true" title="kayıt">
             <UserPlus class="icon" />
-          </router-link>
+          </button>
         </template>
         <template v-else>
           <button class="user-btn" @click="showMenu = !showMenu">
@@ -179,12 +186,32 @@
       />
     </div>
 
+    <!-- Login Modal -->
+    <Teleport to="body">
+      <LoginModal
+        v-if="showLoginModal"
+        @close="showLoginModal = false"
+        @switch-to-register="openRegisterModal"
+      />
+    </Teleport>
+
+    <!-- Register Modal -->
+    <Teleport to="body">
+      <RegisterModal
+        v-if="showRegisterModal"
+        @close="showRegisterModal = false"
+        @switch-to-login="openLoginModal"
+      />
+    </Teleport>
+
     <!-- New Topic Modal -->
-    <NewTopicModal 
-      v-if="showTopicModal" 
-      @close="showTopicModal = false" 
-      @created="handleTopicCreated"
-    />
+    <Teleport to="body">
+      <NewTopicModal 
+        v-if="showTopicModal" 
+        @close="showTopicModal = false" 
+        @created="handleTopicCreated"
+      />
+    </Teleport>
   </header>
 </template>
 
@@ -197,6 +224,8 @@ import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { categoriesApi } from '@/services/api'
 import NewTopicModal from '@/components/NewTopicModal.vue'
+import LoginModal from '@/components/auth/LoginModal.vue'
+import RegisterModal from '@/components/auth/RegisterModal.vue'
 
 const emit = defineEmits(['tab-change'])
 
@@ -215,6 +244,8 @@ const searchContainerRef = ref(null)
 const showChannels = ref(false)
 const categories = ref([])
 const showTopicModal = ref(false)
+const showLoginModal = ref(false)
+const showRegisterModal = ref(false)
 
 // Route değişince tab'ı temizle
 watch(() => route.path, (newPath) => {
@@ -246,26 +277,22 @@ const activeChannel = computed(() => {
 
 function setTab(tab) {
   activeTab.value = tab
+  router.push({ path: '/', query: { tab: tab } })
   emit('tab-change', tab)
-  router.push('/')
 }
 
 function emitTabChange(tab) {
   activeTab.value = ''
   emit('tab-change', tab)
   // Reset filter by pushing to root without query
-  router.push('/').then(() => {
-    // Force reload if needed or just let watchers handle it
-    topicsStore.fetchTrendingTopics(0, 10)
-    topicsStore.fetchPopularTopics(0, 10)
-  })
+  router.push('/')
 }
 
 async function selectCategory(cat) {
   showChannels.value = false
   // Navigate to home with category query
   activeTab.value = '' // Clear other tabs
-  router.push({ path: '/', query: { category: cat.id, name: cat.name } })
+  router.push({ path: '/', query: { category: cat.id, name: cat.name, tab: 'channel' } })
   emit('tab-change', 'channel') 
 }
 
@@ -294,15 +321,29 @@ function logout() {
 
 // Click outside to close
 function handleClickOutside(e) {
+  // Search dropdown
   if (searchContainerRef.value && !searchContainerRef.value.contains(e.target)) {
     showSearchDropdown.value = false
+  }
+  
+  // User menu
+  const isUserBtnClick = e.target.closest('.user-btn')
+  const userDropdown = e.target.closest('.dropdown')
+  if (showMenu.value && !isUserBtnClick && !userDropdown) {
+    showMenu.value = false
+  }
+
+  // Mobile search
+  const isSearchBtnClick = e.target.closest('.mobile-search-btn')
+  const mobileSearchArea = e.target.closest('.mobile-search')
+  if (showMobileSearch.value && !isSearchBtnClick && !mobileSearchArea) {
+    showMobileSearch.value = false
   }
 }
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   topicsStore.fetchTopics()
-  entriesStore.fetchLatestEntries()
   
   // Fetch categories
   try {
@@ -317,6 +358,16 @@ function handleTopicCreated() {
   topicsStore.fetchTopics() // Refresh sidebar
 }
 
+
+function openLoginModal() {
+  showRegisterModal.value = false
+  showLoginModal.value = true
+}
+
+function openRegisterModal() {
+  showLoginModal.value = false
+  showRegisterModal.value = true
+}
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
@@ -339,8 +390,11 @@ defineExpose({
   left: 0;
   right: 0;
   z-index: 100;
-  background: #1a1a2e;
-  border-bottom: 1px solid #2a2a4a;
+  background: rgba(26, 26, 46, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #d4c84a;
+  box-shadow: 0 1px 10px rgba(212, 200, 74, 0.1);
 }
 
 .header-container {
@@ -585,16 +639,30 @@ defineExpose({
   text-decoration: none;
 }
 
-.auth-link:hover { color: #d4c84a; }
-
 .auth-btn {
   padding: 0.35rem 0.75rem;
-  background: #d4c84a;
-  color: #1a1a2e;
   font-size: 0.75rem;
   font-weight: 600;
   text-decoration: none;
   border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-btn.primary {
+  background: #d4c84a;
+  color: #1a1a2e;
+}
+
+.auth-btn.secondary {
+  background: transparent;
+  color: #d4c84a;
+  border: 1px solid #d4c84a;
+  margin-right: 0.5rem;
+}
+
+.auth-btn:hover {
+  opacity: 0.9;
 }
 
 .user-btn {
@@ -725,7 +793,12 @@ defineExpose({
   .mobile-only { display: flex; }
   .mobile-auth { display: flex; }
   .logo-text { display: none; }
-  .nav-tabs { flex: 1; justify-content: center; }
+  .nav-tabs { 
+    flex: 1; 
+    justify-content: flex-start; /* Correct for scrolling */
+    padding-left: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
   .nav-tab { padding: 0 0.6rem; font-size: 0.75rem; }
 }
 </style>

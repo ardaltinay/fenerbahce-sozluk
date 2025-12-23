@@ -12,22 +12,45 @@ export const useEntriesStore = defineStore('entries', () => {
 
   const entries = computed(() => allEntries.value)
 
-  async function fetchEntriesByTopic(topicId, page = 0, size = 10) {
+  // Fetch race condition handling
+  let currentFetchId = 0
+
+  function clearEntries() {
+    allEntries.value = []
+    totalPages.value = 0
+    currentPage.value = 0
+    error.value = null
+    currentFetchId++ // Invalidate any pending requests
+  }
+
+  async function fetchEntriesByTopic(topicId, page = 0, size = 10, clearFirst = false) {
+    if (clearFirst) clearEntries()
+
+    const fetchId = ++currentFetchId
     loading.value = true
     error.value = null
     try {
       const response = await entriesApi.getByTopic(topicId, page, size)
+      // Discard if a new fetch has started
+      if (fetchId !== currentFetchId) return
+
       allEntries.value = response.data.content || response.data
       totalPages.value = response.data.totalPages || 1
       currentPage.value = page
     } catch (err) {
+      if (fetchId !== currentFetchId) return
+
       console.error('Entries fetch error:', err.message)
       error.value = 'Entry\'ler yüklenemedi'
       allEntries.value = []
     } finally {
-      loading.value = false
+      if (fetchId === currentFetchId) {
+        loading.value = false
+      }
     }
   }
+
+
 
   async function fetchEntriesByTopicSlug(slug) {
     // This requires topic lookup first - not directly supported by API
@@ -75,6 +98,7 @@ export const useEntriesStore = defineStore('entries', () => {
   }
 
   async function fetchLatestEntries(page = 0, size = 10) {
+    clearEntries()
     loading.value = true
     error.value = null
     try {
@@ -84,6 +108,24 @@ export const useEntriesStore = defineStore('entries', () => {
     } catch (err) {
       console.error('Latest entries fetch error:', err.message)
       error.value = 'Son entry\'ler yüklenemedi'
+      allEntries.value = []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchRandomEntries(size = 3) {
+    clearEntries()
+    loading.value = true
+    error.value = null
+    try {
+      const response = await entriesApi.getRandom(0, size)
+      allEntries.value = response.data.content || response.data
+      // Random entries usually don't have pages, or we just want one batch.
+      totalPages.value = 1
+    } catch (err) {
+      console.error('Random entries fetch error:', err.message)
+      error.value = 'Rastgele entry\'ler yüklenemedi'
       allEntries.value = []
     } finally {
       loading.value = false
@@ -140,11 +182,18 @@ export const useEntriesStore = defineStore('entries', () => {
     }
   }
 
-  async function deleteEntry(id) {
+  async function deleteEntry(id, reason) {
     loading.value = true
     error.value = null
     try {
-      await entriesApi.delete(id)
+      if (reason) {
+        // Pass as query param or body depending on API.
+        // Controller expects @RequestParam reason.
+        // Axios delete with params:
+        await entriesApi.delete(id, reason)
+      } else {
+        await entriesApi.delete(id)
+      }
       allEntries.value = allEntries.value.filter(e => e.id !== id)
       return { success: true }
     } catch (err) {
@@ -214,6 +263,7 @@ export const useEntriesStore = defineStore('entries', () => {
     fetchEntriesByAuthor,
     fetchPopularEntries,
     fetchLatestEntries,
+    fetchRandomEntries,
     fetchEntryById,
     createEntry,
     updateEntry,
@@ -221,5 +271,6 @@ export const useEntriesStore = defineStore('entries', () => {
     vote,
     toggleFavorite,
     addEntry,
+    clearEntries,
   }
 })

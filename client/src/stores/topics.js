@@ -97,6 +97,21 @@ export const useTopicsStore = defineStore('topics', () => {
     }
   }
 
+  async function fetchTopicById(id) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await topicsApi.getById(id)
+      currentTopic.value = response.data
+    } catch (err) {
+      console.error('Topic fetch error:', err.message)
+      error.value = 'Başlık bulunamadı'
+      currentTopic.value = null
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchTopicsByCategory(categoryId, page = 0, size = 20) {
     loading.value = true
     error.value = null
@@ -153,9 +168,13 @@ export const useTopicsStore = defineStore('topics', () => {
     currentTopic.value = topic
   }
 
-  async function deleteTopic(topicId) {
+  async function deleteTopic(topicId, reason) {
     try {
-      await topicsApi.delete(topicId)
+      if (reason) {
+        await topicsApi.delete(topicId, reason)
+      } else {
+        await topicsApi.delete(topicId)
+      }
       // Remove from local topics list
       topics.value = topics.value.filter(t => t.id !== topicId)
       currentTopic.value = null
@@ -182,6 +201,7 @@ export const useTopicsStore = defineStore('topics', () => {
     fetchSidebarTopics,
     fetchTopicsByCategory,
     fetchTopicBySlug,
+    fetchTopicById,
     searchTopics,
     createTopic,
     deleteTopic,

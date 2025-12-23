@@ -64,6 +64,11 @@ public class AuthService {
         .or(() -> userRepository.findByEmail(request.getUsername()))
         .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
 
+    if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(java.time.LocalDateTime.now())) {
+      String reason = user.getBanReason() != null ? user.getBanReason() : "Belirtilmedi";
+      throw new RuntimeException("Hesabınız yasaklanmıştır. Sebep: " + reason + " Bitiş: " + user.getBannedUntil());
+    }
+
     var token = jwtService.generateToken(user);
 
     return AuthResponse.builder()

@@ -6,124 +6,104 @@
       <!-- Desktop Layout -->
       <div class="desktop-layout">
         <!-- Sidebar -->
-        <aside class="sidebar">
-          <div class="sidebar-header">bugünün konuları</div>
-          <nav class="topic-list">
-            <button
-              v-for="topic in topicsStore.sidebarTopics"
-              :key="topic.id"
-              class="topic-item"
-              :class="{ 'active': selectedTopic?.id === topic.id }"
-              @click="selectTopic(topic)"
-            >
-              <span class="topic-title">{{ topic.title }}</span>
-              <span class="topic-count">{{ formatCount(topic.entryCount) }}</span>
-            </button>
-          </nav>
-        </aside>
+        <Sidebar />
 
         <!-- Main Content -->
         <main class="main-content">
-          <!-- Popüler Başlıklar (Topic seçili değil ve Tab 'popular' veya 'home' veya 'channel' ise) -->
-          <div v-if="!selectedTopic && (activeTab === 'popular' || activeTab === 'home' || activeTab === 'gundem' || activeTab === 'channel' || !activeTab)" class="popular-section">
-            <div class="popular-grid">
-              <div 
-                v-for="topic in (activeTab === 'gundem' ? topicsStore.topics : (activeTab === 'channel' ? topicsStore.channelTopics : topicsStore.popularTopics))" 
+          <div class="topic-header" v-if="getTabTitle()">
+            <h1>{{ getTabTitle() }}</h1>
+          </div>
+
+          <!-- Feed Content -->
+          <div :class="{ 'popular-grid': activeTab !== 'son' && activeTab !== 'random' }">
+            <template v-if="activeTab === 'gundem'">
+              <router-link 
+                v-for="topic in topicsStore.topics" 
                 :key="topic.id" 
                 class="popular-card"
-                @click="selectTopic(topic)"
+                :to="`/baslik/${topic.id}`"
               >
-                <h3>
-                  <span v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</span>
-                  {{ topic.title }}
-                </h3>
+                <div v-if="topic.categoryName" class="badge" style="margin-bottom: 0.4rem; display: inline-block;">{{ topic.categoryName }}</div>
+                <h3>{{ topic.title }}</h3>
+                <div class="card-meta">
+                  <span>{{ formatCount(topic.entryCount) }} entry</span>
+                </div>
+              </router-link>
+            </template>
+            
+            <template v-else-if="activeTab === 'channel'">
+              <router-link 
+                v-for="topic in topicsStore.channelTopics" 
+                :key="topic.id" 
+                class="popular-card"
+                :to="`/baslik/${topic.id}`"
+              >
+                <div v-if="topic.categoryName" class="badge" style="margin-bottom: 0.4rem; display: inline-block;">{{ topic.categoryName }}</div>
+                <h3>{{ topic.title }}</h3>
+                <div class="card-meta">
+                  <span>{{ formatCount(topic.entryCount) }} entry</span>
+                </div>
+              </router-link>
+              <div v-if="topicsStore.channelTopics.length === 0" class="empty-feed">
+                <p>bu kanalda henüz başlık yok</p>
+              </div>
+            </template>
+
+            <template v-else-if="activeTab === 'popular'">
+               <!-- Default: Popular -->
+              <router-link 
+                v-for="topic in topicsStore.popularTopics" 
+                :key="topic.id" 
+                class="popular-card"
+                :to="`/baslik/${topic.id}`"
+              >
+                <div v-if="topic.categoryName" class="badge" style="margin-bottom: 0.4rem; display: inline-block;">{{ topic.categoryName }}</div>
+                <h3>{{ topic.title }}</h3>
                 <div class="card-meta">
                   <span>{{ formatCount(topic.entryCount) }} entry</span>
                   <span>{{ formatDate(topic.createdAt) }}</span>
                 </div>
-              </div>
-            </div>
+              </router-link>
+            </template>
           </div>
 
-          <!-- Entry Listesi (Seçili Topic varsa VEYA Tab 'tarihte'/'son' ise) -->
-          <div v-else class="entries-section">
-            <div v-if="selectedTopic" class="topic-header">
-              <button class="back-btn" @click="selectedTopic = null">
-                <ArrowLeft class="icon" />
+          <!-- Entries Feed (Son / Random) -->
+          <div v-if="activeTab === 'son' || activeTab === 'random'" class="entries-feed">
+            <div v-if="activeTab === 'random'" class="random-actions top-actions">
+              <button class="refresh-btn slim" @click="refreshRandom">
+                <RefreshCw class="icon" /> yenile
               </button>
-              <h1>{{ selectedTopic.title }}</h1>
-            </div>
-            <div v-else-if="activeTab === 'tarihte'" class="topic-header">
-              <h1>tarihte bugün</h1>
-            </div>
-            <div v-else-if="activeTab === 'son'" class="topic-header">
-              <h1>son entryler</h1>
-            </div>
-            <div v-else-if="activeTab === 'channel'" class="topic-header">
-              <h1>{{ route.query.name || 'kanal' }}</h1>
             </div>
 
-            <!-- Entry Listesi veya Boş Durum -->
-            <template v-if="currentEntries.length > 0">
-              <article v-for="entry in currentEntries" :key="entry.id" class="entry">
-                <div v-if="activeTab === 'son'" class="entry-topic-ref">
-                  <span class="ref-text">(bkz: </span>
-                  <router-link :to="`/baslik/${entry.topicSlug || entry.topicId}`" class="ref-link">
-                    {{ entry.topicTitle }}
-                  </router-link>
-                  <span class="ref-text">)</span>
+            <article v-for="entry in entriesStore.entries" :key="entry.id" class="entry">
+              <div class="entry-topic-ref">
+                 <span class="ref-text">(bkz: </span>
+                 <router-link :to="`/baslik/${entry.topicId}`" class="ref-link">
+                   {{ entry.topicTitle }}
+                 </router-link>
+                 <span class="ref-text">)</span>
+              </div>
+              <div class="entry-body" v-html="formatContent(entry.content)"></div>
+              <footer class="entry-footer">
+                <div class="actions">
+                  <button :class="{ 'liked': entry.currentUserVote === 'LIKE' }" @click="vote(entry.id, 'LIKE')">
+                    <ThumbsUp class="icon-sm" /> <span>{{ entry.likeCount || 0 }}</span>
+                  </button>
+                  <button :class="{ 'disliked': entry.currentUserVote === 'DISLIKE' }" @click="vote(entry.id, 'DISLIKE')">
+                    <ThumbsDown class="icon-sm" /> <span>{{ entry.dislikeCount || 0 }}</span>
+                  </button>
+                  <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }" @click="vote(entry.id, 'FAVORITE')">
+                    <Star class="icon-sm" /> <span>{{ entry.favoriteCount || 0 }}</span>
+                  </button>
                 </div>
-                <div class="entry-body" v-html="formatContent(entry.content)"></div>
-                <footer class="entry-footer">
-                  <div class="actions">
-                    <button 
-                      :class="{ 'liked': entry.currentUserVote === 'LIKE' }"
-                      @click="vote(entry.id, 'LIKE')"
-                    >
-                      <ThumbsUp class="icon-sm" />
-                      <span>{{ entry.likeCount || 0 }}</span>
-                    </button>
-                    <button 
-                      :class="{ 'disliked': entry.currentUserVote === 'DISLIKE' }"
-                      @click="vote(entry.id, 'DISLIKE')"
-                    >
-                      <ThumbsDown class="icon-sm" />
-                      <span>{{ entry.dislikeCount || 0 }}</span>
-                    </button>
-                    <button 
-                      :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }"
-                      @click="vote(entry.id, 'FAVORITE')"
-                    >
-                      <Star class="icon-sm" />
-                      <span>{{ entry.favoriteCount || 0 }}</span>
-                    </button>
-                    <button @click="shareEntry(entry.id)">
-                      <Share2 class="icon-sm" />
-                    </button>
-                  </div>
-                  <div class="meta">
-                    <router-link :to="`/biri/${entry.authorUsername || entry.author?.username}`" class="author">
-                      {{ entry.authorUsername || entry.author?.username || '-' }}
-                    </router-link>
-                    <span class="date">{{ formatDate(entry.createdAt) }}</span>
-                  </div>
-                </footer>
-              </article>
-            </template>
-
-            <!-- Boş Durum -->
-            <div v-else class="empty-state">
-              <MessageSquare class="empty-icon" />
-              <p class="empty-title">bu başlıkta henüz entry girilmemiş</p>
-              <span class="empty-hint">ilk entry'yi sen yazabilirsin!</span>
-            </div>
-
-            <!-- Entry Gir Alanı (Sadece Topic Seçiliyse veya Gundem/Home tabında topic seçilince) -->
-            <!-- Son ve Tarihte Bugün tablarında gizle -->
-            <div class="entry-form" v-if="authStore.isAuthenticated && activeTab !== 'son' && activeTab !== 'tarihte'">
-              <textarea v-model="newEntry" placeholder="entry gir..." rows="3"></textarea>
-              <button :disabled="newEntry.length < 10" @click="submitEntry">yolla</button>
-            </div>
+                <div class="meta">
+                  <router-link :to="`/biri/${entry.authorUsername || entry.author?.username}`" class="author">
+                    {{ entry.authorUsername || entry.author?.username || '-' }}
+                  </router-link>
+                  <span class="date">{{ formatDate(entry.createdAt) }}</span>
+                </div>
+              </footer>
+            </article>
           </div>
         </main>
       </div>
@@ -161,7 +141,6 @@
             @click="openMobileEntries(topic)"
           >
             <span>
-              <span v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</span>
               {{ topic.title }}
             </span>
             <span class="count">{{ formatCount(topic.entryCount) }}</span>
@@ -172,7 +151,13 @@
         <div v-else-if="mobileView === 'entries'" class="mobile-entries">
           <div class="mobile-section-header">
             <button @click="mobileView = previousMobileView"><ArrowLeft class="icon" /></button>
-            <span>{{ selectedTopic?.title }}</span>
+            <span>entryler</span>
+          </div>
+
+          <div v-if="activeTab === 'random'" class="random-actions top-actions">
+            <button class="refresh-btn slim" @click="refreshRandom">
+              <RefreshCw class="icon" /> yenile
+            </button>
           </div>
 
           <!-- Boş Durum - Mobile -->
@@ -183,8 +168,15 @@
           </div>
 
           <template v-else>
-            <article v-for="entry in currentEntries" :key="entry.id" class="mobile-entry">
-              <p v-html="formatContent(entry.content)"></p>
+            <article v-for="entry in currentEntries" :key="entry.id" class="mobile-entry stable-card">
+              <div class="entry-topic-ref" style="margin-bottom: 0.5rem; font-size: 0.8rem;">
+                 <span class="ref-text" style="color: #666;">(bkz: </span>
+                 <router-link :to="`/baslik/${entry.topicId}`" class="ref-link" style="color: #d4c84a; font-weight: 500;">
+                   {{ entry.topicTitle }}
+                 </router-link>
+                 <span class="ref-text" style="color: #666;">)</span>
+              </div>
+              <p v-html="formatContent(entry.content)" style="margin-top: 0;"></p>
               <footer>
                 <div class="actions">
                   <button 
@@ -226,8 +218,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { Star, Share2, ArrowLeft, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { Star, Share2, ArrowLeft, ThumbsUp, ThumbsDown, MessageSquare, RefreshCw } from 'lucide-vue-next'
+import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
@@ -240,9 +233,8 @@ const entriesStore = useEntriesStore()
 const authStore = useAuthStore()
 const toast = useToast()
 
+
 const headerRef = ref(null)
-const selectedTopic = ref(null)
-const newEntry = ref('')
 
 // Mobile view state: 'home', 'gundem', 'entries'
 const mobileView = ref('home')
@@ -251,10 +243,12 @@ const previousMobileView = ref('home')
 const currentEntries = computed(() => entriesStore.entries)
 
 // Header'dan tab değişikliği (mobil için)
+// Header'dan tab değişikliği (mobil için)
 const activeTab = ref('popular') // Default tab
+const router = useRouter() // Need router
 
 function handleTabChange(tab) {
-  selectedTopic.value = null
+  // selectedTopic.value = null // Removed
   activeTab.value = tab
   
   if (tab === 'popular' || tab === 'home') {
@@ -274,6 +268,9 @@ function handleTabChange(tab) {
     // topicsStore.fetchTrendingTopics() // Already fetched on mount and periodically?
     // If we want to refresh:
     topicsStore.fetchTrendingTopics(0, 10)
+  } else if (tab === 'random') {
+    mobileView.value = 'entries'
+    entriesStore.fetchRandomEntries(4)
   } else if (tab === 'channel') {
     mobileView.value = 'channel'
     const catId = route.query.category
@@ -283,29 +280,41 @@ function handleTabChange(tab) {
   }
 }
 
-// Watch for route query changes (for category filter)
-watch(() => route.query.category, (newCatId) => {
-  if (newCatId) {
-    activeTab.value = 'channel'
-    mobileView.value = 'channel'
-    topicsStore.fetchTopicsByCategory(newCatId, 0, 10)
+
+// Watch for tab query changes
+watch(() => route.query.tab, (newTab) => {
+  if (newTab) {
+    handleTabChange(newTab)
+  } else if (!route.query.category) {
+    handleTabChange('popular') // Default
   }
 })
 
-function selectTopic(topic) {
-  selectedTopic.value = topic
-  topicsStore.setCurrentTopic(topic)
-  entriesStore.fetchEntriesByTopic(topic.id)
-  // Header'daki aktif tab'ı temizle
-  headerRef.value?.clearActiveTab()
+// Watch for route query changes (for category filter)
+watch(() => route.query.category, (newCatId) => {
+  if (newCatId) {
+    handleTabChange('channel')
+  }
+})
+
+function getTabTitle() {
+  if (activeTab.value === 'son') return 'son entryler'
+  if (activeTab.value === 'random') return 'rastgele'
+  if (activeTab.value === 'tarihte') return 'tarihte bugün'
+  if (activeTab.value === 'channel') return route.query.name || 'kanal'
+  if (activeTab.value === 'gundem') return 'bugünün konuları'
+  return 'popüler'
 }
 
+
+
 function openMobileEntries(topic) {
-  previousMobileView.value = mobileView.value
-  selectedTopic.value = topic
-  topicsStore.setCurrentTopic(topic)
-  entriesStore.fetchEntriesByTopic(topic.id)
-  mobileView.value = 'entries'
+  // Switch to router navigation for mobile too!
+  router.push(`/baslik/${topic.id}`)
+}
+
+function refreshRandom() {
+  entriesStore.fetchRandomEntries(4)
 }
 
 async function vote(entryId, voteType) {
@@ -346,28 +355,19 @@ function formatDate(date) {
   return d.toLocaleDateString('tr-TR')
 }
 
-function submitEntry() {
-  if (newEntry.value.length < 10 || !selectedTopic.value) return
-  entriesStore.addEntry({
-    id: Date.now(),
-    content: newEntry.value,
-    author: { username: authStore.username },
-    topicId: selectedTopic.value.id,
-    favoriteCount: 0,
-    createdAt: new Date().toISOString(),
-    isFavorited: false,
-  })
-  newEntry.value = ''
-}
+
 
 onMounted(() => {
   // Fetch lists
   topicsStore.fetchSidebarTopics(0, 50) // Sidebar is independent
-  topicsStore.fetchTrendingTopics(0, 10) // Gundem view
-  topicsStore.fetchPopularTopics(0, 10)
   
-  if (route.params.slug) {
-    // fetchData inside watch/onMounted will handle it
+  // Initial tab/category check
+  if (route.query.tab) {
+    handleTabChange(route.query.tab)
+  } else if (route.query.category) {
+    handleTabChange('channel')
+  } else {
+    handleTabChange('popular')
   }
 })
 </script>
@@ -375,7 +375,7 @@ onMounted(() => {
 <style scoped>
 .app {
   min-height: 100vh;
-  background: #0f0f1a;
+  background: transparent;
   color: #e0e0e0;
 }
 
@@ -392,64 +392,6 @@ onMounted(() => {
 
 .mobile-layout {
   display: none;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 280px;
-  min-height: calc(100vh - 50px);
-  background: #0a0a14;
-  border-right: 1px solid #1a1a2e;
-}
-
-.sidebar-header {
-  padding: 0.75rem 1rem;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #666;
-  border-bottom: 1px solid #1a1a2e;
-}
-
-.topic-list {
-  padding: 0.25rem 0;
-}
-
-.topic-item {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: none;
-  border: none;
-  border-left: 2px solid transparent;
-  color: #d4c84a;
-  font-size: 0.85rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.topic-item:hover {
-  background: rgba(255, 237, 0, 0.03);
-  color: #d4c84a;
-}
-
-.topic-item.active {
-  background: rgba(255, 237, 0, 0.05);
-  color: #d4c84a;
-  border-left-color: #d4c84a;
-}
-
-.topic-title {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.topic-count {
-  font-size: 0.7rem;
-  color: #444;
 }
 
 /* Main Content */
@@ -529,15 +471,36 @@ onMounted(() => {
 }
 
 .entry {
-  padding: 1rem 0;
-  border-bottom: 1px solid #1a1a2e;
+  padding: 1.5rem;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.entry.stable-card {
+  min-height: 180px;
+}
+
+.entry:hover {
+  background: rgba(26, 26, 46, 0.55);
+  border-color: rgba(255, 237, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .entry-body {
   font-size: 0.9rem;
   line-height: 1.7;
   color: #ccc;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex: 1;
 }
 
 .entry-body :deep(a) { color: #58a6ff; text-decoration: none; }
@@ -561,19 +524,20 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.4rem 0.6rem;
-  background: none;
-  border: none;
-  color: #555;
-  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #999;
+  font-size: 0.75rem;
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.15s;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .actions button:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #888;
+  background: rgba(212, 200, 74, 0.1);
+  border-color: rgba(212, 200, 74, 0.2);
+  color: #d4c84a;
 }
 
 .actions button.liked {
@@ -670,9 +634,11 @@ onMounted(() => {
   }
 
   .mobile-card {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    border-radius: 8px;
+    background: rgba(26, 26, 46, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 237, 0, 0.05);
+    border-radius: 12px;
     padding: 1rem;
   }
 
@@ -735,15 +701,27 @@ onMounted(() => {
   }
 
   .mobile-entry {
-    padding: 1rem 0;
-    border-bottom: 1px solid #1a1a2e;
+    padding: 1.25rem 1rem;
+    background: rgba(26, 26, 46, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 237, 0, 0.05);
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-entry.stable-card {
+    min-height: 160px;
   }
 
   .mobile-entry p {
     font-size: 0.9rem;
     line-height: 1.6;
     color: #ccc;
-    margin: 0 0 0.75rem;
+    margin: 0 0 1rem;
+    flex: 1;
   }
 
   .mobile-entry footer {
@@ -793,5 +771,57 @@ onMounted(() => {
   margin-right: 0.4rem;
   vertical-align: middle;
   font-weight: normal;
+}
+
+.random-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.random-actions.top-actions {
+  margin-top: 0;
+  margin-bottom: 2rem;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: #d4c84a;
+  color: #1a1a2e;
+  border: 1px solid #d4c84a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.refresh-btn.slim {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+  background: rgba(212, 200, 74, 0.1);
+  color: #d4c84a;
+  border-color: rgba(212, 200, 74, 0.3);
+}
+
+.refresh-btn.slim:hover {
+  background: #d4c84a;
+  color: #1a1a2e;
+}
+
+.refresh-btn:not(.slim) {
+  box-shadow: 0 4px 15px rgba(212, 200, 74, 0.2);
+}
+
+.refresh-btn:not(.slim):hover {
+  background: #c3b739;
+  transform: translateY(-1px);
+}
+
+.refresh-btn:active {
+  transform: translateY(0);
 }
 </style>

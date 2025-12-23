@@ -63,8 +63,12 @@ public class UserController {
   @PostMapping("/{id}/ban")
   public ResponseEntity<Map<String, String>> banUser(
       @PathVariable UUID id,
+      @RequestBody Map<String, Object> body,
       @AuthenticationPrincipal User currentUser) {
-    userService.banUser(id, currentUser);
+    long durationSeconds = Long.parseLong(body.get("duration").toString());
+    String reason = (String) body.get("reason");
+
+    userService.banUser(id, durationSeconds, reason, currentUser);
 
     Map<String, String> response = new HashMap<>();
     response.put("message", "Kullanıcı yasaklandı");

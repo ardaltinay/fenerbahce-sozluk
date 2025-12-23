@@ -1,15 +1,59 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { authApi } from '@/services/api'
+
+// Session duration: 24 hours in milliseconds
+const SESSION_DURATION = 24 * 60 * 60 * 1000
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user')) || null)
   const token = ref(localStorage.getItem('token') || null)
+  const tokenExpiresAt = ref(localStorage.getItem('tokenExpiresAt') ? parseInt(localStorage.getItem('tokenExpiresAt')) : null)
   const loading = ref(false)
   const error = ref(null)
+  let expirationTimer = null
 
-  const isAuthenticated = computed(() => !!token.value)
+  const isAuthenticated = computed(() => !!token.value && !isTokenExpired())
   const username = computed(() => user.value?.username || '')
+
+  // Check if token is expired
+  function isTokenExpired() {
+    if (!tokenExpiresAt.value) return true
+    return Date.now() >= tokenExpiresAt.value
+  }
+
+  // Setup expiration timer
+  function setupExpirationTimer() {
+    if (expirationTimer) {
+      clearTimeout(expirationTimer)
+    }
+
+    if (!tokenExpiresAt.value) return
+
+    const timeUntilExpiry = tokenExpiresAt.value - Date.now()
+
+    if (timeUntilExpiry <= 0) {
+      // Token already expired
+      logout()
+      window.location.href = '/giris?expired=true'
+      return
+    }
+
+    // Set timer to logout when token expires
+    expirationTimer = setTimeout(() => {
+      logout()
+      window.location.href = '/giris?expired=true'
+    }, timeUntilExpiry)
+  }
+
+  // Check token on store initialization
+  function initializeAuth() {
+    if (token.value && isTokenExpired()) {
+      logout()
+    } else if (token.value) {
+      setupExpirationTimer()
+    }
+  }
 
   // Role-based computed properties
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
@@ -49,9 +93,13 @@ export const useAuthStore = defineStore('auth', () => {
         role: data.role,
       }
       token.value = data.token
+      tokenExpiresAt.value = Date.now() + SESSION_DURATION
 
       localStorage.setItem('token', data.token)
+      localStorage.setItem('tokenExpiresAt', tokenExpiresAt.value.toString())
       localStorage.setItem('user', JSON.stringify(user.value))
+
+      setupExpirationTimer()
 
       return { success: true, message: data.message }
     } catch (err) {
@@ -75,9 +123,13 @@ export const useAuthStore = defineStore('auth', () => {
         role: data.role,
       }
       token.value = data.token
+      tokenExpiresAt.value = Date.now() + SESSION_DURATION
 
       localStorage.setItem('token', data.token)
+      localStorage.setItem('tokenExpiresAt', tokenExpiresAt.value.toString())
       localStorage.setItem('user', JSON.stringify(user.value))
+
+      setupExpirationTimer()
 
       return { success: true, message: data.message }
     } catch (err) {
@@ -89,11 +141,20 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    if (expirationTimer) {
+      clearTimeout(expirationTimer)
+      expirationTimer = null
+    }
     user.value = null
     token.value = null
+    tokenExpiresAt.value = null
     localStorage.removeItem('token')
+    localStorage.removeItem('tokenExpiresAt')
     localStorage.removeItem('user')
   }
+
+  // Initialize auth check on store creation
+  initializeAuth()
 
   function setUser(userData) {
     user.value = userData

@@ -74,7 +74,7 @@
                 v-for="topic in topicResults" 
                 :key="'t-' + topic.id" 
                 class="result-card topic-result"
-                @click="goToTopic(topic.slug)"
+                @click="goToTopic(topic.id)"
               >
                 <FileText class="result-icon" />
                 <div class="result-content">
@@ -185,8 +185,8 @@ function handleSearch() {
   router.push({ path: '/arama', query: { q: searchQuery.value } })
 }
 
-function goToTopic(slug) {
-  router.push(`/baslik/${slug}`)
+function goToTopic(topicId) {
+  router.push(`/baslik/${topicId}`)
 }
 
 function truncate(text, len) {
@@ -206,7 +206,7 @@ onMounted(() => {
 <style scoped>
 .search-page {
   min-height: 100vh;
-  background: #0f0f1a;
+  background: transparent;
   color: #e0e0e0;
 }
 
@@ -412,13 +412,15 @@ onMounted(() => {
 .result-card {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
-  border-radius: 8px;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
 }
 

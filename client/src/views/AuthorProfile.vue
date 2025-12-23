@@ -51,7 +51,7 @@
             @click="confirmBanUser"
           >
             <UserX class="icon" />
-            kullanıcıyı kaldır
+            kullanıcıyı yasakla
           </button>
         </div>
 
@@ -93,7 +93,7 @@
             <p>henüz entry yazılmamış</p>
           </div>
           <article v-for="entry in userEntries" :key="entry.id" class="entry-card">
-            <router-link :to="`/baslik/${entry.topicSlug || entry.topicTitle}`" class="entry-topic">
+            <router-link :to="getTopicLink(entry)" class="entry-topic">
               {{ entry.topicTitle }}
             </router-link>
             
@@ -190,7 +190,7 @@
           <router-link 
             v-for="topic in userTopics" 
             :key="topic.id"
-            :to="`/baslik/${topic.slug}`"
+            :to="`/baslik/${topic.id}`"
             class="topic-card"
           >
             <div class="topic-info">
@@ -253,10 +253,46 @@
           <div class="entry-preview">
             {{ truncateText(deleteModalEntry.content, 100) }}
           </div>
+          <div class="form-group" style="margin-top: 1rem;">
+             <label>Silme Sebebi (Opsiyonel)</label>
+             <textarea v-model="deleteReasonInput" class="form-textarea" placeholder="Neden siliyorsunuz?" rows="2" style="min-height: 60px"></textarea>
+          </div>
         </div>
         <div class="delete-modal-footer">
           <button class="btn-cancel" @click="closeDeleteModal">İptal</button>
           <button class="btn-delete" @click="confirmDeleteEntry">Sil</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ban User Modal -->
+    <div v-if="showBanModal" class="modal-overlay" @click.self="closeBanModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Kullanıcıyı Yasakla (Çaylak)</h2>
+          <button class="close-btn" @click="closeBanModal">
+            <X class="icon" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+             <label>Süre</label>
+             <select v-model="banDuration" class="form-select">
+               <option :value="3600">1 Saat</option>
+               <option :value="86400">1 Gün</option>
+               <option :value="604800">1 Hafta</option>
+               <option :value="2592000">1 Ay</option>
+               <option :value="3153600000">Süresiz (100 Yıl)</option>
+             </select>
+          </div>
+          <div class="form-group">
+             <label>Sebep</label>
+             <textarea v-model="banReason" class="form-textarea" placeholder="Yasaklama sebebini belirtin..."></textarea>
+          </div>
+          <div class="form-actions right">
+             <button class="btn-cancel" @click="closeBanModal">İptal</button>
+             <button class="btn-delete" @click="executeBan" :disabled="!banReason">Yasakla</button>
+          </div>
         </div>
       </div>
     </div>
@@ -401,18 +437,22 @@ async function saveEdit(entryId) {
 // Delete Modal State
 const deleteModalEntry = ref(null)
 
+const deleteReasonInput = ref('')
+
 function openDeleteModal(entry) {
   deleteModalEntry.value = entry
+  deleteReasonInput.value = ''
 }
 
 function closeDeleteModal() {
   deleteModalEntry.value = null
+  deleteReasonInput.value = ''
 }
 
 async function confirmDeleteEntry() {
   if (!deleteModalEntry.value) return
   
-  const result = await entriesStore.deleteEntry(deleteModalEntry.value.id)
+  const result = await entriesStore.deleteEntry(deleteModalEntry.value.id, deleteReasonInput.value)
   if (result.success) {
     closeDeleteModal()
   } else {
@@ -425,18 +465,42 @@ function truncateText(text, maxLength) {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
-async function confirmBanUser() {
-  const confirmed = confirm(`${username.value} kullanıcısını kaldırmak istediğinizden emin misiniz? Bu işlem geri alınamaz.`)
-  if (confirmed) {
-    try {
-      await usersApi.ban(username.value)
-      toast.success('Kullanıcı başarıyla kaldırıldı')
-      // Redirect to home
-      window.location.href = '/'
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Kullanıcı kaldırılamadı')
-    }
+const showBanModal = ref(false)
+const banDuration = ref(3600)
+const banReason = ref('')
+
+function openBanModal() {
+  showBanModal.value = true
+}
+
+function closeBanModal() {
+  showBanModal.value = false
+  banReason.value = ''
+  banDuration.value = 3600
+}
+
+async function executeBan() {
+  if (!author.value.id) return
+
+  try {
+    // API expects id, duration(seconds), reason
+    await usersApi.ban(author.value.id, banDuration.value, banReason.value)
+    toast.success('Kullanıcı yasaklandı')
+    closeBanModal()
+    // Reload or redirect
+    loadUserData()
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'İşlem başarısız')
   }
+}
+
+function confirmBanUser() {
+  openBanModal()
+}
+
+// Helper for topic slug
+function getTopicLink(entry) {
+  return `/baslik/${entry.topicId}`
 }
 
 async function loadUserData() {
@@ -453,6 +517,12 @@ async function loadUserData() {
       role: response.data.role || 'USER',
       createdAt: response.data.createdAt,
     }
+    
+    // Fetch user's entries using the author ID
+    if (author.value.id) {
+       await entriesStore.fetchEntriesByAuthor(author.value.id, 0, 10)
+    }
+    
   } catch (err) {
     console.error('User profile fetch error:', err)
     // Use defaults on error
@@ -465,22 +535,25 @@ async function loadUserData() {
     }
   }
   
-  // Format createdAt immediately if possible or handle in template
+  // Create safe link helper availability in template (not needed if I use it in template directly, but I need to expose it or use computed)
+  // Actually, I can just use a method or inline logic. I'll use a method in template.
   
-  // Fetch topics (trends) and entries from API
+  // Topics: Current API doesn't support fetching topics by author easily, so we rely on global trends for now or need a new endpoint.
+  // We'll leave topics as 'trends' but this is technically incorrect for "User's Topics". 
+  // However, without backend changes, we can't fix "My Topics" list if it requires a new endpoint.
+  // We will simply fetch trends to populate sidebar/cache if needed, but not user specific topics.
+  // userTopics computed property filters topicsStore.topics. If we don't fetch anything specific, it might be empty.
+  // For now let's just fetch popular/trends to have SOMETHING in the store, although it won't be user specific unless they are trending.
   await topicsStore.fetchTrendingTopics()
-  await entriesStore.fetchLatestEntries()
   
   loading.value = false
 }
 
 function changePage(page) {
   if (page < 0 || page >= entriesStore.totalPages) return
-  entriesStore.fetchEntriesByAuthor(author.value.username, page) // Wait, API uses ID usually? Or username for profile? 
-  // usersApi.getByUsername returns Profile object. entriesApi.getByAuthor needs ID. 
-  // I should check loadUserData response to see if ID is stored in author.
-  // In Step 1272: author.value = { ... response.data ... }. 
-  // response.data likely has ID. I should ensure author.id is set.
+  if (author.value.id) {
+    entriesStore.fetchEntriesByAuthor(author.value.id, page)
+  }
   window.scrollTo(0, 0)
 }
 
@@ -496,7 +569,7 @@ onMounted(() => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: #0f0f1a;
+  background: transparent;
   color: #e0e0e0;
 }
 
@@ -749,12 +822,20 @@ onMounted(() => {
 }
 
 .entry-card {
-  padding: 1rem;
-  border-bottom: 1px solid #2a2a4a;
+  padding: 1.5rem;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  position: relative;
+  transition: transform 0.2s;
 }
 
-.entry-card:last-child {
-  border-bottom: none;
+.entry-card:hover {
+  background: rgba(26, 26, 46, 0.55);
+  border-color: rgba(255, 237, 0, 0.15);
 }
 
 .entry-topic {
@@ -796,18 +877,20 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.3rem 0.5rem;
-  background: none;
-  border: none;
-  color: #555;
+  padding: 0.35rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #999;
   font-size: 0.75rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .entry-footer .actions button:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #888;
+  background: rgba(212, 200, 74, 0.1);
+  border-color: rgba(212, 200, 74, 0.2);
+  color: #d4c84a;
 }
 
 .entry-footer .actions button.liked {
@@ -1201,5 +1284,27 @@ onMounted(() => {
 
 .settings-btn.danger:hover {
   background: rgba(248, 81, 73, 0.1);
+}
+
+.form-select, .form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0d0d1a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-actions.right {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 </style>

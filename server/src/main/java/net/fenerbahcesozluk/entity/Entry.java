@@ -61,6 +61,9 @@ public class Entry extends BaseEntity {
   @Builder.Default
   private boolean isActive = true;
 
+  @Column(name = "delete_reason")
+  private String deleteReason;
+
   @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @Builder.Default
   private List<Vote> votes = new ArrayList<>();

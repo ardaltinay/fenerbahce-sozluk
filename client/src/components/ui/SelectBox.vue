@@ -2,7 +2,7 @@
   <div class="select-box" ref="containerRef">
     <div 
       class="selected-option" 
-      :class="{ 'placeholder': !modelValue, 'open': isOpen }"
+      :class="{ 'placeholder': !modelValue, 'open': isOpen, 'has-error': error }"
       @click="toggle"
     >
       <span>{{ selectedLabel }}</span>
@@ -41,6 +41,10 @@ const props = defineProps({
   placeholder: {
     type: String,
     default: 'Seçiniz'
+  },
+  error: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -104,6 +108,10 @@ onUnmounted(() => {
 
 .selected-option:hover {
   border-color: #d4c84a;
+}
+
+.selected-option.has-error {
+  border-color: #e74c3c !important;
 }
 
 .selected-option.placeholder {
