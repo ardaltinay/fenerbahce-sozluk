@@ -32,7 +32,7 @@ function navigateToTopic(topic) {
 }
 
 function isTopicActive(topic) {
-  // Check if current route is topic detail and slug matches
+  // Check if current route is topic detail and ID matches
   if (route.name === 'TopicDetail') {
     const currentId = route.params.id
     return currentId === topic.id
@@ -122,7 +122,6 @@ onUnmounted(() => {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .topic-count {
@@ -130,3 +129,4 @@ onUnmounted(() => {
   color: #444;
 }
 </style>
+

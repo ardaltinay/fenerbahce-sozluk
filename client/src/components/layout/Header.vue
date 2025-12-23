@@ -86,7 +86,7 @@
               <router-link 
                 v-for="topic in topicResults.slice(0, 5)" 
                 :key="topic.id"
-                :to="`/baslik/${topic.slug}`"
+                :to="`/baslik/${topic.id}`"
                 class="dropdown-item"
                 @click="closeSearch"
               >
@@ -284,13 +284,11 @@ function setTab(tab) {
 function emitTabChange(tab) {
   activeTab.value = ''
   emit('tab-change', tab)
-  // Reset filter by pushing to root without query
   router.push('/')
 }
 
 async function selectCategory(cat) {
   showChannels.value = false
-  // Navigate to home with category query
   activeTab.value = '' // Clear other tabs
   router.push({ path: '/', query: { category: cat.id, name: cat.name, tab: 'channel' } })
   emit('tab-change', 'channel') 
@@ -321,19 +319,16 @@ function logout() {
 
 // Click outside to close
 function handleClickOutside(e) {
-  // Search dropdown
   if (searchContainerRef.value && !searchContainerRef.value.contains(e.target)) {
     showSearchDropdown.value = false
   }
   
-  // User menu
   const isUserBtnClick = e.target.closest('.user-btn')
   const userDropdown = e.target.closest('.dropdown')
   if (showMenu.value && !isUserBtnClick && !userDropdown) {
     showMenu.value = false
   }
 
-  // Mobile search
   const isSearchBtnClick = e.target.closest('.mobile-search-btn')
   const mobileSearchArea = e.target.closest('.mobile-search')
   if (showMobileSearch.value && !isSearchBtnClick && !mobileSearchArea) {
@@ -345,7 +340,6 @@ onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   topicsStore.fetchTopics()
   
-  // Fetch categories
   try {
     const res = await categoriesApi.getAll()
     categories.value = res.data
@@ -355,7 +349,7 @@ onMounted(async () => {
 })
 
 function handleTopicCreated() {
-  topicsStore.fetchTopics() // Refresh sidebar
+  topicsStore.fetchTopics() 
 }
 
 
@@ -373,7 +367,6 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// Tab'ı temizlemek için dışarıya aç
 function clearActiveTab() {
   activeTab.value = ''
 }
@@ -393,8 +386,8 @@ defineExpose({
   background: rgba(26, 26, 46, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #d4c84a;
-  box-shadow: 0 1px 10px rgba(212, 200, 74, 0.1);
+  border-bottom: 1px solid rgba(255, 237, 0, 0.4);
+  box-shadow: 0 1px 15px rgba(0, 0, 0, 0.2);
 }
 
 .header-container {
@@ -437,7 +430,7 @@ defineExpose({
 
 @media (min-width: 769px) {
   .nav-tabs {
-    overflow: visible; /* Allow dropsown to show */
+    overflow: visible; 
   }
 }
 
@@ -469,7 +462,7 @@ defineExpose({
   top: 100%;
   left: 0;
   background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  border: 1px solid rgba(255, 237, 0, 0.15);
   border-radius: 0 0 6px 6px;
   padding: 0.5rem 0;
   min-width: 150px;
@@ -521,8 +514,8 @@ defineExpose({
 
 .search-box {
   display: flex;
-  background: #0d0d1a;
-  border: 1px solid #2a2a4a;
+  background: rgba(13, 13, 26, 0.4);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -558,7 +551,7 @@ defineExpose({
   right: 0;
   margin-top: 0.5rem;
   background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  border: 1px solid rgba(255, 237, 0, 0.2);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
@@ -573,7 +566,7 @@ defineExpose({
 }
 
 .dropdown-section {
-  border-bottom: 1px solid #2a2a4a;
+  border-bottom: 1px solid rgba(255, 237, 0, 0.05);
 }
 
 .dropdown-section:last-of-type {
@@ -618,7 +611,7 @@ defineExpose({
   color: #d4c84a;
   text-decoration: none;
   background: #0d0d1a;
-  border-top: 1px solid #2a2a4a;
+  border-top: 1px solid rgba(255, 237, 0, 0.1);
 }
 
 .dropdown-footer:hover {
@@ -631,12 +624,6 @@ defineExpose({
   align-items: center;
   gap: 0.75rem;
   position: relative;
-}
-
-.auth-link {
-  font-size: 0.8rem;
-  color: #888;
-  text-decoration: none;
 }
 
 .auth-btn {
@@ -692,7 +679,7 @@ defineExpose({
   right: 0;
   margin-top: 0.5rem;
   background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  border: 1px solid rgba(255, 237, 0, 0.15);
   border-radius: 6px;
   padding: 0.5rem 0;
   min-width: 120px;
@@ -734,15 +721,15 @@ defineExpose({
 
 .mobile-search {
   padding: 0.5rem 1rem;
-  background: #0d0d1a;
-  border-top: 1px solid #2a2a4a;
+  background: rgba(13, 13, 26, 0.4);
+  border-top: 1px solid rgba(255, 237, 0, 0.05);
 }
 
 .mobile-search input {
   width: 100%;
   padding: 0.6rem 0.75rem;
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  background: rgba(26, 26, 46, 0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 4px;
   color: #ccc;
   font-size: 0.875rem;
@@ -795,7 +782,7 @@ defineExpose({
   .logo-text { display: none; }
   .nav-tabs { 
     flex: 1; 
-    justify-content: flex-start; /* Correct for scrolling */
+    justify-content: flex-start; 
     padding-left: 0.5rem;
     -webkit-overflow-scrolling: touch;
   }

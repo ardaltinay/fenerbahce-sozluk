@@ -65,10 +65,6 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  topicSlug: {
-    type: String,
-    required: true,
-  }
 })
 
 const emit = defineEmits(['submitted'])
@@ -119,7 +115,6 @@ async function handleSubmit() {
       },
       topicId: props.topicId,
       topicTitle: props.topicTitle,
-      topicSlug: props.topicSlug,
       createdAt: new Date().toISOString(),
       favoriteCount: 0,
       isFavorited: false,

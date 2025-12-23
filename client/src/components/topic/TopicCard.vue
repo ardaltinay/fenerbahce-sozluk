@@ -1,6 +1,6 @@
 <template>
   <router-link 
-    :to="`/baslik/${topic.slug}`"
+    :to="`/baslik/${topic.id}`"
     class="block card hover:border-fb-yellow/40 transition-all duration-200 group"
   >
     <div class="flex items-start justify-between">

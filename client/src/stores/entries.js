@@ -52,17 +52,6 @@ export const useEntriesStore = defineStore('entries', () => {
 
 
 
-  async function fetchEntriesByTopicSlug(slug) {
-    // This requires topic lookup first - not directly supported by API
-    loading.value = true
-    error.value = null
-    try {
-      // For now, return empty - TopicDetail should use fetchEntriesByTopic with topic.id
-      allEntries.value = []
-    } finally {
-      loading.value = false
-    }
-  }
 
   async function fetchEntriesByAuthor(authorId, page = 0, size = 10) {
     loading.value = true
@@ -259,7 +248,6 @@ export const useEntriesStore = defineStore('entries', () => {
     totalPages,
     currentPage,
     fetchEntriesByTopic,
-    fetchEntriesByTopicSlug,
     fetchEntriesByAuthor,
     fetchPopularEntries,
     fetchLatestEntries,

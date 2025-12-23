@@ -58,7 +58,6 @@ export const topicsApi = {
   getByCategory: (categoryId, page = 0, size = 20) =>
     api.get(`/api/topics/category/${categoryId}`, { params: { page, size } }),
   getById: (id) => api.get(`/api/topics/${id}`),
-  getBySlug: (slug) => api.get(`/api/topics/slug/${slug}`),
 
   search: (keyword, page = 0, size = 20) =>
     api.get(`/api/topics/search`, { params: { keyword, page, size } }),

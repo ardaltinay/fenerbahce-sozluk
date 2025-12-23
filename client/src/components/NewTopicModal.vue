@@ -16,6 +16,7 @@
               v-model="form.title" 
               type="text" 
               placeholder="başlık giriniz..."
+              maxlength="50"
               @blur="v$.title.$touch"
               :class="{ 'has-error': v$.title.$error }"
             />
@@ -62,6 +63,14 @@
     </form>
   </div>
     </div>
+
+    <ConfirmModal 
+      :show="showDuplicateConfirm"
+      title="başlık zaten var"
+      message="bu başlık zaten mevcut. başlığa gitmek ister misiniz?"
+      @confirm="handleDuplicateConfirm"
+      @cancel="showDuplicateConfirm = false"
+    />
   </div>
 </template>
 
@@ -74,6 +83,7 @@ import { categoriesApi, entriesApi } from '@/services/api'
 import { useTopicsStore } from '@/stores/topics'
 import { useRouter } from 'vue-router'
 import SelectBox from '@/components/ui/SelectBox.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 
 const emit = defineEmits(['close', 'created'])
 const router = useRouter()
@@ -82,6 +92,8 @@ const topicsStore = useTopicsStore()
 const loading = ref(false)
 const error = ref(null)
 const categories = ref([])
+const showDuplicateConfirm = ref(false)
+const existingTopicId = ref(null)
 
 const form = reactive({
   title: '',
@@ -92,7 +104,8 @@ const form = reactive({
 const rules = computed(() => ({
   title: {
     required: helpers.withMessage('Başlık alanı zorunludur.', required),
-    minLength: helpers.withMessage(({ $params }) => `Başlık en az ${$params.min} karakter olmalıdır.`, minLength(3))
+    minLength: helpers.withMessage(({ $params }) => `Başlık en az ${$params.min} karakter olmalıdır.`, minLength(3)),
+    maxLength: helpers.withMessage(({ $params }) => `Başlık en fazla 50 karakter olabilir.`, (val) => val.length <= 50)
   },
   categoryId: {
     required: helpers.withMessage('Kategori seçimi zorunludur.', required)
@@ -106,12 +119,6 @@ const rules = computed(() => ({
 const v$ = useVuelidate(rules, form)
 
 const loadingCategories = ref(false)
-
-const isValid = computed(() => {
-  return form.value.title.length >= 3 && 
-         form.value.categoryId && 
-         form.value.content.length > 0
-})
 
 onMounted(async () => {
   loadingCategories.value = true
@@ -127,68 +134,45 @@ onMounted(async () => {
 
 async function handleSubmit() {
   const isFormValid = await v$.value.$validate()
-  if (!isFormValid) {
-    // Show validation errors if needed, v$ should handle UI
-    return
-  }
+  if (!isFormValid) return
   
   loading.value = true
   error.value = null
 
   try {
-    // 1. Create Topic
-    console.log('Creating topic with:', { title: form.title, categoryId: form.categoryId })
     const newTopic = await topicsStore.createTopic({
       title: form.title,
       categoryId: form.categoryId
     })
-    console.log('Topic created successfully:', newTopic)
     
-    // 2. Create First Entry
-    if (!newTopic || !newTopic.id) {
-      throw new Error('Başlık ID alınamadı')
-    }
-
-    console.log('Creating first entry for topic:', newTopic.id)
     await entriesApi.create({
       topicId: newTopic.id,
       content: form.content
     })
-    console.log('Entry created successfully')
     
     emit('created')
-    router.push(`/baslik/${newTopic.slug}`)
+    router.push(`/baslik/${newTopic.id}`)
     emit('close')
     
   } catch (err) {
-    console.error('Topic creation error full object:', err)
-    
-    // Handle Duplicate Topic Error
-    // We look for the "duplicate_topic:slug" pattern in the error message
-    // Since backend might wrap it in a generic 500 or 400 depending on handler
     const errorMsg = err.response?.data?.message || err.message || ''
     
     if (errorMsg.includes('duplicate_topic:')) {
-      const slug = errorMsg.split('duplicate_topic:')[1]
-      const shouldRedirect = confirm('Bu başlık zaten var. Oraya gitmek ister misiniz?')
-      if (shouldRedirect) {
-        emit('close')
-        router.push(`/baslik/${slug}`)
-      } else {
-        error.value = 'Bu başlık zaten mevcut.'
-      }
+      existingTopicId.value = errorMsg.split('duplicate_topic:')[1]
+      showDuplicateConfirm.value = true
       return
     }
 
-    if (err.response) {
-      console.error('Error response data:', err.response.data)
-      error.value = `Hata: ${err.response.data.message || 'Sunucu hatası'}`
-    } else {
-      error.value = err.message || 'Bir hata oluştu'
-    }
+    error.value = err.response?.data?.message || err.message || 'Bir hata oluştu'
   } finally {
     loading.value = false
   }
+}
+
+function handleDuplicateConfirm() {
+  showDuplicateConfirm.value = false
+  emit('close')
+  router.push(`/baslik/${existingTopicId.value}`)
 }
 </script>
 

@@ -82,20 +82,6 @@ export const useTopicsStore = defineStore('topics', () => {
     }
   }
 
-  async function fetchTopicBySlug(slug) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await topicsApi.getBySlug(slug)
-      currentTopic.value = response.data
-    } catch (err) {
-      console.error('Topic fetch error:', err.message)
-      error.value = 'Başlık bulunamadı'
-      currentTopic.value = null
-    } finally {
-      loading.value = false
-    }
-  }
 
   async function fetchTopicById(id) {
     loading.value = true
@@ -200,7 +186,6 @@ export const useTopicsStore = defineStore('topics', () => {
     fetchTrendingTopics,
     fetchSidebarTopics,
     fetchTopicsByCategory,
-    fetchTopicBySlug,
     fetchTopicById,
     searchTopics,
     createTopic,

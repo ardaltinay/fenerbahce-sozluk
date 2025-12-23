@@ -23,8 +23,10 @@
                 class="popular-card"
                 :to="`/baslik/${topic.id}`"
               >
-                <div v-if="topic.categoryName" class="badge" style="margin-bottom: 0.4rem; display: inline-block;">{{ topic.categoryName }}</div>
-                <h3>{{ topic.title }}</h3>
+                <div class="card-content">
+                  <div v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</div>
+                  <h3>{{ topic.title }}</h3>
+                </div>
                 <div class="card-meta">
                   <span>{{ formatCount(topic.entryCount) }} entry</span>
                 </div>
@@ -38,8 +40,10 @@
                 class="popular-card"
                 :to="`/baslik/${topic.id}`"
               >
-                <div v-if="topic.categoryName" class="badge" style="margin-bottom: 0.4rem; display: inline-block;">{{ topic.categoryName }}</div>
-                <h3>{{ topic.title }}</h3>
+                <div class="card-content">
+                  <div v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</div>
+                  <h3>{{ topic.title }}</h3>
+                </div>
                 <div class="card-meta">
                   <span>{{ formatCount(topic.entryCount) }} entry</span>
                 </div>
@@ -50,15 +54,16 @@
             </template>
 
             <template v-else-if="activeTab === 'popular'">
-               <!-- Default: Popular -->
               <router-link 
                 v-for="topic in topicsStore.popularTopics" 
                 :key="topic.id" 
                 class="popular-card"
                 :to="`/baslik/${topic.id}`"
               >
-                <div v-if="topic.categoryName" class="badge" style="margin-bottom: 0.4rem; display: inline-block;">{{ topic.categoryName }}</div>
-                <h3>{{ topic.title }}</h3>
+                <div class="card-content">
+                  <div v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</div>
+                  <h3>{{ topic.title }}</h3>
+                </div>
                 <div class="card-meta">
                   <span>{{ formatCount(topic.entryCount) }} entry</span>
                   <span>{{ formatDate(topic.createdAt) }}</span>
@@ -69,7 +74,7 @@
 
           <!-- Entries Feed (Son / Random) -->
           <div v-if="activeTab === 'son' || activeTab === 'random'" class="entries-feed">
-            <div v-if="activeTab === 'random'" class="random-actions top-actions">
+            <div v-if="activeTab === 'random'" class="random-actions top-actions" style="margin-bottom: 2rem;">
               <button class="refresh-btn slim" @click="refreshRandom">
                 <RefreshCw class="icon" /> yenile
               </button>
@@ -118,10 +123,10 @@
             class="mobile-card"
             @click="openMobileEntries(topic)"
           >
-            <h3>
+            <div class="card-content">
               <span v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</span>
-              {{ topic.title }}
-            </h3>
+              <h3>{{ topic.title }}</h3>
+            </div>
             <div class="card-meta">
               <span>{{ formatCount(topic.entryCount) }} entry</span>
             </div>
@@ -154,7 +159,7 @@
             <span>entryler</span>
           </div>
 
-          <div v-if="activeTab === 'random'" class="random-actions top-actions">
+          <div v-if="activeTab === 'random'" class="random-actions top-actions" style="margin-bottom: 1.5rem;">
             <button class="refresh-btn slim" @click="refreshRandom">
               <RefreshCw class="icon" /> yenile
             </button>
@@ -243,30 +248,24 @@ const previousMobileView = ref('home')
 const currentEntries = computed(() => entriesStore.entries)
 
 // Header'dan tab değişikliği (mobil için)
-// Header'dan tab değişikliği (mobil için)
 const activeTab = ref('popular') // Default tab
 const router = useRouter() // Need router
 
 function handleTabChange(tab) {
-  // selectedTopic.value = null // Removed
-  activeTab.value = tab
+  activeTab.value = tab === 'home' ? 'popular' : tab
   
   if (tab === 'popular' || tab === 'home') {
     mobileView.value = 'home'
     topicsStore.fetchPopularTopics(0, 10)
     // If home (logo click), we also want to populate Sidebar (Trending)
     if (tab === 'home') {
-      topicsStore.fetchTrendingTopics(0, 10)
+      topicsStore.fetchSidebarTopics(0, 50)
     }
   } else if (tab === 'son') {
     mobileView.value = 'entries'
     entriesStore.fetchLatestEntries()
   } else if (tab === 'gundem') {
     mobileView.value = 'gundem'
-    // Gündem tab uses topicsStore.topics (fetched as trends on mount)
-    // No need to fetch popular topics here
-    // topicsStore.fetchTrendingTopics() // Already fetched on mount and periodically?
-    // If we want to refresh:
     topicsStore.fetchTrendingTopics(0, 10)
   } else if (tab === 'random') {
     mobileView.value = 'entries'
@@ -309,7 +308,6 @@ function getTabTitle() {
 
 
 function openMobileEntries(topic) {
-  // Switch to router navigation for mobile too!
   router.push(`/baslik/${topic.id}`)
 }
 
@@ -358,8 +356,8 @@ function formatDate(date) {
 
 
 onMounted(() => {
-  // Fetch lists
-  topicsStore.fetchSidebarTopics(0, 50) // Sidebar is independent
+  // Sidebar independent fetch
+  topicsStore.fetchSidebarTopics(0, 50) 
   
   // Initial tab/category check
   if (route.query.tab) {
@@ -403,65 +401,68 @@ onMounted(() => {
 /* Popular Grid */
 .popular-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
 }
 
 .popular-card {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
-  border-radius: 8px;
-  padding: 1rem;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
+  border-radius: 12px;
+  padding: 1.25rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  height: 140px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .popular-card:hover {
+  background: rgba(26, 26, 46, 0.6);
   border-color: #d4c84a;
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .popular-card h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #d4c84a;
-  margin: 0 0 0.5rem;
+  margin: 0.5rem 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  font-weight: 500;
 }
 
-.popular-card p {
-  font-size: 0.85rem;
-  color: #aaa;
-  line-height: 1.5;
-  margin: 0 0 0.75rem;
+.card-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .card-meta {
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
+  margin-top: 0.75rem;
 }
 
 .card-meta .author { color: #6fbf6f; }
 .card-meta .likes { display: flex; align-items: center; gap: 0.25rem; color: #666; }
 .icon { width: 14px; height: 14px; }
 
-/* Entries Section */
+/* Topic Header */
 .topic-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
-
-.back-btn {
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.back-btn:hover { background: rgba(255,255,255,0.05); color: #d4c84a; }
 
 .topic-header h1 {
   font-size: 1.1rem;
@@ -470,6 +471,7 @@ onMounted(() => {
   margin: 0;
 }
 
+/* Entries */
 .entry {
   padding: 1.5rem;
   background: rgba(26, 26, 46, 0.45);
@@ -482,10 +484,6 @@ onMounted(() => {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-}
-
-.entry.stable-card {
-  min-height: 180px;
 }
 
 .entry:hover {
@@ -540,54 +538,13 @@ onMounted(() => {
   color: #d4c84a;
 }
 
-.actions button.liked {
-  color: #3fb950;
-}
-
-.actions button.disliked {
-  color: #f85149;
-}
-
-.actions button.favorited {
-  color: #d4c84a;
-}
+.actions button.liked { color: #3fb950; }
+.actions button.disliked { color: #f85149; }
+.actions button.favorited { color: #d4c84a; }
 
 .meta { display: flex; gap: 0.75rem; font-size: 0.75rem; }
 .meta .author { color: #6fbf6f; }
 .meta .date { color: #555; }
-
-.entry-form {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #1a1a2e;
-}
-
-.entry-form textarea {
-  width: 100%;
-  padding: 0.75rem;
-  background: #0a0a14;
-  border: 1px solid #2a2a4a;
-  border-radius: 6px;
-  color: #ccc;
-  font-size: 0.85rem;
-  resize: vertical;
-  margin-bottom: 0.75rem;
-}
-
-.entry-form textarea:focus { outline: none; border-color: #d4c84a; }
-
-.entry-form button {
-  padding: 0.5rem 1.25rem;
-  background: #d4c84a;
-  color: #0f0f1a;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.entry-form button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Empty State */
 .empty-state {
@@ -639,30 +596,21 @@ onMounted(() => {
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 237, 0, 0.05);
     border-radius: 12px;
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .mobile-card h3 {
     font-size: 0.95rem;
     color: #d4c84a;
-    margin: 0 0 0.5rem;
-  }
-
-  .mobile-card p {
-    font-size: 0.85rem;
-    color: #aaa;
-    margin: 0 0 0.75rem;
-    line-height: 1.5;
+    margin: 0;
   }
 
   .mobile-card .card-meta {
     display: flex;
     justify-content: space-between;
     font-size: 0.75rem;
-    color: #6fbf6f;
+    margin-top: 0.75rem;
   }
-
-  .icon-sm { width: 12px; height: 12px; }
 
   .mobile-section-header {
     display: flex;
@@ -712,10 +660,6 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  .mobile-entry.stable-card {
-    min-height: 160px;
-  }
-
   .mobile-entry p {
     font-size: 0.9rem;
     line-height: 1.6;
@@ -748,6 +692,7 @@ onMounted(() => {
   .mobile-entry .info .author { color: #6fbf6f; }
   .mobile-entry .info .time { color: #555; margin-left: 0.5rem; }
 }
+
 .entry-topic-ref {
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
@@ -763,25 +708,16 @@ onMounted(() => {
 
 .badge {
   display: inline-block;
-  padding: 0.1rem 0.35rem;
-  background: #2a2a4a;
-  color: #d4c84a;
-  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(88, 166, 255, 0.1);
+  color: #58a6ff;
+  font-size: 0.65rem;
   border-radius: 4px;
-  margin-right: 0.4rem;
+  border: 1px solid rgba(88, 166, 255, 0.2);
   vertical-align: middle;
-  font-weight: normal;
-}
-
-.random-actions {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 1.5rem;
-}
-
-.random-actions.top-actions {
-  margin-top: 0;
-  margin-bottom: 2rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  width: fit-content;
 }
 
 .refresh-btn {
@@ -812,16 +748,19 @@ onMounted(() => {
   color: #1a1a2e;
 }
 
-.refresh-btn:not(.slim) {
-  box-shadow: 0 4px 15px rgba(212, 200, 74, 0.2);
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.refresh-btn:not(.slim):hover {
-  background: #c3b739;
-  transform: translateY(-1px);
-}
-
-.refresh-btn:active {
-  transform: translateY(0);
+@media (max-width: 768px) {
+  .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
 }
 </style>
+

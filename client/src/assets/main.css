@@ -54,7 +54,10 @@
 
 body {
   font-family: var(--font-sans);
-  background: linear-gradient(rgba(0, 5, 20, 0.4), rgba(0, 5, 20, 0.6)), url('/background.jpeg') no-repeat center top;
+  background-color: #000514;
+  background-image: linear-gradient(rgba(0, 5, 20, 0.45), rgba(0, 5, 20, 0.65)), url('/background.jpeg');
+  background-repeat: no-repeat;
+  background-position: center top;
   background-size: cover;
   background-attachment: fixed;
   color: var(--color-text-primary);
@@ -63,10 +66,16 @@ body {
   padding: 0;
 }
 
+@media (max-width: 1024px) {
+  body {
+    background-position: 70% top;
+  }
+}
+
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
-    /* Fix for mobile browser background issues */
+    background-position: 65% top;
   }
 }
 
@@ -91,15 +100,33 @@ body {
 
 /* Utility Classes */
 .glass {
-  background: rgba(0, 32, 91, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
+  background: rgba(0, 24, 69, 0.4);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 237, 0, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .glass-hover:hover {
-  background: rgba(0, 32, 91, 0.6);
-  border-color: var(--color-border-hover);
+  background: rgba(0, 24, 69, 0.6);
+  border-color: rgba(255, 237, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Responsive Header Layout */
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 }
 
 /* Link Styles */
@@ -203,7 +230,8 @@ a:hover {
 .input {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: rgba(0, 32, 91, 0.6);
+  background: rgba(0, 32, 91, 0.3);
+  /* Lighter transparency */
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
@@ -223,17 +251,19 @@ a:hover {
 
 /* Card */
 .card {
-  background: rgba(0, 32, 91, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
+  background: rgba(0, 24, 69, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 237, 0, 0.1);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
-  border-color: var(--color-border-hover);
+  border-color: rgba(255, 237, 0, 0.25);
+  background: rgba(0, 24, 69, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* Badge */

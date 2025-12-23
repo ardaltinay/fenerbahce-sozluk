@@ -15,10 +15,10 @@
                 <ArrowLeft class="icon" />
                 <span>geri</span>
               </button>
-              <div v-if="topic?.categoryName" class="badge-lg" style="margin-bottom: 0.5rem; display: inline-block;">{{ topic.categoryName }}</div>
-              <h1>
-                {{ topic?.title || slug }}
-              </h1>
+              <div class="header-row">
+                <div v-if="topic?.categoryName" class="badge-lg">{{ topic.categoryName }}</div>
+                <h1>{{ topic?.title }}</h1>
+              </div>
               <div class="topic-meta">
                 <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || 0 }} entry</span>
               </div>
@@ -190,10 +190,10 @@
                 <ArrowLeft class="icon" />
                 <span>geri</span>
               </button>
-              <div v-if="topic?.categoryName" class="badge-lg" style="margin-bottom: 0.5rem; display: inline-block;">{{ topic.categoryName }}</div>
-              <h1>
-                {{ topic?.title || slug }}
-              </h1>
+              <div class="header-row">
+                <div v-if="topic?.categoryName" class="badge-lg">{{ topic.categoryName }}</div>
+                <h1>{{ topic?.title || 'başlık' }}</h1>
+              </div>
               <div class="topic-meta">
                 <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || entries.length }} entry</span>
               </div>
@@ -210,8 +210,6 @@
                  </div>
                  <template v-else>
                     <article v-for="(entry, index) in entries" :key="entry.id" class="entry-card">
-                        <!-- Reuse entry card structure or simplify for mobile if needed. 
-                             For now, reusing entry-card styles which are responsive enough. -->
                         <div class="entry-content" v-html="formatContent(entry.content)"></div>
                          <footer class="entry-footer">
                             <div class="actions">
@@ -499,10 +497,12 @@ function changePage(page) {
 }
 async function fetchData(id) {
   loading.value = true
-  // Flicker'ı önlemek için veriler gelene kadar bekleyelim, store'u hemen boşaltmayalım
   await topicsStore.fetchTopicById(id)
   if (topic.value?.id) {
     await entriesStore.fetchEntriesByTopic(topic.value.id, 0, 10)
+  } else {
+    // Topic not found or invalid ID, redirect to 404
+    router.push('/404')
   }
   loading.value = false
 }
@@ -542,11 +542,8 @@ onMounted(() => {
   padding: 1.5rem;
 }
 
-/* Hide Sidebar on mobile */
 @media (max-width: 768px) {
-  .desktop-layout {
-    display: none;
-  }
+  .desktop-layout { display: none; }
 }
 
 .mobile-layout {
@@ -557,15 +554,6 @@ onMounted(() => {
 @media (max-width: 768px) {
   .mobile-layout {
     display: block;
-  }
-  
-  .entry-card {
-    padding: 1.25rem 1rem;
-    margin-bottom: 0.75rem;
-    background: rgba(26, 26, 46, 0.45);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 237, 0, 0.05);
   }
 }
 
@@ -603,6 +591,21 @@ onMounted(() => {
   color: #d4c84a;
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
 .topic-header h1 {
   font-size: 1.5rem;
   color: #d4c84a;
@@ -617,14 +620,6 @@ onMounted(() => {
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-weight: normal;
-}
-
-@media (max-width: 768px) {
-  .badge-lg {
-    display: block !important;
-    width: fit-content;
-    margin: 0.5rem 0 0.8rem 0 !important;
-  }
 }
 
 .topic-meta {
@@ -676,9 +671,6 @@ onMounted(() => {
 
 /* Entries Container */
 .entries-container {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
-  border-radius: 12px;
   min-height: 200px;
   margin-bottom: 1rem;
 }
@@ -697,12 +689,6 @@ onMounted(() => {
   animation: spin 1s linear infinite;
   width: 24px;
   height: 24px;
-}
-
-.spin-sm {
-  animation: spin 1s linear infinite;
-  width: 16px;
-  height: 16px;
 }
 
 @keyframes spin {
@@ -767,16 +753,11 @@ onMounted(() => {
   line-height: 1.7;
   color: #ccc;
   margin-bottom: 1rem;
-  padding-right: 2rem;
 }
 
 .entry-content :deep(a) {
   color: #58a6ff;
   text-decoration: none;
-}
-
-.entry-content :deep(a:hover) {
-  text-decoration: underline;
 }
 
 .entry-footer {
@@ -810,25 +791,9 @@ onMounted(() => {
   color: #d4c84a;
 }
 
-.actions button.liked {
-  color: #3fb950;
-}
-
-.actions button.disliked {
-  color: #f85149;
-}
-
-.actions button.edit-btn:hover {
-  color: #58a6ff;
-}
-
-.actions button.delete-btn:hover {
-  color: #f85149;
-}
-
-.actions button.favorited {
-  color: #d4c84a;
-}
+.actions button.liked { color: #3fb950; }
+.actions button.disliked { color: #f85149; }
+.actions button.favorited { color: #d4c84a; }
 
 .meta {
   display: flex;
@@ -837,115 +802,80 @@ onMounted(() => {
   font-size: 0.8rem;
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #2a2a4a;
-}
-
-.page-btn {
-  padding: 0.5rem 1rem;
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
-  color: #d4c84a;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  color: #666;
-}
-
-.page-info {
-  font-size: 0.9rem;
-  color: #888;
-}
-
-.author {
-  color: #6fbf6f;
-  text-decoration: none;
-}
-
-.author:hover {
-  text-decoration: underline;
-}
-
-.date {
-  color: #555;
-}
-
 /* Entry Form */
 .entry-form-container {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 200, 74, 0.15);
   border-radius: 12px;
-  overflow: hidden;
 }
 
 .form-header {
-  padding: 0.75rem 1rem;
-  background: #0d0d1a;
-  border-bottom: 1px solid #2a2a4a;
-  font-size: 0.85rem;
-  color: #888;
+  margin-bottom: 1rem;
 }
 
-.entry-form-container textarea {
+.form-header span {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #d4c84a;
+}
+
+textarea {
   width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 237, 0, 0.1);
+  border-radius: 8px;
   padding: 1rem;
-  background: transparent;
-  border: none;
   color: #e0e0e0;
+  font-family: inherit;
   font-size: 0.95rem;
-  line-height: 1.6;
   resize: vertical;
-  min-height: 100px;
+  min-height: 120px;
+  transition: all 0.2s;
 }
 
-.entry-form-container textarea:focus {
+textarea:focus {
   outline: none;
-}
-
-.entry-form-container textarea::placeholder {
-  color: #555;
+  border-color: rgba(212, 200, 74, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 4px rgba(212, 200, 74, 0.05);
 }
 
 .form-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #2a2a4a;
+  margin-top: 1rem;
 }
 
 .hint {
-  font-size: 0.75rem;
-  color: #555;
+  font-size: 0.8rem;
+  color: #666;
 }
 
 .submit-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
+  padding: 0.6rem 1.5rem;
   background: #d4c84a;
-  color: #0f0f1a;
+  color: #1a1a2e;
   border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.2s;
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #e0d454;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 200, 74, 0.2);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .submit-btn:disabled {
@@ -953,197 +883,61 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
+.spin-sm {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
 /* Login Prompt */
 .login-prompt {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  margin-top: 2rem;
+  padding: 2.5rem;
+  background: rgba(26, 26, 46, 0.4);
+  border: 1px dashed rgba(212, 200, 74, 0.2);
   border-radius: 12px;
-  padding: 2rem;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
 }
 
 .prompt-icon {
-  width: 32px;
-  height: 32px;
-  color: #666;
-}
-
-.login-prompt p {
-  color: #aaa;
-  margin: 0;
+  width: 40px;
+  height: 40px;
+  color: #d4c84a;
+  margin-bottom: 1rem;
+  opacity: 0.8;
 }
 
 .prompt-actions {
   display: flex;
+  justify-content: center;
   gap: 1rem;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
 }
 
 .btn-primary {
-  padding: 0.5rem 1.25rem;
   background: #d4c84a;
-  color: #0f0f1a;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: #1a1a2e;
 }
 
 .btn-secondary {
-  padding: 0.5rem 1.25rem;
-  background: transparent;
-  border: 1px solid #2a2a4a;
-  color: #ccc;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-/* Modals */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.delete-modal {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 1rem;
-  border-bottom: 1px solid #2a2a4a;
-}
-
-.modal-header h3 {
-  margin: 0;
+  background: rgba(255, 255, 255, 0.05);
   color: #e0e0e0;
-  font-size: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.modal-body {
-  padding: 1.5rem;
+.btn-primary:hover {
+  opacity: 0.9;
 }
 
-.modal-body p {
-  color: #ccc;
-  margin: 0 0 1rem;
-}
-
-.entry-preview {
-  background: #0f0f1a;
-  padding: 1rem;
-  border-radius: 8px;
-  color: #888;
-  font-size: 0.9rem;
-  font-style: italic;
-  border-left: 3px solid #f85149;
-}
-
-.modal-footer {
-  padding: 1rem;
-  background: #0d0d1a;
-  border-top: 1px solid #2a2a4a;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.btn-cancel {
-  padding: 0.5rem 1rem;
-  background: transparent;
-  border: 1px solid #2a2a4a;
-  color: #ccc;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn-delete {
-  padding: 0.5rem 1rem;
-  background: #f85149;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.edit-mode {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.edit-textarea {
-  width: 100%;
-  background: #0a0a14;
-  border: 1px solid #2a2a4a;
-  padding: 1rem;
-  color: #e0e0e0;
-  border-radius: 8px;
-  resize: vertical;
-}
-
-.edit-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.btn-save {
-  padding: 0.5rem 1rem;
-  background: #3fb950;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn-save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.85rem;
-  color: #aaa;
-  margin-bottom: 0.5rem;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  background: #0d0d1a;
-  border: 1px solid #2a2a4a;
-  border-radius: 6px;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-  resize: vertical;
-}
-
-.form-textarea:focus {
-  outline: none;
-  border-color: #d4c84a;
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 </style>

@@ -498,7 +498,6 @@ function confirmBanUser() {
   openBanModal()
 }
 
-// Helper for topic slug
 function getTopicLink(entry) {
   return `/baslik/${entry.topicId}`
 }

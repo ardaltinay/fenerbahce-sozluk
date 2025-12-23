@@ -3,7 +3,7 @@
     <!-- Entry Header -->
     <div class="flex items-start justify-between mb-3">
       <router-link 
-        :to="`/baslik/${entry.topicSlug}`"
+        :to="`/baslik/${entry.topicId}`"
         class="text-fb-yellow hover:text-fb-yellow-light font-medium text-sm"
       >
         {{ entry.topicTitle }}

@@ -39,7 +39,7 @@
             <div class="card bg-fb-navy/30">
               <p class="text-sm text-text-muted mb-2">bu entry şu başlıkta yazıldı:</p>
               <router-link 
-                :to="`/baslik/${entry.topicSlug}`"
+                :to="`/baslik/${entry.topicId}`"
                 class="flex items-center justify-between p-3 rounded-lg hover:bg-fb-yellow/10 transition-colors"
               >
                 <span class="text-fb-yellow font-medium">{{ entry.topicTitle }}</span>
