@@ -64,6 +64,10 @@ public class TopicService {
       throw new BusinessException("Başlık 50 karakterden uzun olamaz", HttpStatus.BAD_REQUEST);
     }
 
+    topicRepository.findByTitleIgnoreCase(request.getTitle()).ifPresent(t -> {
+      throw new BusinessException("duplicate_topic:" + t.getId(), HttpStatus.CONFLICT);
+    });
+
     Category category = categoryRepository.findById(request.getCategoryId())
         .orElseThrow(() -> new BusinessException("Kategori bulunamadı", HttpStatus.NOT_FOUND));
 

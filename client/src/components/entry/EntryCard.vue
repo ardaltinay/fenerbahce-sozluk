@@ -19,27 +19,9 @@
     </div>
 
     <!-- Entry Footer -->
-    <div class="flex items-center justify-between pt-3 border-t border-fb-yellow/10">
-      <!-- Author Info -->
-      <router-link 
-        :to="`/biri/${entry.author.username}`"
-        class="flex items-center gap-2 group"
-      >
-        <div class="avatar avatar-sm">
-          {{ entry.author.username.charAt(0).toUpperCase() }}
-        </div>
-        <div>
-          <span class="text-sm text-fb-yellow group-hover:text-fb-yellow-light transition-colors">
-            {{ entry.author.username }}
-          </span>
-          <span class="text-xs text-text-muted block">
-            {{ formatDate(entry.createdAt) }}
-          </span>
-        </div>
-      </router-link>
-
+    <div class="entry-card-footer mt-4 pt-3 border-t border-fb-yellow/10">
       <!-- Actions -->
-      <div class="flex items-center gap-1">
+      <div class="actions flex items-center gap-1">
         <button 
           class="btn btn-ghost p-2"
           :class="{ 'text-fb-yellow': entry.isFavorited }"
@@ -73,6 +55,24 @@
           </button>
         </div>
       </div>
+
+      <!-- Author Info -->
+      <router-link 
+        :to="`/biri/${entry.author.username}`"
+        class="author-info flex items-center gap-2 group mt-2"
+      >
+        <div class="avatar avatar-sm">
+          {{ entry.author.username.charAt(0).toUpperCase() }}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-fb-yellow group-hover:text-fb-yellow-light transition-colors">
+            {{ entry.author.username }}
+          </span>
+          <span class="text-xs text-text-muted">
+            {{ formatDate(entry.createdAt) }}
+          </span>
+        </div>
+      </router-link>
     </div>
   </article>
 </template>
@@ -125,3 +125,27 @@ function formatDate(dateString) {
   })
 }
 </script>
+
+<style scoped>
+.entry-card-footer {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-info {
+  justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+  .entry-card-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .author-info {
+    order: -1;
+    margin-top: 0;
+  }
+}
+</style>

@@ -68,14 +68,17 @@ body {
 
 @media (max-width: 1024px) {
   body {
-    background-position: 70% top;
+    background-position: center top;
+    background-size: cover;
   }
 }
 
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
-    background-position: 65% top;
+    background-position: center top;
+    background-size: cover;
+    background-image: linear-gradient(rgba(0, 5, 20, 0.6), rgba(0, 5, 20, 0.8)), url('/background.jpeg');
   }
 }
 

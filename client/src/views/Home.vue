@@ -100,6 +100,9 @@
                   <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }" @click="vote(entry.id, 'FAVORITE')">
                     <Star class="icon-sm" /> <span>{{ entry.favoriteCount || 0 }}</span>
                   </button>
+                  <button @click="shareEntry(entry.id)">
+                    <Share2 class="icon-sm" />
+                  </button>
                 </div>
                 <div class="meta">
                   <router-link :to="`/biri/${entry.authorUsername || entry.author?.username}`" class="author">
@@ -182,7 +185,7 @@
                  <span class="ref-text" style="color: #666;">)</span>
               </div>
               <p v-html="formatContent(entry.content)" style="margin-top: 0;"></p>
-              <footer>
+              <footer class="mobile-entry-footer">
                 <div class="actions">
                   <button 
                     :class="{ 'liked': entry.currentUserVote === 'LIKE' }"
@@ -204,6 +207,9 @@
                   >
                     <Star class="icon-sm" />
                     <span>{{ entry.favoriteCount || 0 }}</span>
+                  </button>
+                  <button @click="shareEntry(entry.id)">
+                    <Share2 class="icon-sm" />
                   </button>
                 </div>
                 <div class="info">
@@ -669,15 +675,40 @@ onMounted(() => {
   }
 
   .mobile-entry footer {
+    display: none; /* Hide default footer */
+  }
+
+  .mobile-entry-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .mobile-entry-footer .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .mobile-entry-footer .info {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 0.75rem;
+    color: #666;
+  }
+
+  .mobile-entry-footer .info .author {
+    color: #6fbf6f;
   }
 
   .mobile-entry .actions {
     display: flex;
     gap: 0.5rem;
   }
+
+  .mobile-entry .actions button.edit-btn:hover { color: #58a6ff; }
+  .mobile-entry .actions button.delete-btn:hover { color: #f85149; }
 
   .mobile-entry .actions button {
     padding: 0.25rem;

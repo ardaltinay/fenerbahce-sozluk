@@ -14,6 +14,8 @@ import java.util.UUID;
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, UUID> {
 
+  java.util.Optional<Topic> findByTitleIgnoreCase(String title);
+
   Page<Topic> findByIsActiveTrueOrderByCreatedAtDesc(Pageable pageable);
 
   Page<Topic> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(UUID categoryId, Pageable pageable);

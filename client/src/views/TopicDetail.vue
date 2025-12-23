@@ -211,24 +211,35 @@
                  <template v-else>
                     <article v-for="(entry, index) in entries" :key="entry.id" class="entry-card">
                         <div class="entry-content" v-html="formatContent(entry.content)"></div>
-                         <footer class="entry-footer">
-                            <div class="actions">
-                                <button :class="{ 'liked': entry.currentUserVote === 'LIKE' }" @click="vote(entry.id, 'LIKE')">
-                                    <ThumbsUp class="icon-sm" /> <span>{{ entry.likeCount || 0 }}</span>
-                                </button>
-                                <button :class="{ 'disliked': entry.currentUserVote === 'DISLIKE' }" @click="vote(entry.id, 'DISLIKE')">
-                                    <ThumbsDown class="icon-sm" /> <span>{{ entry.dislikeCount || 0 }}</span>
-                                </button>
-                                <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }" @click="vote(entry.id, 'FAVORITE')">
-                                    <Star class="icon-sm" /> <span>{{ entry.favoriteCount || 0 }}</span>
-                                </button>
-                            </div>
-                            <div class="meta">
-                                <router-link :to="`/biri/${entry.authorUsername || entry.author?.username}`" class="author">
-                                  {{ entry.authorUsername || entry.author?.username || '-' }}
-                                </router-link>
-                            </div>
-                         </footer>
+                          <footer class="mobile-entry-footer">
+                             <div class="actions">
+                                 <button :class="{ 'liked': entry.currentUserVote === 'LIKE' }" @click="vote(entry.id, 'LIKE')">
+                                     <ThumbsUp class="icon-sm" /> <span>{{ entry.likeCount || 0 }}</span>
+                                 </button>
+                                 <button :class="{ 'disliked': entry.currentUserVote === 'DISLIKE' }" @click="vote(entry.id, 'DISLIKE')">
+                                     <ThumbsDown class="icon-sm" /> <span>{{ entry.dislikeCount || 0 }}</span>
+                                 </button>
+                                 <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }" @click="vote(entry.id, 'FAVORITE')">
+                                     <Star class="icon-sm" /> <span>{{ entry.favoriteCount || 0 }}</span>
+                                 </button>
+                                 <button @click="shareEntry(entry.id)">
+                                   <Share2 class="icon-sm" />
+                                 </button>
+                                 <!-- Edit/Delete for authorized users -->
+                                 <button v-if="authStore.canEditEntry(entry)" class="edit-btn" @click="startEdit(entry)" title="düzenle">
+                                   <Edit2 class="icon-sm" />
+                                 </button>
+                                 <button v-if="authStore.canDeleteEntry(entry)" class="delete-btn" @click="openDeleteModal(entry)" title="sil">
+                                   <Trash2 class="icon-sm" />
+                                 </button>
+                             </div>
+                             <div class="meta">
+                                 <router-link :to="`/biri/${entry.authorUsername || entry.author?.username}`" class="author">
+                                   {{ entry.authorUsername || entry.author?.username || '-' }}
+                                 </router-link>
+                                 <span class="date">{{ formatDate(entry.createdAt) }}</span>
+                             </div>
+                          </footer>
                     </article>
                  </template>
               </div>
@@ -794,12 +805,40 @@ onMounted(() => {
 .actions button.liked { color: #3fb950; }
 .actions button.disliked { color: #f85149; }
 .actions button.favorited { color: #d4c84a; }
+.actions button.edit-btn:hover { color: #58a6ff; }
+.actions button.delete-btn:hover { color: #f85149; }
 
 .meta {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   font-size: 0.8rem;
+}
+
+/* Mobile Specific Footer */
+.mobile-entry-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.mobile-entry-footer .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mobile-entry-footer .meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.mobile-entry-footer .meta .author {
+  color: #d4c84a;
 }
 
 /* Entry Form */
