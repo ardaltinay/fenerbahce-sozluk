@@ -45,6 +45,9 @@ api.interceptors.response.use(
 export const authApi = {
   login: (credentials) => api.post('/api/auth/login', credentials),
   register: (userData) => api.post('/api/auth/register', userData),
+  forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
+  resetPassword: (token, newPassword) => api.post('/api/auth/reset-password', { token, newPassword }),
+  validateResetToken: (token) => api.get(`/api/auth/validate-reset-token/${token}`),
 }
 
 // Topics API
@@ -100,9 +103,19 @@ export const categoriesApi = {
 export const usersApi = {
   getByUsername: (username) => api.get(`/api/users/${username}`),
   getMe: () => api.get('/api/users/me'),
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/api/users/me/change-password', { currentPassword, newPassword }),
+  deleteAccount: (password) =>
+    api.post('/api/users/me/delete-account', { password }),
   delete: (id) => api.delete(`/api/users/${id}`),
   ban: (id, duration, reason) => api.post(`/api/users/${id}/ban`, { duration, reason }),
 }
 
+// Contact API
+export const contactApi = {
+  send: (data) => api.post('/api/contact', data),
+}
+
 export default api
+
 

@@ -6,9 +6,9 @@ spring:
     name: fenerbahce-sozluk
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/fenerbahce_sozluk
-    username: postgres
-    password: postgres
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USER}
+    password: ${DATASOURCE_PASS}
     driver-class-name: org.postgresql.Driver
   
   jpa:
@@ -19,12 +19,38 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  # Email Configuration
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 # JWT Configuration
 app:
   jwt:
     secret: ${APP_JWT_SECRET}
     expiration: 86400000  # 24 hours in milliseconds
+    remember-me-expiration: 2592000000  # 30 days in milliseconds
+  
+  # Email Settings
+  mail:
+    from: ${MAIL_FROM:admin@fenerbahcesozluk.net}
+    from-name: Fenerbahçe Sözlük
+  
+  # Frontend URL for password reset links
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
 
 # CORS Configuration
 cors:

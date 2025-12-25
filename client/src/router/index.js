@@ -28,6 +28,21 @@ const routes = [
     component: () => import('@/views/Search.vue'),
   },
   {
+    path: '/sifremi-unuttum',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPassword.vue'),
+  },
+  {
+    path: '/sifre-sifirla/:token',
+    name: 'ResetPassword',
+    component: () => import('@/views/ResetPassword.vue'),
+  },
+  {
+    path: '/iletisim',
+    name: 'Contact',
+    component: () => import('@/views/Contact.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),

@@ -255,8 +255,10 @@ onMounted(() => {
 .search-input-box {
   display: flex;
   align-items: center;
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 8px;
   padding: 0 1rem;
 }
@@ -363,7 +365,10 @@ onMounted(() => {
 }
 
 .skeleton-card {
-  background: #1a1a2e;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 8px;
   padding: 1rem;
 }

@@ -172,7 +172,11 @@ async function handleSubmit() {
 function handleDuplicateConfirm() {
   showDuplicateConfirm.value = false
   emit('close')
-  router.push(`/baslik/${existingTopicId.value}`)
+  // Pass entry content as query parameter so user can submit it on existing topic
+  router.push({
+    path: `/baslik/${existingTopicId.value}`,
+    query: form.content ? { draft: encodeURIComponent(form.content) } : {}
+  })
 }
 </script>
 

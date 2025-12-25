@@ -4,6 +4,9 @@ import net.fenerbahcesozluk.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,7 +32,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response = ErrorResponse.builder()
         .timestamp(LocalDateTime.now())
         .status(HttpStatus.BAD_REQUEST.value())
-        .error("Validation Failed")
+        .error("Doğrulama Hatası")
         .message("Giriş verileri geçersiz")
         .errors(errors)
         .build();
@@ -54,7 +57,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response = ErrorResponse.builder()
         .timestamp(LocalDateTime.now())
         .status(HttpStatus.BAD_REQUEST.value())
-        .error("Bad Request")
+        .error("Hatalı İstek")
         .message(ex.getMessage())
         .build();
 
@@ -66,11 +69,47 @@ public class GlobalExceptionHandler {
     ErrorResponse response = ErrorResponse.builder()
         .timestamp(LocalDateTime.now())
         .status(HttpStatus.UNAUTHORIZED.value())
-        .error("Unauthorized")
+        .error("Yetkisiz")
         .message("Kullanıcı adı veya şifre hatalı")
         .build();
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+  }
+
+  @ExceptionHandler(DisabledException.class)
+  public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.FORBIDDEN.value())
+        .error("Hesap Devre Dışı")
+        .message("Bu hesap devre dışı bırakılmıştır")
+        .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
+  @ExceptionHandler(LockedException.class)
+  public ResponseEntity<ErrorResponse> handleLockedException(LockedException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.FORBIDDEN.value())
+        .error("Hesap Kilitli")
+        .message("Bu hesap kilitlenmiştir")
+        .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
+  @ExceptionHandler(AccountExpiredException.class)
+  public ResponseEntity<ErrorResponse> handleAccountExpiredException(AccountExpiredException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.FORBIDDEN.value())
+        .error("Hesap Süresi Dolmuş")
+        .message("Bu hesabın süresi dolmuştur")
+        .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
   }
 
   @ExceptionHandler(RateLimitExceededException.class)
@@ -78,7 +117,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response = ErrorResponse.builder()
         .timestamp(LocalDateTime.now())
         .status(HttpStatus.TOO_MANY_REQUESTS.value())
-        .error("Too Many Requests")
+        .error("Çok Fazla İstek")
         .message(ex.getMessage())
         .build();
 
@@ -92,7 +131,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response = ErrorResponse.builder()
         .timestamp(LocalDateTime.now())
         .status(HttpStatus.NOT_FOUND.value())
-        .error("Not Found")
+        .error("Bulunamadı")
         .message(ex.getMessage())
         .build();
 
@@ -104,7 +143,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response = ErrorResponse.builder()
         .timestamp(LocalDateTime.now())
         .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-        .error("Internal Server Error")
+        .error("Sunucu Hatası")
         .message("Beklenmeyen bir hata oluştu")
         .build();
 

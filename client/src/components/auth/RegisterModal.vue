@@ -570,7 +570,7 @@ function handleGoogleClick() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1100; /* Higher than Login/Register modal */
+  z-index: 2100; /* Higher than Login/Register modal (2000) */
   padding: 1rem;
   backdrop-filter: blur(2px);
 }

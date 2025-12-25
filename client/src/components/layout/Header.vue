@@ -3,7 +3,7 @@
     <div class="header-container">
       <!-- Logo -->
       <router-link to="/" class="logo" @click="emitTabChange('home')">
-        <img src="/logo.jpeg" alt="Fenerbahçe Sözlük" class="logo-icon" />
+        <img src="/icon.png" alt="Fenerbahçe Sözlük" class="logo-icon" />
         <span class="logo-text">fenerbahçe sözlük</span>
       </router-link>
 
@@ -140,6 +140,7 @@
           </button>
           <div v-if="showMenu" class="dropdown">
             <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
+            <router-link to="/iletisim" @click="showMenu = false">iletişim</router-link>
             <button @click="logout">çıkış</button>
           </div>
         </template>
@@ -165,6 +166,7 @@
           </button>
           <div v-if="showMenu" class="dropdown mobile-dropdown">
             <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
+            <router-link to="/iletisim" @click="showMenu = false">iletişim</router-link>
             <button @click="logout">çıkış</button>
           </div>
         </template>

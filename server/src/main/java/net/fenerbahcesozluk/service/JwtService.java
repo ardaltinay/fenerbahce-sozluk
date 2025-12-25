@@ -23,6 +23,9 @@ public class JwtService {
   @Value("${app.jwt.expiration}")
   private long jwtExpiration;
 
+  @Value("${app.jwt.remember-me-expiration}")
+  private long rememberMeExpiration;
+
   public String extractUsername(String token) {
     return extractClaim(token, Claims::getSubject);
   }
@@ -33,11 +36,20 @@ public class JwtService {
   }
 
   public String generateToken(UserDetails userDetails) {
-    return generateToken(new HashMap<>(), userDetails);
+    return generateToken(new HashMap<>(), userDetails, false);
+  }
+
+  public String generateToken(UserDetails userDetails, boolean rememberMe) {
+    return generateToken(new HashMap<>(), userDetails, rememberMe);
   }
 
   public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-    return buildToken(extraClaims, userDetails, jwtExpiration);
+    return generateToken(extraClaims, userDetails, false);
+  }
+
+  public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, boolean rememberMe) {
+    long expiration = rememberMe ? rememberMeExpiration : jwtExpiration;
+    return buildToken(extraClaims, userDetails, expiration);
   }
 
   private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
@@ -74,5 +86,12 @@ public class JwtService {
   private SecretKey getSignInKey() {
     byte[] keyBytes = Decoders.BASE64.decode(secretKey);
     return Keys.hmacShaKeyFor(keyBytes);
+  }
+
+  /**
+   * Returns the expiration duration in milliseconds based on rememberMe flag
+   */
+  public long getExpirationDuration(boolean rememberMe) {
+    return rememberMe ? rememberMeExpiration : jwtExpiration;
   }
 }

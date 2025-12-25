@@ -528,6 +528,18 @@ onMounted(() => {
   if (route.params.id) {
     fetchData(route.params.id)
   }
+  
+  // Check for draft content from NewTopicModal redirect
+  if (route.query.draft) {
+    try {
+      newEntry.value = decodeURIComponent(route.query.draft)
+      toast.info('Taslak içeriğiniz entry formuna eklendi. Göndermek için "yolla" butonuna basın.')
+      // Remove draft from URL without reloading
+      router.replace({ path: route.path, query: {} })
+    } catch (e) {
+      console.error('Draft decode error:', e)
+    }
+  }
 })
 </script>
 
@@ -613,7 +625,11 @@ onMounted(() => {
   .header-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.75rem;
+  }
+  
+  .badge-lg {
+    margin-bottom: 0.25rem;
   }
 }
 

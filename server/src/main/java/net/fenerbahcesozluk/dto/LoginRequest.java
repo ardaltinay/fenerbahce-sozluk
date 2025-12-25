@@ -17,4 +17,7 @@ public class LoginRequest {
 
   @NotBlank(message = "Şifre boş olamaz")
   private String password;
+
+  @Builder.Default
+  private boolean rememberMe = false;
 }

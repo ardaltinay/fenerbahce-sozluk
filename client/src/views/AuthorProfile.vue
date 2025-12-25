@@ -231,16 +231,131 @@
           
           <div class="settings-section">
             <h3>Güvenlik</h3>
-            <button class="settings-btn">Şifre Değiştir</button>
+            <button class="settings-btn" @click="openChangePasswordModal">Şifre Değiştir</button>
           </div>
           
           <div class="settings-section danger">
             <h3>Tehlikeli Bölge</h3>
-            <button class="settings-btn danger">Hesabı Sil</button>
+            <button class="settings-btn danger" @click="openDeleteAccountModal">Hesabı Sil</button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Change Password Modal -->
+    <Teleport to="body">
+      <div v-if="showChangePasswordModal" class="modal-overlay" @click.self="closeChangePasswordModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h2>Şifre Değiştir</h2>
+            <button class="close-btn" @click="closeChangePasswordModal">
+              <X class="icon" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="handleChangePassword">
+              <div class="form-group">
+                <label>Mevcut Şifre</label>
+                <input 
+                  v-model="passwordForm.currentPassword" 
+                  type="password" 
+                  placeholder="••••••••"
+                  required 
+                />
+              </div>
+              <div class="form-group">
+                <label>Yeni Şifre</label>
+                <input 
+                  v-model="passwordForm.newPassword" 
+                  type="password" 
+                  placeholder="••••••••"
+                  required 
+                />
+                <!-- Password strength -->
+                <div class="password-strength" v-if="passwordForm.newPassword">
+                  <div class="strength-bar">
+                    <div 
+                      class="strength-fill" 
+                      :class="`level-${newPasswordStrength}`"
+                      :style="{ width: (newPasswordStrength * 25) + '%' }"
+                    ></div>
+                  </div>
+                  <span class="strength-text">{{ strengthLabels[newPasswordStrength] }}</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Yeni Şifre (Tekrar)</label>
+                <input 
+                  v-model="passwordForm.confirmPassword" 
+                  type="password" 
+                  placeholder="••••••••"
+                  required 
+                />
+                <span v-if="passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword" class="error-hint">
+                  Şifreler eşleşmiyor
+                </span>
+              </div>
+              <div v-if="passwordError" class="error-box">{{ passwordError }}</div>
+              <div class="form-actions right">
+                <button type="button" class="btn-cancel" @click="closeChangePasswordModal">İptal</button>
+                <button 
+                  type="submit" 
+                  class="btn-save" 
+                  :disabled="passwordLoading || !isPasswordFormValid"
+                >
+                  {{ passwordLoading ? 'Güncelleniyor...' : 'Şifreyi Güncelle' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Delete Account Modal -->
+    <Teleport to="body">
+      <div v-if="showDeleteAccountModal" class="modal-overlay" @click.self="closeDeleteAccountModal">
+        <div class="modal">
+          <div class="modal-header danger-header">
+            <h2>Hesabı Sil</h2>
+            <button class="close-btn" @click="closeDeleteAccountModal">
+              <X class="icon" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="warning-box">
+              <AlertTriangle class="warning-icon" />
+              <div>
+                <strong>Bu işlem geri alınamaz!</strong>
+                <p>Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak kaldırılacaktır.</p>
+              </div>
+            </div>
+            <form @submit.prevent="handleDeleteAccount">
+              <div class="form-group">
+                <label>Şifrenizi Girin</label>
+                <input 
+                  v-model="deleteAccountPassword" 
+                  type="password" 
+                  placeholder="Şifrenizi onaylayın"
+                  required 
+                />
+              </div>
+              <div v-if="deleteAccountError" class="error-box">{{ deleteAccountError }}</div>
+              <div class="form-actions right">
+                <button type="button" class="btn-cancel" @click="closeDeleteAccountModal">Vazgeç</button>
+                <button 
+                  type="submit" 
+                  class="btn-delete" 
+                  :disabled="deleteAccountLoading || !deleteAccountPassword"
+                >
+                  {{ deleteAccountLoading ? 'Siliniyor...' : 'Hesabımı Sil' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Delete Confirmation Modal -->
     <div v-if="deleteModalEntry" class="modal-overlay delete-modal-overlay" @click.self="closeDeleteModal">
@@ -300,11 +415,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { 
   UserPlus, UserCheck, MessageCircle, Settings, Loader2,
-  FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2
+  FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle
 } from 'lucide-vue-next'
 import Header from '@/components/layout/Header.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -560,6 +675,103 @@ watch(() => route.params.username, () => {
   loadUserData()
 })
 
+// ===== CHANGE PASSWORD =====
+const showChangePasswordModal = ref(false)
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+const passwordLoading = ref(false)
+const passwordError = ref('')
+
+const strengthLabels = {
+  0: '',
+  1: 'çok zayıf',
+  2: 'zayıf',
+  3: 'orta',
+  4: 'güçlü',
+}
+
+const newPasswordStrength = computed(() => {
+  const p = passwordForm.newPassword
+  if (!p) return 0
+  let s = 0
+  if (p.length >= 8) s++
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++
+  if (/\d/.test(p)) s++
+  if (/[^a-zA-Z0-9]/.test(p)) s++
+  return s
+})
+
+const isPasswordFormValid = computed(() => {
+  return passwordForm.currentPassword && 
+         passwordForm.newPassword && 
+         passwordForm.newPassword === passwordForm.confirmPassword && 
+         newPasswordStrength.value >= 2
+})
+
+function openChangePasswordModal() {
+  showChangePasswordModal.value = true
+  passwordForm.currentPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordError.value = ''
+}
+
+function closeChangePasswordModal() {
+  showChangePasswordModal.value = false
+}
+
+async function handleChangePassword() {
+  passwordLoading.value = true
+  passwordError.value = ''
+  
+  try {
+    await usersApi.changePassword(passwordForm.currentPassword, passwordForm.newPassword)
+    toast.success('Şifreniz başarıyla güncellendi!')
+    closeChangePasswordModal()
+    showSettings.value = false
+  } catch (err) {
+    passwordError.value = err.response?.data?.message || 'Şifre güncellenemedi'
+  } finally {
+    passwordLoading.value = false
+  }
+}
+
+// ===== DELETE ACCOUNT =====
+const router = useRouter()
+const showDeleteAccountModal = ref(false)
+const deleteAccountPassword = ref('')
+const deleteAccountLoading = ref(false)
+const deleteAccountError = ref('')
+
+function openDeleteAccountModal() {
+  showDeleteAccountModal.value = true
+  deleteAccountPassword.value = ''
+  deleteAccountError.value = ''
+}
+
+function closeDeleteAccountModal() {
+  showDeleteAccountModal.value = false
+}
+
+async function handleDeleteAccount() {
+  deleteAccountLoading.value = true
+  deleteAccountError.value = ''
+  
+  try {
+    await usersApi.deleteAccount(deleteAccountPassword.value)
+    toast.success('Hesabınız silindi. Hoşça kalın!')
+    authStore.logout()
+    router.push('/')
+  } catch (err) {
+    deleteAccountError.value = err.response?.data?.message || 'Hesap silinemedi'
+  } finally {
+    deleteAccountLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadUserData()
 })
@@ -580,8 +792,10 @@ onMounted(() => {
 
 /* Profile Header */
 .profile-header {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1rem;
@@ -731,8 +945,10 @@ onMounted(() => {
 .profile-tabs {
   display: flex;
   gap: 0.5rem;
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 8px;
   padding: 0.5rem;
   margin-bottom: 1rem;
@@ -773,8 +989,10 @@ onMounted(() => {
 
 /* Content */
 .profile-content {
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  background: rgba(26, 26, 46, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 12px;
   min-height: 300px;
 }
@@ -1307,5 +1525,97 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+/* Password Strength */
+.password-strength { margin-top: 0.5rem; }
+.strength-bar {
+  height: 4px;
+  background: #2a2a4a;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+.strength-fill { height: 100%; transition: all 0.2s; }
+.strength-fill.level-1 { background: #ef4444; }
+.strength-fill.level-2 { background: #f59e0b; }
+.strength-fill.level-3 { background: #d4c84a; }
+.strength-fill.level-4 { background: #10b981; }
+.strength-text { font-size: 0.7rem; color: #666; }
+
+.error-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: #ef4444;
+  margin-top: 0.375rem;
+}
+
+.error-box {
+  padding: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+/* Warning Box for Delete Account */
+.warning-box {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.warning-box .warning-icon {
+  width: 24px;
+  height: 24px;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.warning-box strong {
+  color: #ef4444;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.warning-box p {
+  color: #b0b0b0;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.danger-header {
+  border-bottom-color: rgba(239, 68, 68, 0.3);
+}
+
+.danger-header h2 {
+  color: #ef4444;
+}
+
+.btn-save {
+  padding: 0.6rem 1.25rem;
+  background: #d4c84a;
+  color: #0f0f1a;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #e0d454;
+}
+
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

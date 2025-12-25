@@ -99,6 +99,7 @@ async function handleLogin() {
     const result = await authStore.login({
       username: form.email,
       password: form.password,
+      rememberMe: form.remember,
     })
     
     if (result.success) {

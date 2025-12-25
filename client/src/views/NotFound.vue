@@ -36,52 +36,56 @@ import { AlertCircle, Home } from 'lucide-vue-next'
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(212, 200, 74, 0.1);
   border-radius: 24px;
-  padding: 4rem 2rem;
+  padding: 4rem 3rem;
   text-align: center;
   max-width: 450px;
   width: 100%;
 }
 
 .error-code {
-  font-size: 6rem;
+  font-size: 5rem;
   font-weight: 800;
-  color: rgba(212, 200, 74, 0.1);
+  color: rgba(212, 200, 74, 0.15);
   line-height: 1;
-  margin-bottom: -2rem;
+  margin-bottom: 0.5rem;
 }
 
 .error-icon {
-  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
 }
 
 .icon-lg {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   color: #d4c84a;
 }
 
 h2 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   color: #d4c84a;
-  margin-bottom: 1rem;
+  margin: 0 0 0.75rem;
 }
 
 p {
   color: #888;
-  margin-bottom: 2.5rem;
+  margin: 0 0 2rem;
   line-height: 1.6;
+  font-size: 0.95rem;
 }
 
 .home-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 2rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
   background: #d4c84a;
   color: #1a1a2e;
   text-decoration: none;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
   transition: all 0.2s;
 }
 
@@ -91,7 +95,41 @@ p {
 }
 
 .icon-sm {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .not-found-page {
+    padding: 1rem;
+  }
+  
+  .glass-container {
+    padding: 2.5rem 1.5rem;
+    border-radius: 16px;
+  }
+  
+  .error-code {
+    font-size: 4rem;
+  }
+  
+  .icon-lg {
+    width: 48px;
+    height: 48px;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  p {
+    font-size: 0.875rem;
+  }
+  
+  .home-btn {
+    padding: 0.65rem 1.5rem;
+    font-size: 0.85rem;
+  }
 }
 </style>

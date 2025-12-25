@@ -93,7 +93,10 @@ export const useAuthStore = defineStore('auth', () => {
         role: data.role,
       }
       token.value = data.token
-      tokenExpiresAt.value = Date.now() + SESSION_DURATION
+
+      // Use server-provided expiration if available, otherwise use default
+      const expiresIn = data.expiresIn || SESSION_DURATION
+      tokenExpiresAt.value = Date.now() + expiresIn
 
       localStorage.setItem('token', data.token)
       localStorage.setItem('tokenExpiresAt', tokenExpiresAt.value.toString())

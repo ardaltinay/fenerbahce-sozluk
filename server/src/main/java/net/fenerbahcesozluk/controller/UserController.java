@@ -1,6 +1,9 @@
 package net.fenerbahcesozluk.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import net.fenerbahcesozluk.dto.ChangePasswordRequest;
+import net.fenerbahcesozluk.dto.DeleteAccountRequest;
 import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.repository.EntryRepository;
 import net.fenerbahcesozluk.service.UserService;
@@ -47,6 +50,26 @@ public class UserController {
     response.put("createdAt", currentUser.getCreatedAt());
 
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/me/change-password")
+  public ResponseEntity<Map<String, String>> changePassword(
+      @Valid @RequestBody ChangePasswordRequest request,
+      @AuthenticationPrincipal User currentUser) {
+    userService.changePassword(currentUser, request);
+
+    return ResponseEntity.ok(Map.of(
+        "message", "Şifreniz başarıyla güncellendi"));
+  }
+
+  @PostMapping("/me/delete-account")
+  public ResponseEntity<Map<String, String>> deleteOwnAccount(
+      @Valid @RequestBody DeleteAccountRequest request,
+      @AuthenticationPrincipal User currentUser) {
+    userService.deleteOwnAccount(currentUser, request.getPassword());
+
+    return ResponseEntity.ok(Map.of(
+        "message", "Hesabınız başarıyla silindi"));
   }
 
   @DeleteMapping("/{id}")
