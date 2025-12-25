@@ -59,7 +59,7 @@
         </div>
 
         <!-- Stats Link -->
-        <router-link to="/istatistikler" class="nav-tab desktop-only">
+        <router-link to="/istatistikler" class="nav-tab">
           istatistikler
         </router-link>
       </nav>
@@ -161,15 +161,14 @@
         </template>
       </div>
 
-      <!-- Mobile Auth -->
+      <!-- Mobile Actions (Order: new topic - search - theme - avatar) -->
       <div class="mobile-auth">
-        <!-- Mobile Stats Button -->
-        <router-link to="/istatistikler" class="mobile-auth-icon" title="istatistikler">
-          <BarChart3 class="icon" />
-        </router-link>
-
-        <button v-if="authStore.isAuthenticated" class="mobile-auth-icon" @click="showTopicModal = true">
+        <button v-if="authStore.isAuthenticated" class="mobile-auth-icon" @click="showTopicModal = true" title="yeni başlık">
           <Edit3 class="icon" />
+        </button>
+
+        <button class="mobile-auth-icon mobile-search-btn" @click.stop="showMobileSearch = !showMobileSearch" title="ara">
+          <Search class="icon" />
         </button>
 
         <template v-if="!authStore.isAuthenticated">
@@ -194,17 +193,11 @@
           </button>
           <div v-if="showMenu" class="dropdown mobile-dropdown">
             <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
-            <router-link to="/istatistikler" @click="showMenu = false">istatistikler</router-link>
             <router-link to="/iletisim" @click="showMenu = false">iletişim</router-link>
             <button @click="logout">çıkış</button>
           </div>
         </template>
       </div>
-
-      <!-- Mobile Search -->
-      <button class="mobile-search-btn mobile-only" @click="showMobileSearch = !showMobileSearch">
-        <Search class="icon" />
-      </button>
     </div>
 
     <!-- Mobile Search Bar -->
@@ -249,7 +242,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, FileText, User, LogIn, UserPlus, Edit3, Sun, Moon, BarChart3 } from 'lucide-vue-next'
+import { Search, FileText, User, LogIn, UserPlus, Edit3, Sun, Moon } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useTopicsStore } from '@/stores/topics'
