@@ -215,7 +215,7 @@ public class EmailService {
                                         Bu email otomatik olarak gönderilmiştir, lütfen yanıtlamayınız.
                                     </p>
                                     <p style="margin: 0; font-size: 12px; color: #555;">
-                                        © 2024 Fenerbahçe Sözlük. Tüm hakları saklıdır.
+                                        © 2025 Fenerbahçe Sözlük. Tüm hakları saklıdır.
                                     </p>
                                 </td>
                             </tr>
