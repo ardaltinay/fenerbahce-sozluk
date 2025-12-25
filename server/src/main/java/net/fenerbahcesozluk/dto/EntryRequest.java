@@ -20,6 +20,6 @@ public class EntryRequest {
   private UUID topicId;
 
   @NotBlank(message = "Entry içeriği boş olamaz")
-  @Size(min = 1, max = 50000, message = "Entry içeriği 1-50000 karakter arasında olmalıdır")
+  @Size(min = 10, max = 50000, message = "Entry içeriği 10-50000 karakter arasında olmalıdır")
   private String content;
 }

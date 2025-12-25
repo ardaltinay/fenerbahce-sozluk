@@ -30,6 +30,13 @@
                 </button>
               </div>
             </div>
+
+            <!-- Transfermarkt Info Card -->
+            <TransfermarktCard 
+              v-if="topic?.transfermarktId && topic?.topicType"
+              :type="topic.topicType"
+              :transfermarkt-id="topic.transfermarktId"
+            />
       
             <!-- Entries -->
             <div class="entries-container">
@@ -338,6 +345,7 @@ import {
 } from 'lucide-vue-next'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import TransfermarktCard from '@/components/TransfermarktCard.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'

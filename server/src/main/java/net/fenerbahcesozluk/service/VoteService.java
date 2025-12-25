@@ -20,6 +20,7 @@ public class VoteService {
 
   private final VoteRepository voteRepository;
   private final EntryRepository entryRepository;
+  private final StatsService statsService;
 
   @Transactional
   public void vote(VoteRequest request, User user) {
@@ -38,6 +39,7 @@ public class VoteService {
       if (oldVoteType == request.getVoteType()) {
         removeVoteCount(entry.getId(), oldVoteType);
         voteRepository.delete(vote);
+        statsService.evictStatsCache();
         return;
       }
 
@@ -57,6 +59,7 @@ public class VoteService {
       voteRepository.save(vote);
       addVoteCount(entry.getId(), request.getVoteType());
     }
+    statsService.evictStatsCache();
   }
 
   @Transactional

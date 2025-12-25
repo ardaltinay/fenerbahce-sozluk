@@ -28,6 +28,8 @@ public class EntryService {
   private final EntryRepository entryRepository;
   private final TopicRepository topicRepository;
   private final VoteRepository voteRepository;
+  private final StatsService statsService;
+  private final TopicService topicService;
 
   public Page<EntryResponse> getEntriesByTopic(UUID topicId, User currentUser, Pageable pageable) {
     return entryRepository.findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(topicId, pageable)
@@ -83,6 +85,8 @@ public class EntryService {
 
     Entry saved = entryRepository.save(entry);
     topicRepository.incrementEntryCount(topic.getId());
+    statsService.evictStatsCache();
+    topicService.evictTopicCaches();
 
     return toResponse(saved, author);
   }
@@ -126,6 +130,8 @@ public class EntryService {
     entry.setDeleteReason(reason);
     entryRepository.save(entry);
     topicRepository.decrementEntryCount(entry.getTopic().getId());
+    statsService.evictStatsCache();
+    topicService.evictTopicCaches();
   }
 
   private EntryResponse toResponse(Entry entry, User currentUser) {

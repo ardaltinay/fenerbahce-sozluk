@@ -60,6 +60,13 @@ public class Topic extends BaseEntity {
   @Column(name = "delete_reason")
   private String deleteReason;
 
+  // Transfermarkt integration
+  @Column(name = "topic_type")
+  private String topicType; // "player", "club", "general"
+
+  @Column(name = "transfermarkt_id")
+  private String transfermarktId;
+
   @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @Builder.Default
   private List<Entry> entries = new ArrayList<>();

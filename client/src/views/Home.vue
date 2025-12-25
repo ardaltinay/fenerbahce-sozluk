@@ -286,11 +286,11 @@ function handleTabChange(tab) {
 }
 
 
-// Watch for tab query changes
-watch(() => route.query.tab, (newTab) => {
-  if (newTab) {
+// Watch for tab query changes - only trigger if tab actually changed
+watch(() => route.query.tab, (newTab, oldTab) => {
+  if (newTab && newTab !== activeTab.value) {
     handleTabChange(newTab)
-  } else if (!route.query.category) {
+  } else if (!newTab && !route.query.category && activeTab.value !== 'popular') {
     handleTabChange('popular') // Default
   }
 })
@@ -365,10 +365,14 @@ onMounted(() => {
   // Sidebar independent fetch
   topicsStore.fetchSidebarTopics(0, 50) 
   
-  // Initial tab/category check
-  if (route.query.tab) {
-    handleTabChange(route.query.tab)
-  } else if (route.query.category) {
+  // Initial tab/category check - only fetch if there's no query that watch will handle
+  const initialTab = route.query.tab
+  const catId = route.query.category
+  
+  if (initialTab) {
+    // watch will NOT fire on mount, so we need to call handleTabChange here
+    handleTabChange(initialTab)
+  } else if (catId) {
     handleTabChange('channel')
   } else {
     handleTabChange('popular')

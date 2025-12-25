@@ -24,6 +24,8 @@ public class TopicResponse {
   private Long viewCount;
   private boolean isLocked;
   private boolean isPinned;
+  private String topicType;
+  private String transfermarktId;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 }

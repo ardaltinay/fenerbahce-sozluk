@@ -38,6 +38,78 @@
         </span>
       </div>
 
+      <!-- Topic Type -->
+      <div class="form-group">
+        <label>Başlık Türü <span class="optional">(opsiyonel)</span></label>
+        <div class="type-buttons">
+          <button 
+            type="button" 
+            class="type-btn" 
+            :class="{ active: form.topicType === 'general' }"
+            @click="selectTopicType('general')"
+          >
+            Genel
+          </button>
+          <button 
+            type="button" 
+            class="type-btn" 
+            :class="{ active: form.topicType === 'player' }"
+            @click="selectTopicType('player')"
+          >
+            <User class="btn-icon" /> Oyuncu
+          </button>
+          <button 
+            type="button" 
+            class="type-btn" 
+            :class="{ active: form.topicType === 'club' }"
+            @click="selectTopicType('club')"
+          >
+            <Shield class="btn-icon" /> Kulüp
+          </button>
+        </div>
+      </div>
+
+      <!-- Transfermarkt Search -->
+      <div v-if="form.topicType === 'player' || form.topicType === 'club'" class="form-group">
+        <label>Transfermarkt Eşleştirme</label>
+        <div class="tm-search-box">
+          <input 
+            v-model="tmSearchQuery" 
+            type="text" 
+            :placeholder="form.topicType === 'player' ? 'Oyuncu ara...' : 'Kulüp ara...'"
+            @keyup.enter="searchTransfermarkt"
+          />
+          <button type="button" class="search-btn" @click="searchTransfermarkt" :disabled="tmSearching">
+            <Search v-if="!tmSearching" class="btn-icon" />
+            <Loader2 v-else class="btn-icon spin" />
+          </button>
+        </div>
+
+        <!-- Search Results -->
+        <div v-if="tmResults.length > 0" class="tm-results">
+          <div 
+            v-for="result in tmResults" 
+            :key="result.id" 
+            class="tm-result-item"
+            :class="{ selected: form.transfermarktId === result.id }"
+            @click="selectTransfermarkt(result)"
+          >
+            <span class="result-name">{{ result.name }}</span>
+            <span v-if="result.club" class="result-club">{{ result.club.name }}</span>
+            <span v-if="result.country" class="result-club">{{ result.country }}</span>
+            <Check v-if="form.transfermarktId === result.id" class="check-icon" />
+          </div>
+        </div>
+
+        <div v-if="form.transfermarktId" class="tm-selected">
+          <Check class="check-icon" />
+          <span>Seçili: {{ selectedTmName }}</span>
+          <button type="button" class="clear-btn" @click="clearTransfermarkt">
+            <X class="btn-icon" />
+          </button>
+        </div>
+      </div>
+
       <div class="form-group">
         <label>İçerik</label>
         <textarea 
@@ -76,10 +148,10 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { X } from 'lucide-vue-next'
+import { X, User, Shield, Search, Loader2, Check } from 'lucide-vue-next'
 import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, helpers } from '@vuelidate/validators'
-import { categoriesApi, entriesApi } from '@/services/api'
+import { categoriesApi, entriesApi, transfermarktApi } from '@/services/api'
 import { useTopicsStore } from '@/stores/topics'
 import { useRouter } from 'vue-router'
 import SelectBox from '@/components/ui/SelectBox.vue'
@@ -98,8 +170,16 @@ const existingTopicId = ref(null)
 const form = reactive({
   title: '',
   categoryId: null,
-  content: ''
+  content: '',
+  topicType: 'general',
+  transfermarktId: null
 })
+
+// Transfermarkt state
+const tmSearchQuery = ref('')
+const tmSearching = ref(false)
+const tmResults = ref([])
+const selectedTmName = ref('')
 
 const rules = computed(() => ({
   title: {
@@ -112,7 +192,7 @@ const rules = computed(() => ({
   },
   content: {
     required: helpers.withMessage('İçerik alanı zorunludur.', required),
-    minLength: helpers.withMessage(({ $params }) => `İçerik en az ${$params.min} karakter olmalıdır.`, minLength(3))
+    minLength: helpers.withMessage(({ $params }) => `İçerik en az ${$params.min} karakter olmalıdır.`, minLength(10))
   }
 }))
 
@@ -142,7 +222,9 @@ async function handleSubmit() {
   try {
     const newTopic = await topicsStore.createTopic({
       title: form.title,
-      categoryId: form.categoryId
+      categoryId: form.categoryId,
+      topicType: form.topicType !== 'general' ? form.topicType : null,
+      transfermarktId: form.transfermarktId
     })
     
     await entriesApi.create({
@@ -172,11 +254,53 @@ async function handleSubmit() {
 function handleDuplicateConfirm() {
   showDuplicateConfirm.value = false
   emit('close')
-  // Pass entry content as query parameter so user can submit it on existing topic
   router.push({
     path: `/baslik/${existingTopicId.value}`,
     query: form.content ? { draft: encodeURIComponent(form.content) } : {}
   })
+}
+
+// Transfermarkt functions
+function selectTopicType(type) {
+  form.topicType = type
+  if (type === 'general') {
+    form.transfermarktId = null
+    tmResults.value = []
+    selectedTmName.value = ''
+  }
+}
+
+async function searchTransfermarkt() {
+  if (!tmSearchQuery.value.trim()) return
+  
+  tmSearching.value = true
+  tmResults.value = []
+  
+  try {
+    let response
+    if (form.topicType === 'player') {
+      response = await transfermarktApi.searchPlayers(tmSearchQuery.value)
+    } else {
+      response = await transfermarktApi.searchClubs(tmSearchQuery.value)
+    }
+    tmResults.value = response.data.results || []
+  } catch (err) {
+    console.error('Transfermarkt search error:', err)
+  } finally {
+    tmSearching.value = false
+  }
+}
+
+function selectTransfermarkt(result) {
+  form.transfermarktId = result.id
+  selectedTmName.value = result.name
+  tmResults.value = []
+}
+
+function clearTransfermarkt() {
+  form.transfermarktId = null
+  selectedTmName.value = ''
+  tmSearchQuery.value = ''
 }
 </script>
 
@@ -350,5 +474,162 @@ function handleDuplicateConfirm() {
   font-size: 0.8rem;
   color: #666;
   margin-top: 0.25rem;
+}
+
+/* Topic Type Buttons */
+.type-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  background: rgba(26, 26, 46, 0.6);
+  border: 1px solid rgba(255, 237, 0, 0.1);
+  border-radius: 6px;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: all 0.15s;
+}
+
+.type-btn:hover {
+  border-color: rgba(255, 237, 0, 0.3);
+  color: #ccc;
+}
+
+.type-btn.active {
+  background: rgba(212, 200, 74, 0.15);
+  border-color: #d4c84a;
+  color: #d4c84a;
+}
+
+.btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.optional {
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: normal;
+}
+
+/* Transfermarkt Search */
+.tm-search-box {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tm-search-box input {
+  flex: 1;
+}
+
+.search-btn {
+  padding: 0.5rem 0.75rem;
+  background: rgba(212, 200, 74, 0.2);
+  border: 1px solid rgba(255, 237, 0, 0.2);
+  border-radius: 6px;
+  color: #d4c84a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.search-btn:hover:not(:disabled) {
+  background: rgba(212, 200, 74, 0.3);
+}
+
+.search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.tm-results {
+  margin-top: 0.5rem;
+  background: rgba(13, 13, 26, 0.8);
+  border: 1px solid rgba(255, 237, 0, 0.1);
+  border-radius: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.tm-result-item {
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 237, 0, 0.05);
+  transition: background 0.15s;
+}
+
+.tm-result-item:hover {
+  background: rgba(212, 200, 74, 0.1);
+}
+
+.tm-result-item.selected {
+  background: rgba(212, 200, 74, 0.15);
+}
+
+.tm-result-item:last-child {
+  border-bottom: none;
+}
+
+.result-name {
+  font-size: 0.85rem;
+  color: #e0e0e0;
+}
+
+.result-club {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.check-icon {
+  width: 14px;
+  height: 14px;
+  color: #4ade80;
+  margin-left: auto;
+}
+
+.tm-selected {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #4ade80;
+}
+
+.clear-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+}
+
+.clear-btn:hover {
+  color: #ef4444;
 }
 </style>

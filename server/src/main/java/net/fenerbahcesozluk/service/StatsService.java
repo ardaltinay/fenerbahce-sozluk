@@ -7,6 +7,8 @@ import net.fenerbahcesozluk.repository.TopicRepository;
 import net.fenerbahcesozluk.repository.UserRepository;
 import net.fenerbahcesozluk.repository.VoteRepository;
 import net.fenerbahcesozluk.enums.VoteType;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +23,7 @@ public class StatsService {
   private final UserRepository userRepository;
   private final VoteRepository voteRepository;
 
+  @Cacheable(value = "stats", key = "'global'")
   public StatsResponse getStats() {
     long totalEntries = entryRepository.count();
     long totalTopics = topicRepository.count();
@@ -59,5 +62,10 @@ public class StatsService {
         .topAuthors(topAuthors)
         .topTopics(topTopics)
         .build();
+  }
+
+  @CacheEvict(value = "stats", allEntries = true)
+  public void evictStatsCache() {
+    // Cache will be evicted
   }
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.dto.CategoryResponse;
 import net.fenerbahcesozluk.entity.Category;
 import net.fenerbahcesozluk.repository.CategoryRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ public class CategoryService {
 
   private final CategoryRepository categoryRepository;
 
+  @Cacheable(value = "categories", key = "'all'")
   public List<CategoryResponse> getAllCategories() {
     return categoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc()
         .stream()

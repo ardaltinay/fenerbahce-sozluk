@@ -22,4 +22,8 @@ public class TopicRequest {
 
   @NotNull(message = "Kategori seçimi zorunludur")
   private UUID categoryId;
+
+  // Optional Transfermarkt integration
+  private String topicType;
+  private String transfermarktId;
 }

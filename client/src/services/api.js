@@ -121,6 +121,16 @@ export const statsApi = {
   get: () => api.get('/api/stats'),
 }
 
+// Transfermarkt API
+export const transfermarktApi = {
+  searchPlayers: (name) => api.get(`/api/transfermarkt/search/players/${encodeURIComponent(name)}`),
+  searchClubs: (name) => api.get(`/api/transfermarkt/search/clubs/${encodeURIComponent(name)}`),
+  getPlayer: (id) => api.get(`/api/transfermarkt/player/${id}`),
+  getClub: (id) => api.get(`/api/transfermarkt/club/${id}`),
+  linkToTopic: (topicId, type, transfermarktId) => api.post(`/api/transfermarkt/topics/${topicId}/link`, { type, transfermarktId }),
+  unlinkFromTopic: (topicId) => api.delete(`/api/transfermarkt/topics/${topicId}/unlink`),
+}
+
 export default api
 
 

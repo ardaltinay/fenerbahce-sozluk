@@ -1,6 +1,7 @@
 package net.fenerbahcesozluk.service;
 
 import lombok.RequiredArgsConstructor;
+import net.fenerbahcesozluk.dto.CacheablePage;
 import net.fenerbahcesozluk.dto.TopicRequest;
 import net.fenerbahcesozluk.dto.TopicResponse;
 import net.fenerbahcesozluk.entity.Category;
@@ -9,7 +10,11 @@ import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.exception.BusinessException;
 import net.fenerbahcesozluk.repository.CategoryRepository;
 import net.fenerbahcesozluk.repository.TopicRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +30,7 @@ public class TopicService {
 
   private final TopicRepository topicRepository;
   private final CategoryRepository categoryRepository;
+  private final StatsService statsService;
 
   public Page<TopicResponse> getAllTopics(Pageable pageable) {
     return topicRepository.findByIsActiveTrueOrderByCreatedAtDesc(pageable)
@@ -32,14 +38,26 @@ public class TopicService {
   }
 
   public Page<TopicResponse> getPopularTopics(Pageable pageable) {
-    return topicRepository.findPopularTopics(pageable)
+    return getPopularTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
+  }
+
+  @Cacheable(value = "popularTopics", key = "#pageNumber")
+  public CacheablePage<TopicResponse> getPopularTopicsCached(int pageNumber, int pageSize) {
+    Page<TopicResponse> page = topicRepository.findPopularTopics(PageRequest.of(pageNumber, pageSize))
         .map(this::toResponse);
+    return CacheablePage.of(page);
   }
 
   public Page<TopicResponse> getTrendingTopics(Pageable pageable) {
+    return getTrendingTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
+  }
+
+  @Cacheable(value = "trendingTopics", key = "#pageNumber")
+  public CacheablePage<TopicResponse> getTrendingTopicsCached(int pageNumber, int pageSize) {
     LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
-    return topicRepository.findTrends(thirtyDaysAgo, pageable)
+    Page<TopicResponse> page = topicRepository.findTrends(thirtyDaysAgo, PageRequest.of(pageNumber, pageSize))
         .map(this::toResponse);
+    return CacheablePage.of(page);
   }
 
   public Page<TopicResponse> getTopicsByCategory(UUID categoryId, Pageable pageable) {
@@ -75,9 +93,12 @@ public class TopicService {
         .title(request.getTitle())
         .category(category)
         .author(author)
+        .topicType(request.getTopicType())
+        .transfermarktId(request.getTransfermarktId())
         .build();
 
     Topic saved = topicRepository.save(topic);
+    statsService.evictStatsCache();
     return toResponse(saved);
   }
 
@@ -103,6 +124,7 @@ public class TopicService {
     topic.setActive(false);
     topic.setDeleteReason(reason);
     topicRepository.save(topic);
+    statsService.evictStatsCache();
   }
 
   private TopicResponse toResponse(Topic topic) {
@@ -117,9 +139,19 @@ public class TopicService {
         .viewCount(topic.getViewCount())
         .isLocked(topic.isLocked())
         .isPinned(topic.isPinned())
+        .topicType(topic.getTopicType())
+        .transfermarktId(topic.getTransfermarktId())
         .createdAt(topic.getCreatedAt())
         .updatedAt(topic.getUpdatedAt())
         .build();
+  }
+
+  @Caching(evict = {
+      @CacheEvict(value = "trendingTopics", allEntries = true),
+      @CacheEvict(value = "popularTopics", allEntries = true)
+  })
+  public void evictTopicCaches() {
+    // Evict topic list caches
   }
 
 }
