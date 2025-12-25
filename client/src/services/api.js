@@ -116,6 +116,11 @@ export const contactApi = {
   send: (data) => api.post('/api/contact', data),
 }
 
+// Stats API
+export const statsApi = {
+  get: () => api.get('/api/stats'),
+}
+
 export default api
 
 

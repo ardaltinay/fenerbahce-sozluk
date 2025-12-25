@@ -21,4 +21,6 @@ public interface VoteRepository extends JpaRepository<Vote, UUID> {
   List<Vote> findByUserIdAndVoteType(UUID userId, VoteType voteType);
 
   void deleteByEntryIdAndUserId(UUID entryId, UUID userId);
+
+  long countByVoteType(VoteType voteType);
 }

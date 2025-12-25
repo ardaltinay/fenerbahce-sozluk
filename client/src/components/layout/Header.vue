@@ -57,6 +57,11 @@
             </button>
           </div>
         </div>
+
+        <!-- Stats Link -->
+        <router-link to="/istatistikler" class="nav-tab desktop-only">
+          istatistikler
+        </router-link>
       </nav>
 
       <!-- Search with Dropdown -->
@@ -130,6 +135,16 @@
 
       <!-- Auth -->
       <div class="auth-area desktop-only">
+        <!-- Theme Switch -->
+        <button class="theme-switch" @click="toggleTheme" :title="themeStore.theme === 'dark' ? 'Gündüz modu' : 'Gece modu'">
+          <span class="switch-track" :class="{ 'light': themeStore.theme === 'light' }">
+            <span class="switch-thumb">
+              <Sun v-if="themeStore.theme === 'dark'" class="switch-icon" />
+              <Moon v-else class="switch-icon" />
+            </span>
+          </span>
+        </button>
+
         <template v-if="!authStore.isAuthenticated">
           <button class="auth-btn secondary" @click="showLoginModal = true">giriş</button>
           <button class="auth-btn primary" @click="showRegisterModal = true">kayıt</button>
@@ -148,6 +163,11 @@
 
       <!-- Mobile Auth -->
       <div class="mobile-auth">
+        <!-- Mobile Stats Button -->
+        <router-link to="/istatistikler" class="mobile-auth-icon" title="istatistikler">
+          <BarChart3 class="icon" />
+        </router-link>
+
         <button v-if="authStore.isAuthenticated" class="mobile-auth-icon" @click="showTopicModal = true">
           <Edit3 class="icon" />
         </button>
@@ -161,11 +181,20 @@
           </button>
         </template>
         <template v-else>
+          <button class="theme-switch mobile-theme" @click="toggleTheme">
+            <span class="switch-track" :class="{ 'light': themeStore.theme === 'light' }">
+              <span class="switch-thumb">
+                <Sun v-if="themeStore.theme === 'dark'" class="switch-icon" />
+                <Moon v-else class="switch-icon" />
+              </span>
+            </span>
+          </button>
           <button class="user-btn" @click="showMenu = !showMenu">
             <span class="avatar">{{ authStore.username.charAt(0) }}</span>
           </button>
           <div v-if="showMenu" class="dropdown mobile-dropdown">
             <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
+            <router-link to="/istatistikler" @click="showMenu = false">istatistikler</router-link>
             <router-link to="/iletisim" @click="showMenu = false">iletişim</router-link>
             <button @click="logout">çıkış</button>
           </div>
@@ -220,8 +249,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, FileText, User, LogIn, UserPlus, Edit3 } from 'lucide-vue-next'
+import { Search, FileText, User, LogIn, UserPlus, Edit3, Sun, Moon, BarChart3 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { categoriesApi } from '@/services/api'
@@ -234,8 +264,13 @@ const emit = defineEmits(['tab-change'])
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
+
+function toggleTheme() {
+  themeStore.toggleTheme()
+}
 
 const searchQuery = ref('')
 const showMenu = ref(false)
@@ -449,10 +484,14 @@ defineExpose({
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
 }
 
 .nav-tab:hover { color: #d4c84a; }
 .nav-tab.active { color: #d4c84a; border-bottom-color: #d4c84a; }
+.nav-tab.router-link-active { color: #d4c84a; border-bottom-color: #d4c84a; }
 
 .nav-channels {
   position: relative;
@@ -490,18 +529,26 @@ defineExpose({
 }
 
 .create-topic-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
   background: #d4c84a;
   color: #1a1a2e;
   border: none;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   margin-left: 0.5rem;
+  flex-shrink: 0;
+  width: auto;
+}
+
+.create-topic-btn .icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .create-topic-btn:hover {
@@ -705,6 +752,63 @@ defineExpose({
 .dropdown button:hover {
   background: rgba(255, 237, 0, 0.1);
   color: #d4c84a;
+}
+
+/* Theme Switch Button */
+.theme-switch {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-right: 0.75rem;
+}
+
+.switch-track {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  background: #2a2a4a;
+  border-radius: 12px;
+  padding: 2px;
+  transition: all 0.3s ease;
+}
+
+.switch-track.light {
+  background: #e0d454;
+}
+
+.switch-thumb {
+  width: 20px;
+  height: 20px;
+  background: #0d0d1a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.switch-track.light .switch-thumb {
+  transform: translateX(20px);
+  background: #1a1a2e;
+}
+
+.switch-icon {
+  width: 12px;
+  height: 12px;
+  color: #d4c84a;
+}
+
+.switch-track.light .switch-icon {
+  color: #d4c84a;
+}
+
+/* Nav Icon */
+.nav-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 0.25rem;
 }
 
 /* Mobile */

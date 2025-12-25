@@ -480,10 +480,10 @@ onMounted(() => {
 /* Entries */
 .entry {
   padding: 1.5rem;
-  background: rgba(26, 26, 46, 0.45);
+  background: var(--entry-bg, rgba(26, 26, 46, 0.45));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 237, 0, 0.05);
+  border: 1px solid var(--border, rgba(255, 237, 0, 0.05));
   border-radius: 12px;
   margin-bottom: 1rem;
   position: relative;
@@ -493,10 +493,10 @@ onMounted(() => {
 }
 
 .entry:hover {
-  background: rgba(26, 26, 46, 0.55);
-  border-color: rgba(255, 237, 0, 0.15);
+  background: var(--entry-hover, rgba(26, 26, 46, 0.55));
+  border-color: var(--border-hover, rgba(255, 237, 0, 0.15));
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 15px var(--card-shadow, rgba(0, 0, 0, 0.2));
 }
 
 .entry-body {

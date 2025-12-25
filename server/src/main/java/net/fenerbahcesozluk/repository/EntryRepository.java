@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -66,4 +67,7 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
   @Modifying
   @Query("UPDATE Entry e SET e.favoriteCount = e.favoriteCount - 1 WHERE e.id = :entryId AND e.favoriteCount > 0")
   void decrementFavoriteCount(@Param("entryId") UUID entryId);
+
+  @Query("SELECT e.author.username, COUNT(e) FROM Entry e WHERE e.isActive = true GROUP BY e.author.username ORDER BY COUNT(e) DESC")
+  List<Object[]> findTopAuthors(int limit);
 }

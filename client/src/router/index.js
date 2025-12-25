@@ -43,6 +43,11 @@ const routes = [
     component: () => import('@/views/Contact.vue'),
   },
   {
+    path: '/istatistikler',
+    name: 'Statistics',
+    component: () => import('@/views/Statistics.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),

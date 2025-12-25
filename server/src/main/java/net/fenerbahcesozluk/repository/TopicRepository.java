@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,4 +47,7 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
   @Modifying
   @Query("UPDATE Topic t SET t.entryCount = t.entryCount - 1 WHERE t.id = :topicId AND t.entryCount > 0")
   void decrementEntryCount(@Param("topicId") UUID topicId);
+
+  @Query("SELECT t.id, t.title, t.entryCount FROM Topic t WHERE t.isActive = true AND t.entryCount > 0 ORDER BY t.entryCount DESC")
+  List<Object[]> findTopTopics(int limit);
 }
