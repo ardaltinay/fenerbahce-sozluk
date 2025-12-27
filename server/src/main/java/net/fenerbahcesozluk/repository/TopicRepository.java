@@ -20,8 +20,6 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
 
   Page<Topic> findByIsActiveTrueOrderByCreatedAtDesc(Pageable pageable);
 
-  Page<Topic> findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(UUID categoryId, Pageable pageable);
-
   Page<Topic> findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
 
   @Query("SELECT t FROM Topic t WHERE t.isActive = true AND t.entryCount > 0 ORDER BY t.entryCount DESC")

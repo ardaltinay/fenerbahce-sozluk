@@ -174,10 +174,29 @@
 
         <!-- Favorites Tab -->
         <div v-else-if="activeTab === 'favorites'" class="entries-list">
-          <div class="empty-state">
+          <div v-if="userFavorites.length === 0" class="empty-state">
             <Star class="empty-icon" />
             <p>favori entry yok</p>
           </div>
+          <article v-for="entry in userFavorites" :key="entry.id" class="entry-card">
+            <router-link :to="`/baslik/${entry.topicId}`" class="entry-topic">
+              {{ entry.topicTitle }}
+            </router-link>
+            <p class="entry-content" v-html="formatContent(entry.content)"></p>
+            <footer class="entry-footer">
+              <div class="actions">
+                <button :class="{ 'liked': entry.currentUserVote === 'LIKE' }">
+                  <ThumbsUp class="icon-sm" />
+                  <span>{{ entry.likeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }">
+                  <Star class="icon-sm" />
+                  <span>{{ entry.favoriteCount || 0 }}</span>
+                </button>
+              </div>
+              <span class="date">{{ formatDateTime(entry.createdAt) }}</span>
+            </footer>
+          </article>
         </div>
 
         <!-- Topics Tab -->
@@ -438,6 +457,7 @@ const loading = ref(true)
 const isFollowing = ref(false)
 const activeTab = ref('entries')
 const showSettings = ref(false)
+const userFavorites = ref([])
 
 const username = computed(() => route.params.username)
 const isOwnProfile = computed(() => authStore.username === username.value)
@@ -474,7 +494,7 @@ const userTopics = computed(() => {
 // Sync tabs with filtered data
 const tabs = computed(() => [
   { id: 'entries', label: 'entryler', count: userEntries.value.length },
-  { id: 'favorites', label: 'favoriler' },
+  { id: 'favorites', label: 'favoriler', count: userFavorites.value.length },
   { id: 'topics', label: 'başlıklar', count: userTopics.value.length },
 ])
 
@@ -635,6 +655,14 @@ async function loadUserData() {
     // Fetch user's entries using the author ID
     if (author.value.id) {
        await entriesStore.fetchEntriesByAuthor(author.value.id, 0, 10)
+       
+       // Fetch user's favorite entries
+       try {
+         const favResponse = await usersApi.getFavorites(username.value)
+         userFavorites.value = favResponse.data || []
+       } catch (e) {
+         userFavorites.value = []
+       }
     }
     
   } catch (err) {

@@ -16,7 +16,6 @@
                 <span>geri</span>
               </button>
               <div class="header-row">
-                <div v-if="topic?.categoryName" class="badge-lg">{{ topic.categoryName }}</div>
                 <h1>{{ topic?.title }}</h1>
               </div>
               <div class="topic-meta">
@@ -198,7 +197,6 @@
                 <span>geri</span>
               </button>
               <div class="header-row">
-                <div v-if="topic?.categoryName" class="badge-lg">{{ topic.categoryName }}</div>
                 <h1>{{ topic?.title || 'başlık' }}</h1>
               </div>
               <div class="topic-meta">

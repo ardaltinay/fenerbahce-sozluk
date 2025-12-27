@@ -4,11 +4,9 @@ import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.dto.CacheablePage;
 import net.fenerbahcesozluk.dto.TopicRequest;
 import net.fenerbahcesozluk.dto.TopicResponse;
-import net.fenerbahcesozluk.entity.Category;
 import net.fenerbahcesozluk.entity.Topic;
 import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.exception.BusinessException;
-import net.fenerbahcesozluk.repository.CategoryRepository;
 import net.fenerbahcesozluk.repository.TopicRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -29,7 +27,6 @@ import java.util.UUID;
 public class TopicService {
 
   private final TopicRepository topicRepository;
-  private final CategoryRepository categoryRepository;
   private final StatsService statsService;
 
   public Page<TopicResponse> getAllTopics(Pageable pageable) {
@@ -60,11 +57,6 @@ public class TopicService {
     return CacheablePage.of(page);
   }
 
-  public Page<TopicResponse> getTopicsByCategory(UUID categoryId, Pageable pageable) {
-    return topicRepository.findByCategoryIdAndIsActiveTrueOrderByCreatedAtDesc(categoryId, pageable)
-        .map(this::toResponse);
-  }
-
   public Page<TopicResponse> searchTopics(String keyword, Pageable pageable) {
     return topicRepository.searchByTitle(keyword, pageable)
         .map(this::toResponse);
@@ -86,12 +78,8 @@ public class TopicService {
       throw new BusinessException("duplicate_topic:" + t.getId(), HttpStatus.CONFLICT);
     });
 
-    Category category = categoryRepository.findById(request.getCategoryId())
-        .orElseThrow(() -> new BusinessException("Kategori bulunamadı", HttpStatus.NOT_FOUND));
-
     Topic topic = Topic.builder()
         .title(request.getTitle())
-        .category(category)
         .author(author)
         .topicType(request.getTopicType())
         .transfermarktId(request.getTransfermarktId())
@@ -131,8 +119,6 @@ public class TopicService {
     return TopicResponse.builder()
         .id(topic.getId())
         .title(topic.getTitle())
-        .categoryId(topic.getCategory() != null ? topic.getCategory().getId() : null)
-        .categoryName(topic.getCategory() != null ? topic.getCategory().getName() : null)
         .authorId(topic.getAuthor().getId())
         .authorUsername(topic.getAuthor().getUsername())
         .entryCount(topic.getEntryCount())

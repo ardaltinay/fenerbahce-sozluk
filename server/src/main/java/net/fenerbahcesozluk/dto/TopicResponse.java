@@ -16,8 +16,6 @@ public class TopicResponse {
 
   private UUID id;
   private String title;
-  private String categoryName;
-  private UUID categoryId;
   private String authorUsername;
   private UUID authorId;
   private Integer entryCount;

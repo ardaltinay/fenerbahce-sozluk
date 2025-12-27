@@ -7,7 +7,6 @@ export const useTopicsStore = defineStore('topics', () => {
   const topics = ref([])
   const sidebarTopics = ref([])
   const popularTopics = ref([])
-  const channelTopics = ref([])
   const currentTopic = ref(null)
   const loading = ref(false)
   const error = ref(null)
@@ -98,26 +97,6 @@ export const useTopicsStore = defineStore('topics', () => {
     }
   }
 
-  async function fetchTopicsByCategory(categoryId, page = 0, size = 20) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await topicsApi.getByCategory(categoryId, page, size)
-      channelTopics.value = response.data.content || response.data
-      totalPages.value = response.data.totalPages || 1
-
-      if (!currentTopic.value && topics.value.length > 0) {
-        currentTopic.value = topics.value[0]
-      }
-    } catch (err) {
-      console.error('Category topics fetch error:', err.message)
-      error.value = 'Kategori başlıkları yüklenemedi'
-      channelTopics.value = []
-    } finally {
-      loading.value = false
-    }
-  }
-
   async function searchTopics(keyword, page = 0, size = 20) {
     loading.value = true
     error.value = null
@@ -175,7 +154,6 @@ export const useTopicsStore = defineStore('topics', () => {
     topics,
     sidebarTopics,
     popularTopics,
-    channelTopics,
     currentTopic,
     loading,
     error,
@@ -185,7 +163,6 @@ export const useTopicsStore = defineStore('topics', () => {
     fetchPopularTopics,
     fetchTrendingTopics,
     fetchSidebarTopics,
-    fetchTopicsByCategory,
     fetchTopicById,
     searchTopics,
     createTopic,

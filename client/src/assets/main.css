@@ -52,6 +52,16 @@
   box-sizing: border-box;
 }
 
+/* All text lowercase */
+body,
+button,
+input,
+textarea,
+select,
+a {
+  text-transform: lowercase;
+}
+
 /* Theme Variables */
 :root,
 [data-theme="dark"] {

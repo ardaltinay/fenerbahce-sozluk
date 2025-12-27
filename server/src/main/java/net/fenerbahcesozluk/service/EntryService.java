@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -60,6 +61,15 @@ public class EntryService {
   public Page<EntryResponse> getRandomEntries(User currentUser, Pageable pageable) {
     return entryRepository.findRandomEntries(pageable)
         .map(entry -> toResponse(entry, currentUser));
+  }
+
+  public List<EntryResponse> getFavoriteEntriesByUserId(UUID userId, User currentUser) {
+    return voteRepository.findByUserIdAndVoteType(userId, VoteType.FAVORITE)
+        .stream()
+        .map(Vote::getEntry)
+        .filter(entry -> entry.isActive())
+        .map(entry -> toResponse(entry, currentUser))
+        .collect(java.util.stream.Collectors.toList());
   }
 
   public EntryResponse getEntryById(UUID id, User currentUser) {

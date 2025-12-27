@@ -25,19 +25,6 @@
             </span>
           </div>
 
-          <div class="form-group">
-        <label>Kategori</label>
-        <SelectBox 
-          v-model="form.categoryId" 
-          :options="categories" 
-          placeholder="Kategori seçiniz"
-          :error="v$.categoryId.$error"
-        />
-        <span class="error" v-if="v$.categoryId.$error">
-          {{ v$.categoryId.$errors[0].$message }}
-        </span>
-      </div>
-
       <!-- Topic Type -->
       <div class="form-group">
         <label>Başlık Türü <span class="optional">(opsiyonel)</span></label>
@@ -151,10 +138,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { X, User, Shield, Search, Loader2, Check } from 'lucide-vue-next'
 import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, helpers } from '@vuelidate/validators'
-import { categoriesApi, entriesApi, transfermarktApi } from '@/services/api'
+import { entriesApi, transfermarktApi } from '@/services/api'
 import { useTopicsStore } from '@/stores/topics'
 import { useRouter } from 'vue-router'
-import SelectBox from '@/components/ui/SelectBox.vue'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 
 const emit = defineEmits(['close', 'created'])
@@ -163,13 +149,11 @@ const topicsStore = useTopicsStore()
 
 const loading = ref(false)
 const error = ref(null)
-const categories = ref([])
 const showDuplicateConfirm = ref(false)
 const existingTopicId = ref(null)
 
 const form = reactive({
   title: '',
-  categoryId: null,
   content: '',
   topicType: 'general',
   transfermarktId: null
@@ -187,9 +171,6 @@ const rules = computed(() => ({
     minLength: helpers.withMessage(({ $params }) => `Başlık en az ${$params.min} karakter olmalıdır.`, minLength(3)),
     maxLength: helpers.withMessage(({ $params }) => `Başlık en fazla 50 karakter olabilir.`, (val) => val.length <= 50)
   },
-  categoryId: {
-    required: helpers.withMessage('Kategori seçimi zorunludur.', required)
-  },
   content: {
     required: helpers.withMessage('İçerik alanı zorunludur.', required),
     minLength: helpers.withMessage(({ $params }) => `İçerik en az ${$params.min} karakter olmalıdır.`, minLength(10))
@@ -197,20 +178,6 @@ const rules = computed(() => ({
 }))
 
 const v$ = useVuelidate(rules, form)
-
-const loadingCategories = ref(false)
-
-onMounted(async () => {
-  loadingCategories.value = true
-  try {
-    const res = await categoriesApi.getAll()
-    categories.value = res.data
-  } catch (err) {
-    console.error('Categories fetch error:', err)
-  } finally {
-    loadingCategories.value = false
-  }
-})
 
 async function handleSubmit() {
   const isFormValid = await v$.value.$validate()
@@ -222,7 +189,6 @@ async function handleSubmit() {
   try {
     const newTopic = await topicsStore.createTopic({
       title: form.title,
-      categoryId: form.categoryId,
       topicType: form.topicType !== 'general' ? form.topicType : null,
       transfermarktId: form.transfermarktId
     })

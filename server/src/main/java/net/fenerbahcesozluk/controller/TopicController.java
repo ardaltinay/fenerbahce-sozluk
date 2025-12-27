@@ -48,13 +48,6 @@ public class TopicController {
     return ResponseEntity.ok(topicService.getTrendingTopics(pageable));
   }
 
-  @GetMapping("/category/{categoryId}")
-  public ResponseEntity<Page<TopicResponse>> getTopicsByCategory(
-      @PathVariable UUID categoryId,
-      @PageableDefault(size = 20) Pageable pageable) {
-    return ResponseEntity.ok(topicService.getTopicsByCategory(categoryId, pageable));
-  }
-
   @GetMapping("/search")
   public ResponseEntity<Page<TopicResponse>> searchTopics(
       @RequestParam String keyword,

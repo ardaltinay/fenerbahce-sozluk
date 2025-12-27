@@ -58,8 +58,6 @@ export const topicsApi = {
     api.get(`/api/topics/popular`, { params: { page, size } }),
   getTrends: (page = 0, size = 50) =>
     api.get(`/api/topics/trends`, { params: { page, size } }),
-  getByCategory: (categoryId, page = 0, size = 20) =>
-    api.get(`/api/topics/category/${categoryId}`, { params: { page, size } }),
   getById: (id) => api.get(`/api/topics/${id}`),
 
   search: (keyword, page = 0, size = 20) =>
@@ -93,15 +91,10 @@ export const votesApi = {
 
 }
 
-// Categories API
-export const categoriesApi = {
-  getAll: () => api.get('/api/categories'),
-
-}
-
 // Users API
 export const usersApi = {
   getByUsername: (username) => api.get(`/api/users/${username}`),
+  getFavorites: (username) => api.get(`/api/users/${username}/favorites`),
   getMe: () => api.get('/api/users/me'),
   changePassword: (currentPassword, newPassword) =>
     api.post('/api/users/me/change-password', { currentPassword, newPassword }),

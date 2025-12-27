@@ -38,26 +38,6 @@
           son
         </button>
         
-        <!-- Channels Dropdown -->
-        <div class="nav-channels desktop-only" 
-             @mouseenter="showChannels = true" 
-             @mouseleave="showChannels = false"
-        >
-          <button class="nav-tab" :class="{'active': route.query.category}">
-            kanallar
-          </button>
-          <div v-if="showChannels" class="channels-dropdown">
-            <button 
-              v-for="cat in categories" 
-              :key="cat.id" 
-              class="channel-item"
-              @click="selectCategory(cat)"
-            >
-              {{ cat.name }}
-            </button>
-          </div>
-        </div>
-
         <!-- Stats Link -->
         <router-link to="/istatistikler" class="nav-tab">
           istatistikler
@@ -247,7 +227,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
-import { categoriesApi } from '@/services/api'
 import NewTopicModal from '@/components/NewTopicModal.vue'
 import LoginModal from '@/components/auth/LoginModal.vue'
 import RegisterModal from '@/components/auth/RegisterModal.vue'
@@ -271,8 +250,6 @@ const showMobileSearch = ref(false)
 const showSearchDropdown = ref(false)
 const activeTab = ref('')
 const searchContainerRef = ref(null)
-const showChannels = ref(false)
-const categories = ref([])
 const showTopicModal = ref(false)
 const showLoginModal = ref(false)
 const showRegisterModal = ref(false)
@@ -301,10 +278,6 @@ const authorResults = computed(() => {
 
 const searchResults = computed(() => [...topicResults.value, ...authorResults.value])
 
-const activeChannel = computed(() => {
-  return route.query.category ? { id: route.query.category, name: route.query.name } : null
-})
-
 function setTab(tab) {
   activeTab.value = tab
   router.push({ path: '/', query: { tab: tab } })
@@ -315,13 +288,6 @@ function emitTabChange(tab) {
   activeTab.value = ''
   emit('tab-change', tab)
   router.push('/')
-}
-
-async function selectCategory(cat) {
-  showChannels.value = false
-  activeTab.value = '' // Clear other tabs
-  router.push({ path: '/', query: { category: cat.id, name: cat.name, tab: 'channel' } })
-  emit('tab-change', 'channel') 
 }
 
 function handleSearchInput() {
@@ -369,13 +335,6 @@ function handleClickOutside(e) {
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   topicsStore.fetchTopics()
-  
-  try {
-    const res = await categoriesApi.getAll()
-    categories.value = res.data
-  } catch (err) {
-    console.error('Categories fetch error:', err)
-  }
 })
 
 function handleTopicCreated() {

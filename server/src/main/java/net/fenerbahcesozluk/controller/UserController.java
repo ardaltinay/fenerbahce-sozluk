@@ -5,7 +5,10 @@ import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.dto.ChangePasswordRequest;
 import net.fenerbahcesozluk.dto.DeleteAccountRequest;
 import net.fenerbahcesozluk.entity.User;
+import net.fenerbahcesozluk.enums.VoteType;
 import net.fenerbahcesozluk.repository.EntryRepository;
+import net.fenerbahcesozluk.repository.VoteRepository;
+import net.fenerbahcesozluk.service.EntryService;
 import net.fenerbahcesozluk.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +25,8 @@ public class UserController {
 
   private final UserService userService;
   private final EntryRepository entryRepository;
+  private final VoteRepository voteRepository;
+  private final EntryService entryService;
 
   @GetMapping("/{username}")
   public ResponseEntity<Map<String, Object>> getUserByUsername(@PathVariable String username) {
@@ -34,10 +39,19 @@ public class UserController {
     response.put("isActive", user.isActive());
     response.put("createdAt", user.getCreatedAt());
     response.put("entryCount", entryRepository.countByAuthorId(user.getId()));
-    response.put("likeCount", entryRepository.sumLikeCountByAuthorId(user.getId()));
-    response.put("favoriteCount", entryRepository.sumFavoriteCountByAuthorId(user.getId()));
+    response.put("likeCount", voteRepository.countByEntryAuthorIdAndVoteType(user.getId(), VoteType.LIKE));
+    response.put("dislikeCount", voteRepository.countByEntryAuthorIdAndVoteType(user.getId(), VoteType.DISLIKE));
+    response.put("favoriteCount", voteRepository.countByEntryAuthorIdAndVoteType(user.getId(), VoteType.FAVORITE));
 
     return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/{username}/favorites")
+  public ResponseEntity<?> getUserFavorites(
+      @PathVariable String username,
+      @AuthenticationPrincipal User currentUser) {
+    User user = userService.getUserByUsername(username);
+    return ResponseEntity.ok(entryService.getFavoriteEntriesByUserId(user.getId(), currentUser));
   }
 
   @GetMapping("/me")

@@ -81,7 +81,6 @@ onUnmounted(() => {
 .sidebar-header {
   padding: 0.75rem 1rem;
   font-size: 0.7rem;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #666;
   border-bottom: 1px solid #1a1a2e;

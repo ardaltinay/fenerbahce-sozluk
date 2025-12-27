@@ -24,33 +24,13 @@
                 :to="`/baslik/${topic.id}`"
               >
                 <div class="card-content">
-                  <div v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</div>
+                  
                   <h3>{{ topic.title }}</h3>
                 </div>
                 <div class="card-meta">
                   <span>{{ formatCount(topic.entryCount) }} entry</span>
                 </div>
               </router-link>
-            </template>
-            
-            <template v-else-if="activeTab === 'channel'">
-              <router-link 
-                v-for="topic in topicsStore.channelTopics" 
-                :key="topic.id" 
-                class="popular-card"
-                :to="`/baslik/${topic.id}`"
-              >
-                <div class="card-content">
-                  <div v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</div>
-                  <h3>{{ topic.title }}</h3>
-                </div>
-                <div class="card-meta">
-                  <span>{{ formatCount(topic.entryCount) }} entry</span>
-                </div>
-              </router-link>
-              <div v-if="topicsStore.channelTopics.length === 0" class="empty-feed">
-                <p>bu kanalda henüz başlık yok</p>
-              </div>
             </template>
 
             <template v-else-if="activeTab === 'popular'">
@@ -61,7 +41,7 @@
                 :to="`/baslik/${topic.id}`"
               >
                 <div class="card-content">
-                  <div v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</div>
+                  
                   <h3>{{ topic.title }}</h3>
                 </div>
                 <div class="card-meta">
@@ -127,7 +107,7 @@
             @click="openMobileEntries(topic)"
           >
             <div class="card-content">
-              <span v-if="topic.categoryName" class="badge">{{ topic.categoryName }}</span>
+              
               <h3>{{ topic.title }}</h3>
             </div>
             <div class="card-meta">
@@ -276,12 +256,6 @@ function handleTabChange(tab) {
   } else if (tab === 'random') {
     mobileView.value = 'entries'
     entriesStore.fetchRandomEntries(4)
-  } else if (tab === 'channel') {
-    mobileView.value = 'channel'
-    const catId = route.query.category
-    if (catId) {
-      topicsStore.fetchTopicsByCategory(catId, 0, 10)
-    }
   }
 }
 
@@ -290,15 +264,8 @@ function handleTabChange(tab) {
 watch(() => route.query.tab, (newTab, oldTab) => {
   if (newTab && newTab !== activeTab.value) {
     handleTabChange(newTab)
-  } else if (!newTab && !route.query.category && activeTab.value !== 'popular') {
+  } else if (!newTab && activeTab.value !== 'popular') {
     handleTabChange('popular') // Default
-  }
-})
-
-// Watch for route query changes (for category filter)
-watch(() => route.query.category, (newCatId) => {
-  if (newCatId) {
-    handleTabChange('channel')
   }
 })
 
@@ -306,7 +273,6 @@ function getTabTitle() {
   if (activeTab.value === 'son') return 'son entryler'
   if (activeTab.value === 'random') return 'rastgele'
   if (activeTab.value === 'tarihte') return 'tarihte bugün'
-  if (activeTab.value === 'channel') return route.query.name || 'kanal'
   if (activeTab.value === 'gundem') return 'bugünün konuları'
   return 'popüler'
 }
@@ -365,15 +331,11 @@ onMounted(() => {
   // Sidebar independent fetch
   topicsStore.fetchSidebarTopics(0, 50) 
   
-  // Initial tab/category check - only fetch if there's no query that watch will handle
+  // Initial tab check
   const initialTab = route.query.tab
-  const catId = route.query.category
   
   if (initialTab) {
-    // watch will NOT fire on mount, so we need to call handleTabChange here
     handleTabChange(initialTab)
-  } else if (catId) {
-    handleTabChange('channel')
   } else {
     handleTabChange('popular')
   }
