@@ -132,23 +132,11 @@
               </template>
               
               <!-- Pagination -->
-              <div v-if="entriesStore.totalPages > 1" class="pagination">
-                <button 
-                  :disabled="entriesStore.currentPage === 0" 
-                  @click="changePage(entriesStore.currentPage - 1)"
-                  class="page-btn"
-                >
-                  ←
-                </button>
-                <span class="page-info">{{ entriesStore.currentPage + 1 }} / {{ entriesStore.totalPages }}</span>
-                <button 
-                  :disabled="entriesStore.currentPage >= entriesStore.totalPages - 1" 
-                  @click="changePage(entriesStore.currentPage + 1)"
-                  class="page-btn"
-                >
-                  →
-                </button>
-              </div>
+              <Pagination 
+                :current-page="entriesStore.currentPage"
+                :total-pages="entriesStore.totalPages"
+                @change="changePage"
+              />
             </div>
       
             <!-- Entry Form -->
@@ -335,7 +323,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   ArrowLeft, MessageSquare, Eye, ThumbsUp, ThumbsDown, 
@@ -344,10 +332,12 @@ import {
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
 import TransfermarktCard from '@/components/TransfermarktCard.vue'
+import Pagination from '@/components/ui/Pagination.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useWebSocket } from '@/composables/useWebSocket'
 
 const route = useRoute()
 const router = useRouter()
@@ -355,6 +345,7 @@ const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
 const authStore = useAuthStore()
 const toast = useToast()
+const { connect, subscribeToTopic, unsubscribeFromTopic } = useWebSocket()
 
 function goBack() {
   if (window.history.length > 2) {
@@ -501,6 +492,10 @@ async function submitEntry() {
   
   if (result.success) {
     newEntry.value = ''
+    // Refresh sidebar to show updated entry counts
+    topicsStore.fetchSidebarTopics(0, 50)
+    // Also refresh topic info for entry count
+    topicsStore.fetchTopicById(topic.value.id)
   } else {
     toast.error(result.message || 'Entry gönderilemedi')
   }
@@ -545,6 +540,47 @@ onMounted(() => {
     } catch (e) {
       console.error('Draft decode error:', e)
     }
+  }
+})
+
+// WebSocket for real-time updates
+let currentSubscribedTopicId = null
+
+function setupWebSocket(topicId) {
+  if (currentSubscribedTopicId) {
+    unsubscribeFromTopic(currentSubscribedTopicId)
+  }
+  
+  connect()
+  subscribeToTopic(topicId, (newEntry) => {
+    // Only add if not already in list (avoid duplicates from own entries)
+    const exists = entriesStore.entries.some(e => e.id === newEntry.id)
+    if (!exists) {
+      entriesStore.entries.push(newEntry)
+      // Update topic entry count
+      if (topic.value) {
+        topic.value.entryCount = (topic.value.entryCount || 0) + 1
+      }
+    }
+  })
+  currentSubscribedTopicId = topicId
+}
+
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    setupWebSocket(newId)
+  }
+})
+
+onMounted(() => {
+  if (route.params.id) {
+    setupWebSocket(route.params.id)
+  }
+})
+
+onUnmounted(() => {
+  if (currentSubscribedTopicId) {
+    unsubscribeFromTopic(currentSubscribedTopicId)
   }
 })
 </script>

@@ -49,14 +49,16 @@ public class SecurityConfig {
             .requestMatchers(
                 "/api/auth/**",
                 "/api/public/**",
+                "/ws/**",
                 "/error",
                 "/actuator/health")
             .permitAll()
             // Public read endpoints (GET only)
             .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/entries/**").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/transfermarkt/**").permitAll()
             .anyRequest().authenticated())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

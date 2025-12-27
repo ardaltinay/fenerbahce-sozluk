@@ -17,14 +17,15 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTopicsStore } from '@/stores/topics'
+import { useWebSocket } from '@/composables/useWebSocket'
 
 const router = useRouter()
 const route = useRoute()
 const topicsStore = useTopicsStore()
-const refreshInterval = ref(null)
+const { connect, subscribeToSidebar } = useWebSocket()
 
 function navigateToTopic(topic) {
   // Always navigate to the topic detail page
@@ -44,26 +45,18 @@ function formatCount(n) {
   return n >= 1000 ? Math.floor(n/1000) + 'b' : n
 }
 
-function fetchTopics() {
-  topicsStore.fetchSidebarTopics(0, 50)
-}
-
 onMounted(() => {
   // Ensure sidebar topics are loaded
   if (topicsStore.sidebarTopics.length === 0) {
-    fetchTopics()
+    topicsStore.fetchSidebarTopics(0, 50)
   }
-
-  // Auto Refresh every 60 seconds
-  refreshInterval.value = setInterval(() => {
-    fetchTopics()
-  }, 60000)
-})
-
-onUnmounted(() => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value)
-  }
+  
+  // Connect to WebSocket and subscribe for sidebar updates
+  connect()
+  subscribeToSidebar(() => {
+    // Refresh sidebar when new entry is created anywhere
+    topicsStore.fetchSidebarTopics(0, 50)
+  })
 })
 </script>
 

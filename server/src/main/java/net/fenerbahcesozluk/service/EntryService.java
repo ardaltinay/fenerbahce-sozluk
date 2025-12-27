@@ -31,6 +31,7 @@ public class EntryService {
   private final VoteRepository voteRepository;
   private final StatsService statsService;
   private final TopicService topicService;
+  private final WebSocketService webSocketService;
 
   public Page<EntryResponse> getEntriesByTopic(UUID topicId, User currentUser, Pageable pageable) {
     return entryRepository.findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(topicId, pageable)
@@ -98,7 +99,13 @@ public class EntryService {
     statsService.evictStatsCache();
     topicService.evictTopicCaches();
 
-    return toResponse(saved, author);
+    EntryResponse response = toResponse(saved, author);
+
+    // Broadcast to WebSocket subscribers
+    webSocketService.broadcastNewEntry(topic.getId(), response);
+    webSocketService.broadcastSidebarUpdate();
+
+    return response;
   }
 
   @Transactional

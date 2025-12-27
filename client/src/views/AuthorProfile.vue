@@ -153,23 +153,11 @@
             </template>
           </article>
             <!-- Pagination -->
-            <div v-if="entriesStore.totalPages > 1" class="pagination">
-              <button 
-                :disabled="entriesStore.currentPage === 0" 
-                @click="changePage(entriesStore.currentPage - 1)"
-                class="page-btn"
-              >
-                ←
-              </button>
-              <span class="page-info">{{ entriesStore.currentPage + 1 }} / {{ entriesStore.totalPages }}</span>
-              <button 
-                :disabled="entriesStore.currentPage >= entriesStore.totalPages - 1" 
-                @click="changePage(entriesStore.currentPage + 1)"
-                class="page-btn"
-              >
-                →
-              </button>
-            </div>
+            <Pagination 
+              :current-page="entriesStore.currentPage"
+              :total-pages="entriesStore.totalPages"
+              @change="changePage"
+            />
           </div>
 
         <!-- Favorites Tab -->
@@ -441,6 +429,7 @@ import {
   FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle
 } from 'lucide-vue-next'
 import Header from '@/components/layout/Header.vue'
+import Pagination from '@/components/ui/Pagination.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
 import { useTopicsStore } from '@/stores/topics'
@@ -493,7 +482,7 @@ const userTopics = computed(() => {
 
 // Sync tabs with filtered data
 const tabs = computed(() => [
-  { id: 'entries', label: 'entryler', count: userEntries.value.length },
+  { id: 'entries', label: 'entryler', count: author.value.entryCount || 0 },
   { id: 'favorites', label: 'favoriler', count: userFavorites.value.length },
   { id: 'topics', label: 'başlıklar', count: userTopics.value.length },
 ])
