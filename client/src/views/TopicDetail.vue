@@ -1352,10 +1352,9 @@ textarea:focus {
 <style scoped>
 /* Edit Mode & Buttons */
 .edit-mode {
-  padding: 1rem;
-  background: rgba(255, 237, 0, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(212, 200, 74, 0.2);
+  padding: 0.5rem 0;
+  background: transparent;
+  border: none;
   margin-bottom: 1rem;
 }
 
