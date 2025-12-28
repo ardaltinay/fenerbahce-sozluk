@@ -100,7 +100,7 @@
             </template>
 
             <!-- Authors -->
-            <template v-if="activeFilter === 'authors'">
+            <template v-if="activeFilter === 'all' || activeFilter === 'authors'">
               <router-link 
                 v-for="author in authorResults" 
                 :key="author.username"
@@ -110,7 +110,7 @@
                 <div class="author-avatar">{{ author.username.charAt(0).toUpperCase() }}</div>
                 <div class="result-content">
                   <h3>{{ author.username }}</h3>
-                  <span class="result-meta">{{ author.entryCount }} entry</span>
+                  <span class="result-meta">{{ author.entryCount || 0 }} entry</span>
                 </div>
               </router-link>
             </template>
@@ -128,6 +128,7 @@ import { Search as SearchIcon, X, AlertCircle, FileText, MessageSquare, User } f
 import Header from '@/components/layout/Header.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
+import { usersApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -161,17 +162,25 @@ const entryResults = computed(() => {
   )
 })
 
+// Author search now fetches from API
+const authorSearchResults = ref([])
+
 const authorResults = computed(() => {
-  if (!searchQuery.value) return []
-  const getUsername = (e) => e.authorUsername || e.author?.username
-  const authors = [...new Set(entriesStore.entries.map(getUsername).filter(Boolean))]
-  return authors
-    .filter(a => a.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    .map(username => ({
-      username,
-      entryCount: entriesStore.entries.filter(e => getUsername(e) === username).length
-    }))
+  return authorSearchResults.value
 })
+
+async function fetchUserSearch(query) {
+  if (!query || query.length < 2) {
+    authorSearchResults.value = []
+    return
+  }
+  try {
+    const response = await usersApi.search(query)
+    authorSearchResults.value = response.data || []
+  } catch (e) {
+    authorSearchResults.value = []
+  }
+}
 
 function getFilterCount(id) {
   if (id === 'all') return results.value.length
@@ -196,6 +205,11 @@ function truncate(text, len) {
 watch(() => route.query.q, (newQuery) => {
   searchQuery.value = newQuery || ''
 })
+
+// Watch searchQuery to fetch users from API
+watch(searchQuery, (newQuery) => {
+  fetchUserSearch(newQuery)
+}, { immediate: true })
 
 onMounted(() => {
   topicsStore.fetchTopics()
@@ -384,6 +398,10 @@ onMounted(() => {
 .skeleton-line.short { width: 40%; margin-bottom: 0; }
 
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 3rem 1rem;
 }

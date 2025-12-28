@@ -25,6 +25,19 @@ public class UserService {
         .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı: " + username, HttpStatus.NOT_FOUND));
   }
 
+  public java.util.List<java.util.Map<String, Object>> searchUsers(String query) {
+    java.util.List<User> users = userRepository.findByUsernameContainingIgnoreCaseAndIsActiveTrue(query);
+    java.util.List<java.util.Map<String, Object>> results = new java.util.ArrayList<>();
+    for (User user : users) {
+      java.util.Map<String, Object> userMap = new java.util.HashMap<>();
+      userMap.put("username", user.getUsername());
+      userMap.put("role", user.getRole().name());
+      userMap.put("createdAt", user.getCreatedAt());
+      results.add(userMap);
+    }
+    return results;
+  }
+
   public User getUserById(UUID id) {
     return userRepository.findById(id)
         .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
@@ -106,5 +119,63 @@ public class UserService {
     userToBan.setBannedUntil(java.time.LocalDateTime.now().plusSeconds(durationSeconds));
     userToBan.setBanReason(reason);
     userRepository.save(userToBan);
+  }
+
+  @Transactional
+  public void promoteToModerator(UUID userId, User currentUser) {
+    // Only ADMIN can promote users
+    if (!currentUser.getRole().equals(Role.ADMIN)) {
+      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+    }
+
+    User userToPromote = userRepository.findById(userId)
+        .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+
+    // Cannot promote yourself
+    if (userId.equals(currentUser.getId())) {
+      throw new BusinessException("Kendi rolünüzü değiştiremezsiniz", HttpStatus.BAD_REQUEST);
+    }
+
+    // Cannot promote admins
+    if (userToPromote.getRole().equals(Role.ADMIN)) {
+      throw new BusinessException("Admin kullanıcının rolü değiştirilemez", HttpStatus.FORBIDDEN);
+    }
+
+    // Already moderator
+    if (userToPromote.getRole().equals(Role.MODERATOR)) {
+      throw new BusinessException("Kullanıcı zaten moderatör", HttpStatus.BAD_REQUEST);
+    }
+
+    userToPromote.setRole(Role.MODERATOR);
+    userRepository.save(userToPromote);
+  }
+
+  @Transactional
+  public void demoteToUser(UUID userId, User currentUser) {
+    // Only ADMIN can demote users
+    if (!currentUser.getRole().equals(Role.ADMIN)) {
+      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+    }
+
+    User userToDemote = userRepository.findById(userId)
+        .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+
+    // Cannot demote yourself
+    if (userId.equals(currentUser.getId())) {
+      throw new BusinessException("Kendi rolünüzü değiştiremezsiniz", HttpStatus.BAD_REQUEST);
+    }
+
+    // Cannot demote admins
+    if (userToDemote.getRole().equals(Role.ADMIN)) {
+      throw new BusinessException("Admin kullanıcının rolü değiştirilemez", HttpStatus.FORBIDDEN);
+    }
+
+    // Already user
+    if (userToDemote.getRole().equals(Role.USER)) {
+      throw new BusinessException("Kullanıcı zaten normal kullanıcı", HttpStatus.BAD_REQUEST);
+    }
+
+    userToDemote.setRole(Role.USER);
+    userRepository.save(userToDemote);
   }
 }

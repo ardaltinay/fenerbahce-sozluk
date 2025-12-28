@@ -64,6 +64,8 @@ export const topicsApi = {
     api.get(`/api/topics/search`, { params: { keyword, page, size } }),
   create: (topicData) => api.post('/api/topics', topicData),
   delete: (id, reason) => api.delete(`/api/topics/${id}`, { params: { reason } }),
+  updateTransfermarkt: (id, transfermarktId, topicType) =>
+    api.put(`/api/topics/${id}/transfermarkt`, { transfermarktId, topicType }),
 }
 
 // Entries API
@@ -78,8 +80,14 @@ export const entriesApi = {
     api.get(`/api/entries/latest`, { params: { page, size } }),
   getRandom: (page = 0, size = 3) =>
     api.get(`/api/entries/random`, { params: { page, size } }),
+  getRandomPopular: () =>
+    api.get(`/api/entries/random-popular`),
 
   getById: (id) => api.get(`/api/entries/${id}`),
+  getTopLikedByAuthor: (authorId, limit = 5) =>
+    api.get(`/api/entries/author/${authorId}/top-liked`, { params: { limit } }),
+  getTopFavoritedByAuthor: (authorId, limit = 5) =>
+    api.get(`/api/entries/author/${authorId}/top-favorited`, { params: { limit } }),
   create: (entryData) => api.post('/api/entries', entryData),
   update: (id, content) => api.put(`/api/entries/${id}`, { content }),
   delete: (id, reason) => api.delete(`/api/entries/${id}`, { params: { reason } }),
@@ -96,12 +104,15 @@ export const usersApi = {
   getByUsername: (username) => api.get(`/api/users/${username}`),
   getFavorites: (username) => api.get(`/api/users/${username}/favorites`),
   getMe: () => api.get('/api/users/me'),
+  search: (query) => api.get('/api/users/search', { params: { q: query } }),
   changePassword: (currentPassword, newPassword) =>
     api.post('/api/users/me/change-password', { currentPassword, newPassword }),
   deleteAccount: (password) =>
     api.post('/api/users/me/delete-account', { password }),
   delete: (id) => api.delete(`/api/users/${id}`),
   ban: (id, duration, reason) => api.post(`/api/users/${id}/ban`, { duration, reason }),
+  promote: (id) => api.post(`/api/users/${id}/promote`),
+  demote: (id) => api.post(`/api/users/${id}/demote`),
 }
 
 // Contact API

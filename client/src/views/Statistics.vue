@@ -80,7 +80,7 @@
           </div>
           <div class="ranking-list">
             <router-link 
-              v-for="(author, index) in stats.topAuthors" 
+              v-for="(author, index) in stats.topAuthors.slice(0, 10)" 
               :key="author.username"
               :to="`/biri/${author.username}`"
               class="ranking-item"
@@ -99,7 +99,7 @@
           </div>
           <div class="ranking-list">
             <router-link 
-              v-for="(topic, index) in stats.topTopics" 
+              v-for="(topic, index) in stats.topTopics.slice(0, 10)" 
               :key="topic.id"
               :to="`/baslik/${topic.id}`"
               class="ranking-item"

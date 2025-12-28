@@ -26,4 +26,5 @@ public class TopicResponse {
   private String transfermarktId;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+  private LocalDateTime lastActivityAt;
 }

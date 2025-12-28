@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -76,11 +77,37 @@ public class EntryController {
     return ResponseEntity.ok(entryService.getRandomEntries(currentUser, pageable));
   }
 
+  @GetMapping("/random-popular")
+  public ResponseEntity<EntryResponse> getRandomPopularEntry(
+      @AuthenticationPrincipal User currentUser) {
+    EntryResponse entry = entryService.getRandomPopularEntry(currentUser);
+    if (entry == null) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.ok(entry);
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<EntryResponse> getEntryById(
       @PathVariable UUID id,
       @AuthenticationPrincipal User currentUser) {
     return ResponseEntity.ok(entryService.getEntryById(id, currentUser));
+  }
+
+  @GetMapping("/author/{authorId}/top-liked")
+  public ResponseEntity<List<EntryResponse>> getTopLikedByAuthor(
+      @PathVariable UUID authorId,
+      @AuthenticationPrincipal User currentUser,
+      @RequestParam(defaultValue = "5") int limit) {
+    return ResponseEntity.ok(entryService.getTopLikedByAuthor(authorId, currentUser, limit));
+  }
+
+  @GetMapping("/author/{authorId}/top-favorited")
+  public ResponseEntity<List<EntryResponse>> getTopFavoritedByAuthor(
+      @PathVariable UUID authorId,
+      @AuthenticationPrincipal User currentUser,
+      @RequestParam(defaultValue = "5") int limit) {
+    return ResponseEntity.ok(entryService.getTopFavoritedByAuthor(authorId, currentUser, limit));
   }
 
   @PostMapping

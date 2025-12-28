@@ -269,12 +269,26 @@ const topicResults = computed(() => {
   )
 })
 
+// Author search from API
+const apiAuthorResults = ref([])
+
 const authorResults = computed(() => {
-  if (searchQuery.value.length < 2) return []
-  const getUsername = (e) => e.authorUsername || e.author?.username
-  const authors = [...new Set(entriesStore.entries.map(getUsername).filter(Boolean))]
-  return authors.filter(a => a.toLowerCase().includes(searchQuery.value.toLowerCase()))
+  return apiAuthorResults.value.map(u => u.username)
 })
+
+// Fetch authors from API when searchQuery changes
+watch(searchQuery, async (newQuery) => {
+  if (newQuery.length < 2) {
+    apiAuthorResults.value = []
+    return
+  }
+  try {
+    const response = await usersApi.search(newQuery)
+    apiAuthorResults.value = response.data || []
+  } catch (e) {
+    apiAuthorResults.value = []
+  }
+}, { immediate: true })
 
 const searchResults = computed(() => [...topicResults.value, ...authorResults.value])
 

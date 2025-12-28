@@ -22,8 +22,23 @@
                 <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || 0 }} entry</span>
               </div>
               <!-- Topic Actions -->
-              <div class="topic-actions" v-if="topic && authStore.canDeleteTopic(topic)">
-                <button class="topic-delete-btn" @click="openTopicDeleteModal" title="başlığı sil">
+              <div class="topic-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
+                <!-- Add Transfermarkt Button (only if no transfermarkt exists) -->
+                <button 
+                  v-if="authStore.isModeratorOrAdmin && !topic.transfermarktId" 
+                  class="topic-edit-btn" 
+                  @click="showTransfermarktModal = true"
+                  title="transfermarkt künyesi ekle"
+                >
+                  <Edit3 class="icon-sm" />
+                  <span>künye ekle</span>
+                </button>
+                <button 
+                  v-if="authStore.canDeleteTopic(topic)" 
+                  class="topic-delete-btn" 
+                  @click="openTopicDeleteModal" 
+                  title="başlığı sil"
+                >
                   <Trash2 class="icon-sm" />
                   <span>sil</span>
                 </button>
@@ -36,6 +51,81 @@
               :type="topic.topicType"
               :transfermarkt-id="topic.transfermarktId"
             />
+
+            <!-- Transfermarkt Edit Modal -->
+            <div v-if="showTransfermarktModal" class="modal-overlay" @click.self="showTransfermarktModal = false">
+              <div class="modal">
+                <div class="modal-header">
+                  <h3>Transfermarkt Künyesi Ekle</h3>
+                  <button class="close-btn" @click="showTransfermarktModal = false">
+                    <X class="icon" />
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label>Künye Tipi</label>
+                    <!-- Custom Dropdown with Tailwind -->
+                    <div class="relative">
+                      <button 
+                        type="button"
+                        @click="dropdownOpen = !dropdownOpen"
+                        class="w-full flex items-center justify-between px-4 py-3 bg-[#0d0d1a] border border-[#2a2a4a] rounded-lg text-[#e0e0e0] text-sm cursor-pointer hover:border-[#58a6ff] transition-colors"
+                      >
+                        <span :class="transfermarktForm.topicType ? 'text-[#e0e0e0]' : 'text-[#666]'">
+                          {{ topicTypeLabel }}
+                        </span>
+                        <ChevronDown class="w-4 h-4 text-[#888] transition-transform" :class="{ 'rotate-180': dropdownOpen }" />
+                      </button>
+                      
+                      <!-- Dropdown Menu -->
+                      <div 
+                        v-if="dropdownOpen" 
+                        class="absolute z-50 w-full mt-1 bg-[#0d0d1a] border border-[#2a2a4a] rounded-lg shadow-xl overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          @click="selectTopicType('')"
+                          class="w-full px-4 py-3 text-left text-sm text-[#666] hover:bg-[#1a1a2e] transition-colors"
+                        >
+                          Seçiniz...
+                        </button>
+                        <button
+                          type="button"
+                          @click="selectTopicType('player')"
+                          class="w-full px-4 py-3 text-left text-sm text-[#e0e0e0] hover:bg-[#1a1a2e] transition-colors"
+                          :class="{ 'bg-[#1a1a2e]': transfermarktForm.topicType === 'player' }"
+                        >
+                          Oyuncu
+                        </button>
+                        <button
+                          type="button"
+                          @click="selectTopicType('club')"
+                          class="w-full px-4 py-3 text-left text-sm text-[#e0e0e0] hover:bg-[#1a1a2e] transition-colors"
+                          :class="{ 'bg-[#1a1a2e]': transfermarktForm.topicType === 'club' }"
+                        >
+                          Kulüp
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Transfermarkt id</label>
+                    <input 
+                      v-model="transfermarktForm.transfermarktId" 
+                      type="text" 
+                      placeholder="örn: 8263 (oyuncu ID)"
+                    />
+                    <small>transfermarkt.com URL'sinden id'yi alın</small>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn-secondary" @click="showTransfermarktModal = false">İptal</button>
+                  <button class="btn-primary" @click="saveTransfermarkt" :disabled="!transfermarktForm.topicType || !transfermarktForm.transfermarktId">
+                    Kaydet
+                  </button>
+                </div>
+              </div>
+            </div>
       
             <!-- Entries -->
             <div class="entries-container">
@@ -327,7 +417,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   ArrowLeft, MessageSquare, Eye, ThumbsUp, ThumbsDown, 
-  Star, Share2, Loader2, PenSquare, Edit2, Trash2
+  Star, Share2, Loader2, PenSquare, Edit2, Edit3, Trash2, X, ChevronDown
 } from 'lucide-vue-next'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
@@ -338,6 +428,7 @@ import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { topicsApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -358,6 +449,43 @@ function goBack() {
 const loading = ref(true)
 const newEntry = ref('')
 const submitting = ref(false)
+
+// Transfermarkt modal
+const showTransfermarktModal = ref(false)
+const dropdownOpen = ref(false)
+const transfermarktForm = ref({
+  topicType: '',
+  transfermarktId: ''
+})
+
+const topicTypeLabel = computed(() => {
+  const labels = {
+    'player': 'Oyuncu',
+    'club': 'Kulüp'
+  }
+  return labels[transfermarktForm.value.topicType] || 'Seçiniz...'
+})
+
+function selectTopicType(value) {
+  transfermarktForm.value.topicType = value
+  dropdownOpen.value = false
+}
+
+async function saveTransfermarkt() {
+  try {
+    await topicsApi.updateTransfermarkt(
+      topicId.value, 
+      transfermarktForm.value.transfermarktId, 
+      transfermarktForm.value.topicType
+    )
+    toast.success('Künye eklendi!')
+    showTransfermarktModal.value = false
+    // Refresh topic data
+    await topicsStore.fetchTopicById(topicId.value)
+  } catch (error) {
+    toast.error('Künye eklenirken bir hata oluştu')
+  }
+}
 
 const topicId = computed(() => route.params.id)
 const topic = computed(() => topicsStore.currentTopic)
@@ -545,6 +673,7 @@ onMounted(() => {
 
 // WebSocket for real-time updates
 let currentSubscribedTopicId = null
+const PAGE_SIZE = 10
 
 function setupWebSocket(topicId) {
   if (currentSubscribedTopicId) {
@@ -556,11 +685,22 @@ function setupWebSocket(topicId) {
     // Only add if not already in list (avoid duplicates from own entries)
     const exists = entriesStore.entries.some(e => e.id === newEntry.id)
     if (!exists) {
-      entriesStore.entries.push(newEntry)
       // Update topic entry count
       if (topic.value) {
         topic.value.entryCount = (topic.value.entryCount || 0) + 1
       }
+      
+      // Check if we're on the last page
+      const isLastPage = entriesStore.currentPage >= entriesStore.totalPages - 1
+      
+      // If on last page and current entries are less than page size, add directly
+      if (isLastPage && entriesStore.entries.length < PAGE_SIZE) {
+        entriesStore.entries.push(newEntry)
+      } else if (isLastPage) {
+        // Last page but full - need to create new page, refresh to update pagination
+        entriesStore.fetchEntriesByTopic(topic.value.id, entriesStore.currentPage, PAGE_SIZE)
+      }
+      // If not on last page, don't add - user will see it when they navigate to last page
     }
   })
   currentSubscribedTopicId = topicId
@@ -717,6 +857,8 @@ onUnmounted(() => {
 
 /* Topic Actions */
 .topic-actions {
+  display: flex;
+  gap: 0.5rem;
   margin-top: 0.75rem;
 }
 
@@ -736,6 +878,24 @@ onUnmounted(() => {
 
 .topic-delete-btn:hover {
   background: rgba(248, 81, 73, 0.15);
+}
+
+.topic-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid #58a6ff;
+  border-radius: 6px;
+  color: #58a6ff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.topic-edit-btn:hover {
+  background: rgba(88, 166, 255, 0.15);
 }
 
 /* Entries Container */
@@ -1036,5 +1196,155 @@ textarea:focus {
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e0e0e0;
+}
+
+.modal-header .close-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.modal-header .close-btn:hover {
+  color: #fff;
+}
+
+.modal-body {
+  padding: 1.25rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0d0d1a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.form-group select,
+.form-select {
+  width: 100%;
+  padding: 0.75rem;
+  padding-right: 2.5rem;
+  background: #0d0d1a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='%23888'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.form-group select option,
+.form-select option {
+  background: #0d0d1a;
+  color: #e0e0e0;
+  padding: 0.5rem;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #2a2a4a;
+}
+
+.modal-footer .btn-primary,
+.modal-footer .btn-secondary {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modal-footer .btn-primary {
+  background: #58a6ff;
+  border: none;
+  color: #fff;
+}
+
+.modal-footer .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-footer .btn-secondary {
+  background: transparent;
+  border: 1px solid #444;
+  color: #888;
 }
 </style>

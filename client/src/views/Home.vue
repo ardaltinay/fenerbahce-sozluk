@@ -15,7 +15,7 @@
           </div>
 
           <!-- Feed Content -->
-          <div :class="{ 'popular-grid': activeTab !== 'son' && activeTab !== 'random' }">
+          <div :class="{ 'popular-grid': activeTab !== 'son' && activeTab !== 'random' && activeTab !== 'popular' }">
             <template v-if="activeTab === 'gundem'">
               <router-link 
                 v-for="topic in topicsStore.topics" 
@@ -34,21 +34,51 @@
             </template>
 
             <template v-else-if="activeTab === 'popular'">
-              <router-link 
-                v-for="topic in topicsStore.popularTopics" 
-                :key="topic.id" 
-                class="popular-card"
-                :to="`/baslik/${topic.id}`"
-              >
-                <div class="card-content">
-                  
-                  <h3>{{ topic.title }}</h3>
+              <!-- Single random popular entry like rastgele -->
+              <div class="entries-feed">
+                <div class="random-actions top-actions" style="margin-bottom: 2rem;">
+                  <button class="refresh-btn slim" @click="refreshPopularEntry">
+                    <RefreshCw class="icon" /> yenile
+                  </button>
                 </div>
-                <div class="card-meta">
-                  <span>{{ formatCount(topic.entryCount) }} entry</span>
-                  <span>{{ formatDate(topic.createdAt) }}</span>
+                
+                <article v-if="popularEntry" class="entry">
+                  <div class="entry-topic-ref">
+                    <span class="ref-text">(bkz: </span>
+                    <router-link :to="`/baslik/${popularEntry.topicId}`" class="ref-link">
+                      {{ popularEntry.topicTitle }}
+                    </router-link>
+                    <span class="ref-text">)</span>
+                  </div>
+                  <div class="entry-body" v-html="formatContent(popularEntry.content)"></div>
+                  <footer class="entry-footer">
+                    <div class="actions">
+                      <button :class="{ 'liked': popularEntry.currentUserVote === 'LIKE' }" @click="vote(popularEntry.id, 'LIKE')">
+                        <ThumbsUp class="icon-sm" /> <span>{{ popularEntry.likeCount || 0 }}</span>
+                      </button>
+                      <button :class="{ 'disliked': popularEntry.currentUserVote === 'DISLIKE' }" @click="vote(popularEntry.id, 'DISLIKE')">
+                        <ThumbsDown class="icon-sm" /> <span>{{ popularEntry.dislikeCount || 0 }}</span>
+                      </button>
+                      <button :class="{ 'favorited': popularEntry.currentUserVote === 'FAVORITE' }" @click="vote(popularEntry.id, 'FAVORITE')">
+                        <Star class="icon-sm" /> <span>{{ popularEntry.favoriteCount || 0 }}</span>
+                      </button>
+                      <button @click="shareEntry(popularEntry.id)">
+                        <Share2 class="icon-sm" />
+                      </button>
+                    </div>
+                    <div class="meta">
+                      <router-link :to="`/biri/${popularEntry.authorUsername || popularEntry.author?.username}`" class="author">
+                        {{ popularEntry.authorUsername || popularEntry.author?.username || '-' }}
+                      </router-link>
+                      <span class="date">{{ formatDate(popularEntry.createdAt) }}</span>
+                    </div>
+                  </footer>
+                </article>
+                
+                <div v-else class="empty-state">
+                  <p>popüler entry bulunamadı</p>
                 </div>
-              </router-link>
+              </div>
             </template>
           </div>
 
@@ -98,21 +128,47 @@
 
       <!-- Mobile Layout -->
       <div class="mobile-layout">
-        <!-- Varsayılan: Popüler Başlıklar -->
-        <div v-if="mobileView === 'home'" class="mobile-popular">
-          <div 
-            v-for="topic in topicsStore.popularTopics" 
-            :key="topic.id" 
-            class="mobile-card"
-            @click="openMobileEntries(topic)"
-          >
-            <div class="card-content">
-              
-              <h3>{{ topic.title }}</h3>
+        <!-- Varsayılan: Popüler Entry (tek entry) -->
+        <div v-if="mobileView === 'home'" class="mobile-entries">
+          <div class="mobile-section-header">
+            <span>popüler</span>
+            <button class="refresh-btn slim" @click="refreshPopularEntry">
+              <RefreshCw class="icon" /> yenile
+            </button>
+          </div>
+          
+          <article v-if="popularEntry" class="mobile-entry">
+            <div class="entry-topic-ref">
+              <span class="ref-text">(bkz: </span>
+              <router-link :to="`/baslik/${popularEntry.topicId}`" class="ref-link">
+                {{ popularEntry.topicTitle }}
+              </router-link>
+              <span class="ref-text">)</span>
             </div>
-            <div class="card-meta">
-              <span>{{ formatCount(topic.entryCount) }} entry</span>
-            </div>
+            <div class="entry-body" v-html="formatContent(popularEntry.content)"></div>
+            <footer class="mobile-entry-footer">
+              <div class="actions">
+                <button :class="{ 'liked': popularEntry.currentUserVote === 'LIKE' }" @click="vote(popularEntry.id, 'LIKE')">
+                  <ThumbsUp class="icon-sm" /> <span>{{ popularEntry.likeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'disliked': popularEntry.currentUserVote === 'DISLIKE' }" @click="vote(popularEntry.id, 'DISLIKE')">
+                  <ThumbsDown class="icon-sm" /> <span>{{ popularEntry.dislikeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'favorited': popularEntry.currentUserVote === 'FAVORITE' }" @click="vote(popularEntry.id, 'FAVORITE')">
+                  <Star class="icon-sm" /> <span>{{ popularEntry.favoriteCount || 0 }}</span>
+                </button>
+              </div>
+              <div class="info">
+                <router-link :to="`/biri/${popularEntry.authorUsername}`" class="author">
+                  {{ popularEntry.authorUsername || '-' }}
+                </router-link>
+                <span class="time">{{ formatDate(popularEntry.createdAt) }}</span>
+              </div>
+            </footer>
+          </article>
+          
+          <div v-else class="empty-state">
+            <p>popüler entry bulunamadı</p>
           </div>
         </div>
 
@@ -217,6 +273,7 @@ import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { entriesApi, votesApi } from '@/services/api'
 
 const route = useRoute()
 const topicsStore = useTopicsStore()
@@ -224,6 +281,21 @@ const entriesStore = useEntriesStore()
 const authStore = useAuthStore()
 const toast = useToast()
 
+// Popular entry state
+const popularEntry = ref(null)
+
+async function fetchPopularEntry() {
+  try {
+    const response = await entriesApi.getRandomPopular()
+    popularEntry.value = response.data
+  } catch (e) {
+    popularEntry.value = null
+  }
+}
+
+function refreshPopularEntry() {
+  fetchPopularEntry()
+}
 
 const headerRef = ref(null)
 
@@ -242,7 +314,7 @@ function handleTabChange(tab) {
   
   if (tab === 'popular' || tab === 'home') {
     mobileView.value = 'home'
-    topicsStore.fetchPopularTopics(0, 10)
+    fetchPopularEntry()
     // If home (logo click), we also want to populate Sidebar (Trending)
     if (tab === 'home') {
       topicsStore.fetchSidebarTopics(0, 50)
@@ -292,7 +364,35 @@ async function vote(entryId, voteType) {
     toast.warning('Oy vermek için giriş yapmalısınız')
     return
   }
-  await entriesStore.vote(entryId, voteType)
+  
+  // Check if this is the popularEntry
+  if (popularEntry.value && popularEntry.value.id === entryId) {
+    try {
+      await votesApi.vote({ entryId, voteType })
+      
+      // Locally update popularEntry
+      const entry = popularEntry.value
+      // Remove old vote count
+      if (entry.currentUserVote === 'LIKE') entry.likeCount--
+      else if (entry.currentUserVote === 'DISLIKE') entry.dislikeCount--
+      else if (entry.currentUserVote === 'FAVORITE') entry.favoriteCount--
+      
+      // Toggle or set new vote
+      if (entry.currentUserVote === voteType) {
+        entry.currentUserVote = null
+      } else {
+        entry.currentUserVote = voteType
+        if (voteType === 'LIKE') entry.likeCount++
+        else if (voteType === 'DISLIKE') entry.dislikeCount++
+        else if (voteType === 'FAVORITE') entry.favoriteCount++
+      }
+    } catch (e) {
+      toast.error('Oy verilemedi')
+    }
+  } else {
+    // Use entriesStore for other entries
+    await entriesStore.vote(entryId, voteType)
+  }
 }
 
 function shareEntry(entryId) {
@@ -640,8 +740,8 @@ onMounted(() => {
     flex: 1;
   }
 
-  .mobile-entry footer {
-    display: none; /* Hide default footer */
+  .mobile-entry footer.entry-footer {
+    display: none; /* Hide default footer, but not mobile-entry-footer */
   }
 
   .mobile-entry-footer {
@@ -670,23 +770,37 @@ onMounted(() => {
 
   .mobile-entry .actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
-  .mobile-entry .actions button.edit-btn:hover { color: #58a6ff; }
-  .mobile-entry .actions button.delete-btn:hover { color: #f85149; }
-
   .mobile-entry .actions button {
-    padding: 0.25rem;
-    background: none;
-    border: none;
-    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.6rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #999;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mobile-entry .actions button:hover {
+    background: rgba(212, 200, 74, 0.1);
+    border-color: rgba(212, 200, 74, 0.2);
+    color: #d4c84a;
   }
 
   .mobile-entry .actions button.liked { color: #3fb950; }
+  .mobile-entry .actions button.disliked { color: #f85149; }
+  .mobile-entry .actions button.favorited { color: #d4c84a; }
+  .mobile-entry .actions button.edit-btn:hover { color: #58a6ff; }
+  .mobile-entry .actions button.delete-btn:hover { color: #f85149; }
 
   .mobile-entry .info { font-size: 0.75rem; }
-  .mobile-entry .info .author { color: #6fbf6f; }
+  .mobile-entry .info .author { color: #d4c84a; }
   .mobile-entry .info .time { color: #555; margin-left: 0.5rem; }
 }
 

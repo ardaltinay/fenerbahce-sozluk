@@ -13,6 +13,7 @@ import net.fenerbahcesozluk.repository.EntryRepository;
 import net.fenerbahcesozluk.repository.TopicRepository;
 import net.fenerbahcesozluk.repository.VoteRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -64,11 +65,36 @@ public class EntryService {
         .map(entry -> toResponse(entry, currentUser));
   }
 
+  public EntryResponse getRandomPopularEntry(User currentUser) {
+    // Fetch top 20 popular entries from high-entry topics, then pick one randomly
+    List<Entry> entries = entryRepository.findPopularEntriesFromTopTopics(PageRequest.of(0, 20));
+    if (entries.isEmpty()) {
+      return null;
+    }
+    // Pick a random entry from the list
+    int randomIndex = (int) (Math.random() * entries.size());
+    return toResponse(entries.get(randomIndex), currentUser);
+  }
+
   public List<EntryResponse> getFavoriteEntriesByUserId(UUID userId, User currentUser) {
     return voteRepository.findByUserIdAndVoteType(userId, VoteType.FAVORITE)
         .stream()
         .map(Vote::getEntry)
         .filter(entry -> entry.isActive())
+        .map(entry -> toResponse(entry, currentUser))
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  public List<EntryResponse> getTopLikedByAuthor(UUID authorId, User currentUser, int limit) {
+    return entryRepository.findTopLikedByAuthor(authorId, PageRequest.of(0, limit))
+        .stream()
+        .map(entry -> toResponse(entry, currentUser))
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  public List<EntryResponse> getTopFavoritedByAuthor(UUID authorId, User currentUser, int limit) {
+    return entryRepository.findTopFavoritedByAuthor(authorId, PageRequest.of(0, limit))
+        .stream()
         .map(entry -> toResponse(entry, currentUser))
         .collect(java.util.stream.Collectors.toList());
   }

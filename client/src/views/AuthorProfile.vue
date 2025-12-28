@@ -53,6 +53,24 @@
             <UserX class="icon" />
             kullanıcıyı yasakla
           </button>
+          <!-- Admin: Promote to Moderator -->
+          <button 
+            v-if="authStore.isAdmin && author?.role === 'USER'"
+            class="action-btn primary" 
+            @click="promoteToModerator"
+          >
+            <Shield class="icon" />
+            moderatör yap
+          </button>
+          <!-- Admin: Demote from Moderator -->
+          <button 
+            v-if="authStore.isAdmin && author?.role === 'MODERATOR'"
+            class="action-btn warning" 
+            @click="demoteToUser"
+          >
+            <ShieldOff class="icon" />
+            moderatörlükten çıkar
+          </button>
         </div>
 
         <!-- Edit Profile (own profile) -->
@@ -209,6 +227,68 @@
             </div>
             <ChevronRight class="arrow-icon" />
           </router-link>
+        </div>
+
+        <!-- Top Liked Tab -->
+        <div v-else-if="activeTab === 'topLiked'" class="entries-list">
+          <div v-if="topLikedEntries.length === 0" class="empty-state">
+            <ThumbsUp class="empty-icon" />
+            <p>henüz beğenilen entry yok</p>
+          </div>
+          <article v-for="entry in topLikedEntries" :key="entry.id" class="entry-card">
+            <router-link :to="`/baslik/${entry.topicId}`" class="entry-topic">
+              {{ entry.topicTitle }}
+            </router-link>
+            <p class="entry-content" v-html="formatContent(entry.content)"></p>
+            <footer class="entry-footer">
+              <div class="actions">
+                <button :class="{ 'liked': entry.currentUserVote === 'LIKE' }">
+                  <ThumbsUp class="icon-sm" />
+                  <span>{{ entry.likeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'disliked': entry.currentUserVote === 'DISLIKE' }">
+                  <ThumbsDown class="icon-sm" />
+                  <span>{{ entry.dislikeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }">
+                  <Star class="icon-sm" />
+                  <span>{{ entry.favoriteCount || 0 }}</span>
+                </button>
+              </div>
+              <span class="date">{{ formatDateTime(entry.createdAt) }}</span>
+            </footer>
+          </article>
+        </div>
+
+        <!-- Top Favorited Tab -->
+        <div v-else-if="activeTab === 'topFavorited'" class="entries-list">
+          <div v-if="topFavoritedEntries.length === 0" class="empty-state">
+            <Star class="empty-icon" />
+            <p>henüz favlanan entry yok</p>
+          </div>
+          <article v-for="entry in topFavoritedEntries" :key="entry.id" class="entry-card">
+            <router-link :to="`/baslik/${entry.topicId}`" class="entry-topic">
+              {{ entry.topicTitle }}
+            </router-link>
+            <p class="entry-content" v-html="formatContent(entry.content)"></p>
+            <footer class="entry-footer">
+              <div class="actions">
+                <button :class="{ 'liked': entry.currentUserVote === 'LIKE' }">
+                  <ThumbsUp class="icon-sm" />
+                  <span>{{ entry.likeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'disliked': entry.currentUserVote === 'DISLIKE' }">
+                  <ThumbsDown class="icon-sm" />
+                  <span>{{ entry.dislikeCount || 0 }}</span>
+                </button>
+                <button :class="{ 'favorited': entry.currentUserVote === 'FAVORITE' }">
+                  <Star class="icon-sm" />
+                  <span>{{ entry.favoriteCount || 0 }}</span>
+                </button>
+              </div>
+              <span class="date">{{ formatDateTime(entry.createdAt) }}</span>
+            </footer>
+          </article>
         </div>
       </div>
     </div>
@@ -426,14 +506,14 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   UserPlus, UserCheck, MessageCircle, Settings, Loader2,
-  FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle
+  FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle, Shield, ShieldOff
 } from 'lucide-vue-next'
 import Header from '@/components/layout/Header.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
 import { useTopicsStore } from '@/stores/topics'
-import { usersApi } from '@/services/api'
+import { usersApi, entriesApi } from '@/services/api'
 import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
@@ -447,6 +527,8 @@ const isFollowing = ref(false)
 const activeTab = ref('entries')
 const showSettings = ref(false)
 const userFavorites = ref([])
+const topLikedEntries = ref([])
+const topFavoritedEntries = ref([])
 
 const username = computed(() => route.params.username)
 const isOwnProfile = computed(() => authStore.username === username.value)
@@ -480,12 +562,19 @@ const userTopics = computed(() => {
   )
 })
 
-// Sync tabs with filtered data
-const tabs = computed(() => [
-  { id: 'entries', label: 'entryler', count: author.value.entryCount || 0 },
-  { id: 'favorites', label: 'favoriler', count: userFavorites.value.length },
-  { id: 'topics', label: 'başlıklar', count: userTopics.value.length },
-])
+// Sync tabs with filtered data - always show topLiked and topFavorited
+const tabs = computed(() => {
+  const result = []
+  
+  // Always show these tabs
+  result.push({ id: 'entries', label: 'entryler', count: author.value.entryCount || 0 })
+  result.push({ id: 'topics', label: 'başlıklar', count: userTopics.value.length || 0 })
+  result.push({ id: 'favorites', label: 'favoriler', count: userFavorites.value.length || 0 })
+  result.push({ id: 'topLiked', label: 'en beğenilen', count: topLikedEntries.value.length || 0 })
+  result.push({ id: 'topFavorited', label: 'en favlanan', count: topFavoritedEntries.value.length || 0 })
+  
+  return result
+})
 
 function getRoleBadge(role) {
   const badges = {
@@ -622,6 +711,30 @@ function confirmBanUser() {
   openBanModal()
 }
 
+async function promoteToModerator() {
+  if (!author.value?.id) return
+  try {
+    await usersApi.promote(author.value.id)
+    toast.success('Kullanıcı moderatör yapıldı')
+    // Refresh profile data
+    await loadUserData()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Bir hata oluştu')
+  }
+}
+
+async function demoteToUser() {
+  if (!author.value?.id) return
+  try {
+    await usersApi.demote(author.value.id)
+    toast.success('Kullanıcı normal kullanıcı yapıldı')
+    // Refresh profile data
+    await loadUserData()
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Bir hata oluştu')
+  }
+}
+
 function getTopicLink(entry) {
   return `/baslik/${entry.topicId}`
 }
@@ -652,6 +765,22 @@ async function loadUserData() {
        } catch (e) {
          userFavorites.value = []
        }
+       
+       // Fetch top liked entries
+       try {
+         const likedResponse = await entriesApi.getTopLikedByAuthor(author.value.id, 5)
+         topLikedEntries.value = likedResponse.data || []
+       } catch (e) {
+         topLikedEntries.value = []
+       }
+       
+       // Fetch top favorited entries
+       try {
+         const favoritedResponse = await entriesApi.getTopFavoritedByAuthor(author.value.id, 5)
+         topFavoritedEntries.value = favoritedResponse.data || []
+       } catch (e) {
+         topFavoritedEntries.value = []
+       }
     }
     
   } catch (err) {
@@ -666,15 +795,6 @@ async function loadUserData() {
     }
   }
   
-  // Create safe link helper availability in template (not needed if I use it in template directly, but I need to expose it or use computed)
-  // Actually, I can just use a method or inline logic. I'll use a method in template.
-  
-  // Topics: Current API doesn't support fetching topics by author easily, so we rely on global trends for now or need a new endpoint.
-  // We'll leave topics as 'trends' but this is technically incorrect for "User's Topics". 
-  // However, without backend changes, we can't fix "My Topics" list if it requires a new endpoint.
-  // We will simply fetch trends to populate sidebar/cache if needed, but not user specific topics.
-  // userTopics computed property filters topicsStore.topics. If we don't fetch anything specific, it might be empty.
-  // For now let's just fetch popular/trends to have SOMETHING in the store, although it won't be user specific unless they are trending.
   await topicsStore.fetchTrendingTopics()
   
   loading.value = false
@@ -953,9 +1073,44 @@ onMounted(() => {
   background: #3fb950;
 }
 
+.action-btn.primary {
+  background: #58a6ff;
+  color: #fff;
+}
+
+.action-btn.primary:hover {
+  background: #79b8ff;
+}
+
+.action-btn.warning {
+  background: transparent;
+  border: 1px solid #f0883e;
+  color: #f0883e;
+}
+
+.action-btn.warning:hover {
+  background: rgba(240, 136, 62, 0.15);
+}
+
 .action-btn .icon {
   width: 16px;
   height: 16px;
+}
+
+/* Mobile profile actions */
+@media (max-width: 768px) {
+  .profile-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .profile-actions .action-btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
 }
 
 /* Tabs */
@@ -1011,7 +1166,6 @@ onMounted(() => {
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 237, 0, 0.05);
   border-radius: 12px;
-  min-height: 300px;
 }
 
 .loading-state {
@@ -1360,10 +1514,12 @@ onMounted(() => {
 @media (max-width: 640px) {
   .profile-container {
     padding: 60px 0.75rem 1rem;
+    overflow-x: hidden;
   }
 
   .profile-header {
     padding: 1rem;
+    overflow: hidden;
   }
 
   .profile-info {
@@ -1371,17 +1527,45 @@ onMounted(() => {
     text-align: center;
   }
 
+  .avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
   .profile-stats {
     justify-content: center;
+    flex-wrap: wrap;
   }
 
   .profile-actions {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Horizontal scrolling tabs */
+  .profile-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+  }
+
+  .profile-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .tab {
-    padding: 0.5rem;
-    font-size: 0.8rem;
+    flex: 0 0 auto;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .tab .count {
+    font-size: 0.65rem;
   }
 }
 

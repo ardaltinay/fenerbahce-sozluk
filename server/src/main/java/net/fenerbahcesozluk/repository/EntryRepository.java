@@ -68,6 +68,17 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
   @Query("UPDATE Entry e SET e.favoriteCount = e.favoriteCount - 1 WHERE e.id = :entryId AND e.favoriteCount > 0")
   void decrementFavoriteCount(@Param("entryId") UUID entryId);
 
+  // Top entries by author - only entries with counts > 0
+  @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.likeCount > 0 ORDER BY e.likeCount DESC")
+  List<Entry> findTopLikedByAuthor(@Param("authorId") UUID authorId, Pageable pageable);
+
+  @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.favoriteCount > 0 ORDER BY e.favoriteCount DESC")
+  List<Entry> findTopFavoritedByAuthor(@Param("authorId") UUID authorId, Pageable pageable);
+
   @Query("SELECT e.author.username, COUNT(e) FROM Entry e WHERE e.isActive = true GROUP BY e.author.username ORDER BY COUNT(e) DESC")
   List<Object[]> findTopAuthors(int limit);
+
+  // Popular entries from high-entry-count topics ordered by likes
+  @Query("SELECT e FROM Entry e WHERE e.isActive = true AND e.likeCount > 0 ORDER BY e.topic.entryCount DESC, e.likeCount DESC")
+  List<Entry> findPopularEntriesFromTopTopics(Pageable pageable);
 }

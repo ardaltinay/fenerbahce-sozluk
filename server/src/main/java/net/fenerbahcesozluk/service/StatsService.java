@@ -33,8 +33,8 @@ public class StatsService {
     long totalDislikes = voteRepository.countByVoteType(VoteType.DISLIKE);
     long totalFavorites = voteRepository.countByVoteType(VoteType.FAVORITE);
 
-    // Top 5 authors by entry count
-    List<Object[]> topAuthorsRaw = entryRepository.findTopAuthors(5);
+    // Top 10 authors by entry count
+    List<Object[]> topAuthorsRaw = entryRepository.findTopAuthors(10);
     List<StatsResponse.TopAuthor> topAuthors = topAuthorsRaw.stream()
         .map(row -> StatsResponse.TopAuthor.builder()
             .username((String) row[0])
@@ -42,8 +42,8 @@ public class StatsService {
             .build())
         .collect(Collectors.toList());
 
-    // Top 5 topics by entry count
-    List<Object[]> topTopicsRaw = topicRepository.findTopTopics(5);
+    // Top 10 topics by entry count
+    List<Object[]> topTopicsRaw = topicRepository.findTopTopics(10);
     List<StatsResponse.TopTopic> topTopics = topTopicsRaw.stream()
         .map(row -> StatsResponse.TopTopic.builder()
             .id(row[0].toString())

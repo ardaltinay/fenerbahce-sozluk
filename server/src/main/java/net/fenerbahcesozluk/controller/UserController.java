@@ -28,6 +28,12 @@ public class UserController {
   private final VoteRepository voteRepository;
   private final EntryService entryService;
 
+  @GetMapping("/search")
+  public ResponseEntity<java.util.List<Map<String, Object>>> searchUsers(@RequestParam String q) {
+    java.util.List<Map<String, Object>> results = userService.searchUsers(q);
+    return ResponseEntity.ok(results);
+  }
+
   @GetMapping("/{username}")
   public ResponseEntity<Map<String, Object>> getUserByUsername(@PathVariable String username) {
     User user = userService.getUserByUsername(username);
@@ -109,6 +115,28 @@ public class UserController {
 
     Map<String, String> response = new HashMap<>();
     response.put("message", "Kullanıcı yasaklandı");
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/{id}/promote")
+  public ResponseEntity<Map<String, String>> promoteToModerator(
+      @PathVariable UUID id,
+      @AuthenticationPrincipal User currentUser) {
+    userService.promoteToModerator(id, currentUser);
+
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Kullanıcı moderatör yapıldı");
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/{id}/demote")
+  public ResponseEntity<Map<String, String>> demoteToUser(
+      @PathVariable UUID id,
+      @AuthenticationPrincipal User currentUser) {
+    userService.demoteToUser(id, currentUser);
+
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Kullanıcı normal kullanıcı yapıldı");
     return ResponseEntity.ok(response);
   }
 }

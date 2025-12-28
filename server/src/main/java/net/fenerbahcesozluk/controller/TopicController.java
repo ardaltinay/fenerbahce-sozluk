@@ -16,11 +16,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -66,6 +68,16 @@ public class TopicController {
       @Valid @RequestBody TopicRequest request,
       @AuthenticationPrincipal User currentUser) {
     return ResponseEntity.ok(topicService.createTopic(request, currentUser));
+  }
+
+  @PutMapping("/{id}/transfermarkt")
+  public ResponseEntity<TopicResponse> updateTransfermarkt(
+      @PathVariable UUID id,
+      @RequestBody Map<String, String> body,
+      @AuthenticationPrincipal User currentUser) {
+    String transfermarktId = body.get("transfermarktId");
+    String topicType = body.get("topicType");
+    return ResponseEntity.ok(topicService.updateTransfermarkt(id, transfermarktId, topicType, currentUser));
   }
 
   @DeleteMapping("/{id}")
