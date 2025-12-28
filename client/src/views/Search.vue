@@ -128,12 +128,13 @@ import { Search as SearchIcon, X, AlertCircle, FileText, MessageSquare, User } f
 import Header from '@/components/layout/Header.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
-import { usersApi } from '@/services/api'
+import { useUsersStore } from '@/stores/users'
 
 const route = useRoute()
 const router = useRouter()
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
+const usersStore = useUsersStore()
 
 const searchQuery = ref(route.query.q || '')
 const activeFilter = ref('all')
@@ -162,7 +163,7 @@ const entryResults = computed(() => {
   )
 })
 
-// Author search now fetches from API
+// Author search now fetches from Store
 const authorSearchResults = ref([])
 
 const authorResults = computed(() => {
@@ -174,12 +175,8 @@ async function fetchUserSearch(query) {
     authorSearchResults.value = []
     return
   }
-  try {
-    const response = await usersApi.search(query)
-    authorSearchResults.value = response.data || []
-  } catch (e) {
-    authorSearchResults.value = []
-  }
+  const results = await usersStore.search(query)
+  authorSearchResults.value = results || []
 }
 
 function getFilterCount(id) {
@@ -206,7 +203,7 @@ watch(() => route.query.q, (newQuery) => {
   searchQuery.value = newQuery || ''
 })
 
-// Watch searchQuery to fetch users from API
+// Watch searchQuery to fetch users from Store
 watch(searchQuery, (newQuery) => {
   fetchUserSearch(newQuery)
 }, { immediate: true })

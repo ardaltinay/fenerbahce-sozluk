@@ -43,6 +43,8 @@ public class UserController {
     response.put("username", user.getUsername());
     response.put("role", user.getRole().name());
     response.put("isActive", user.isActive());
+    response.put("bannedUntil", user.getBannedUntil());
+    response.put("banReason", user.getBanReason());
     response.put("createdAt", user.getCreatedAt());
     response.put("entryCount", entryRepository.countByAuthorId(user.getId()));
     response.put("likeCount", voteRepository.countByEntryAuthorIdAndVoteType(user.getId(), VoteType.LIKE));
@@ -137,6 +139,17 @@ public class UserController {
 
     Map<String, String> response = new HashMap<>();
     response.put("message", "Kullanıcı normal kullanıcı yapıldı");
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/{id}/unban")
+  public ResponseEntity<Map<String, String>> unbanUser(
+      @PathVariable UUID id,
+      @AuthenticationPrincipal User currentUser) {
+    userService.unbanUser(id, currentUser);
+
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Kullanıcı yasağı kaldırıldı");
     return ResponseEntity.ok(response);
   }
 }

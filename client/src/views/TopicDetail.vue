@@ -1348,3 +1348,113 @@ textarea:focus {
   color: #888;
 }
 </style>
+
+<style scoped>
+/* Edit Mode & Buttons */
+.edit-mode {
+  padding: 1rem;
+  background: rgba(255, 237, 0, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(212, 200, 74, 0.2);
+  margin-bottom: 1rem;
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0d0d1a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn-cancel {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #444;
+  color: #888;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cancel:hover {
+  border-color: #666;
+  color: #aaa;
+}
+
+.btn-save {
+  padding: 0.5rem 1rem;
+  background: #d4c84a;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-save:hover:not(:disabled) {
+  background: #e6da5c;
+  transform: translateY(-1px);
+}
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-delete {
+  padding: 0.5rem 1rem;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-delete:hover {
+  background: #dc2626;
+}
+
+/* Delete Modal Specifics */
+.delete-modal {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.entry-preview {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: #bbb;
+  border-left: 3px solid #d4c84a;
+  margin: 1rem 0;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0d0d1a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+</style>

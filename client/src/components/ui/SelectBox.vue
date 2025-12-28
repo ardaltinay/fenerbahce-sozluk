@@ -1,61 +1,71 @@
 <template>
-  <div class="select-box" ref="containerRef">
+  <div class="relative w-full" ref="containerRef">
     <div 
-      class="selected-option" 
-      :class="{ 'placeholder': !modelValue, 'open': isOpen, 'has-error': error }"
+      class="select-trigger" 
+      :class="{ 'is-open': isOpen }"
       @click="toggle"
     >
-      <span>{{ selectedLabel }}</span>
-      <ChevronDown class="icon" :class="{ 'rotate': isOpen }" />
+      <span v-if="selectedLabel" class="selected-text">{{ selectedLabel }}</span>
+      <span v-else class="placeholder">{{ placeholder || 'Seçiniz' }}</span>
+      
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="16" 
+        height="16" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        class="chevron"
+        :class="{ 'rotate-180': isOpen }"
+      >
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
     </div>
 
-    <transition name="fade">
-      <div v-if="isOpen" class="options-container">
-        <div 
-          v-for="option in options" 
-          :key="option.id || option.value"
-          class="option-item"
-          :class="{ 'active': isSelected(option) }"
-          @click="select(option)"
-        >
-          {{ option.name || option.label }}
-        </div>
+    <div v-show="isOpen" class="select-dropdown">
+      <div 
+        v-for="option in options" 
+        :key="option.value"
+        class="select-option"
+        :class="{ 'is-selected': modelValue === option.value }"
+        @click="select(option)"
+      >
+        {{ option.label }}
       </div>
-    </transition>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ChevronDown } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: {
-    type: [String, Number, Object],
+    type: [String, Number],
     default: null
   },
   options: {
     type: Array,
-    required: true
+    required: true,
+    // Expected format: [{ label: 'Option 1', value: 1 }]
   },
   placeholder: {
     type: String,
-    default: 'Seçiniz'
-  },
-  error: {
-    type: Boolean,
-    default: false
+    default: ''
   }
 })
 
 const emit = defineEmits(['update:modelValue'])
-const containerRef = ref(null)
+
 const isOpen = ref(false)
+const containerRef = ref(null)
 
 const selectedLabel = computed(() => {
-  if (!props.modelValue) return props.placeholder
-  const selected = props.options.find(opt => (opt.id || opt.value) === props.modelValue)
-  return selected ? (selected.name || selected.label) : props.placeholder
+  const selected = props.options.find(opt => opt.value === props.modelValue)
+  return selected ? selected.label : null
 })
 
 function toggle() {
@@ -63,16 +73,12 @@ function toggle() {
 }
 
 function select(option) {
-  emit('update:modelValue', option.id || option.value)
+  emit('update:modelValue', option.value)
   isOpen.value = false
 }
 
-function isSelected(option) {
-  return props.modelValue === (option.id || option.value)
-}
-
-function handleClickOutside(e) {
-  if (containerRef.value && !containerRef.value.contains(e.target)) {
+function handleClickOutside(event) {
+  if (containerRef.value && !containerRef.value.contains(event.target)) {
     isOpen.value = false
   }
 }
@@ -87,94 +93,78 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.select-box {
-  position: relative;
-  width: 100%;
-}
-
-.selected-option {
+.select-trigger {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  background: #0a0a14;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem;
+  background: #0d0d1a;
   border: 1px solid #2a2a4a;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  color: #e0e0e0;
-  font-size: 0.9rem;
   transition: all 0.2s;
 }
 
-.selected-option:hover {
+.select-trigger:hover {
   border-color: #d4c84a;
 }
 
-.selected-option.has-error {
-  border-color: #e74c3c !important;
-}
-
-.selected-option.placeholder {
-  color: #666;
-}
-
-.selected-option.open {
+.select-trigger.is-open {
   border-color: #d4c84a;
-  border-bottom-color: transparent;
-  border-radius: 4px 4px 0 0;
+  box-shadow: 0 0 0 3px rgba(212, 200, 74, 0.1);
 }
 
-.icon {
-  width: 16px;
-  height: 16px;
+.selected-text {
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.placeholder {
   color: #666;
+  font-size: 0.9rem;
+}
+
+.chevron {
+  color: #888;
   transition: transform 0.2s;
 }
 
-.icon.rotate {
+.rotate-180 {
   transform: rotate(180deg);
 }
 
-.options-container {
+.select-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
+  margin-top: 0.5rem;
   background: #1a1a2e;
-  border: 1px solid #d4c84a;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 50;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 50;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-.option-item {
-  padding: 0.75rem 1rem;
-  color: #ccc;
+.select-option {
+  padding: 0.75rem;
+  color: #bbb;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
 
-.option-item:hover {
-  background: rgba(255, 237, 0, 0.1);
+.select-option:hover {
+  background: rgba(212, 200, 74, 0.1);
+  color: #fff;
+}
+
+.select-option.is-selected {
+  background: rgba(212, 200, 74, 0.2);
   color: #d4c84a;
-}
-
-.option-item.active {
-  background: rgba(255, 237, 0, 0.05);
-  color: #d4c84a;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+  font-weight: 600;
 }
 </style>

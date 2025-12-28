@@ -10,6 +10,9 @@ export const useEntriesStore = defineStore('entries', () => {
   const totalPages = ref(0)
   const currentPage = ref(0)
 
+  // Cache context
+  const lastFetchContext = ref({ type: null, id: null, page: null })
+
   const entries = computed(() => allEntries.value)
 
   // Fetch race condition handling
@@ -20,10 +23,20 @@ export const useEntriesStore = defineStore('entries', () => {
     totalPages.value = 0
     currentPage.value = 0
     error.value = null
+    lastFetchContext.value = { type: null, id: null, page: null }
     currentFetchId++ // Invalidate any pending requests
   }
 
   async function fetchEntriesByTopic(topicId, page = 0, size = 10, clearFirst = false) {
+    // Return cached if context matches
+    if (!clearFirst &&
+      allEntries.value.length > 0 &&
+      lastFetchContext.value.type === 'topic' &&
+      lastFetchContext.value.id === topicId &&
+      lastFetchContext.value.page === page) {
+      return
+    }
+
     if (clearFirst) clearEntries()
 
     const fetchId = ++currentFetchId
@@ -37,6 +50,7 @@ export const useEntriesStore = defineStore('entries', () => {
       allEntries.value = response.data.content || response.data
       totalPages.value = response.data.totalPages || 1
       currentPage.value = page
+      lastFetchContext.value = { type: 'topic', id: topicId, page: page }
     } catch (err) {
       if (fetchId !== currentFetchId) return
 
@@ -54,6 +68,14 @@ export const useEntriesStore = defineStore('entries', () => {
 
 
   async function fetchEntriesByAuthor(authorId, page = 0, size = 10) {
+    // Return cached if context matches
+    if (allEntries.value.length > 0 &&
+      lastFetchContext.value.type === 'author' &&
+      lastFetchContext.value.id === authorId &&
+      lastFetchContext.value.page === page) {
+      return
+    }
+
     loading.value = true
     error.value = null
     try {
@@ -61,6 +83,7 @@ export const useEntriesStore = defineStore('entries', () => {
       allEntries.value = response.data.content || response.data
       totalPages.value = response.data.totalPages || 1
       currentPage.value = page
+      lastFetchContext.value = { type: 'author', id: authorId, page: page }
     } catch (err) {
       console.error('Author entries fetch error:', err.message)
       error.value = 'Kullanıcı entryleri yüklenemedi'

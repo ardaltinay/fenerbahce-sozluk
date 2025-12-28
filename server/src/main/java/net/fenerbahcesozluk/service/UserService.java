@@ -122,6 +122,21 @@ public class UserService {
   }
 
   @Transactional
+  public void unbanUser(UUID userId, User currentUser) {
+    // Only ADMIN can unban users
+    if (!currentUser.getRole().equals(Role.ADMIN)) {
+      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+    }
+
+    User userToUnban = userRepository.findById(userId)
+        .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+
+    userToUnban.setBannedUntil(null);
+    userToUnban.setBanReason(null);
+    userRepository.save(userToUnban);
+  }
+
+  @Transactional
   public void promoteToModerator(UUID userId, User currentUser) {
     // Only ADMIN can promote users
     if (!currentUser.getRole().equals(Role.ADMIN)) {

@@ -80,7 +80,21 @@ public class AuthService {
 
     if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(java.time.LocalDateTime.now())) {
       String reason = user.getBanReason() != null ? user.getBanReason() : "Belirtilmedi";
-      throw new BusinessException("Hesabınız yasaklanmıştır. Sebep: " + reason, HttpStatus.FORBIDDEN);
+
+      java.time.LocalDateTime bannedUntil = user.getBannedUntil();
+      String dateStr;
+
+      // Check if banned for more than 50 years (indefinite)
+      if (bannedUntil.getYear() > java.time.LocalDateTime.now().getYear() + 50) {
+        dateStr = "Süresiz";
+      } else {
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        dateStr = bannedUntil.format(formatter);
+      }
+
+      throw new BusinessException(
+          String.format("Hesabınız yasaklanmıştır.\nSebep: %s\nYasak Bitiş: %s", reason, dateStr),
+          HttpStatus.FORBIDDEN);
     }
 
     // Generate token with remember me support

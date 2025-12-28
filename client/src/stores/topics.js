@@ -13,7 +13,12 @@ export const useTopicsStore = defineStore('topics', () => {
   const totalPages = ref(0)
   const currentPage = ref(0)
 
-  async function fetchTopics(page = 0, size = 20) {
+  async function fetchTopics(page = 0, size = 20, force = false) {
+    // Return cached if page matches and not forced
+    if (!force && topics.value.length > 0 && currentPage.value === page) {
+      return
+    }
+
     loading.value = true
     error.value = null
     try {
@@ -70,7 +75,12 @@ export const useTopicsStore = defineStore('topics', () => {
     }
   }
 
-  async function fetchSidebarTopics(page = 0, size = 50) {
+  async function fetchSidebarTopics(page = 0, size = 50, force = false) {
+    // Return cached if we have topics and not forced
+    if (!force && sidebarTopics.value.length > 0) {
+      return
+    }
+
     // No loading state change to prevent UI flicker on main loader
     try {
       const response = await topicsApi.getTrends(page, size)

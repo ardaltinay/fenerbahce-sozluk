@@ -53,6 +53,7 @@
             placeholder="ara"
             @focus="showSearchDropdown = true"
             @input="handleSearchInput"
+            @keyup.enter="navigateToSearch"
           />
           <button @click="navigateToSearch">
             <Search class="icon" />
@@ -227,6 +228,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
+import { useUsersStore } from '@/stores/users'
 import NewTopicModal from '@/components/NewTopicModal.vue'
 import LoginModal from '@/components/auth/LoginModal.vue'
 import RegisterModal from '@/components/auth/RegisterModal.vue'
@@ -239,6 +241,7 @@ const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
+const usersStore = useUsersStore()
 
 function toggleTheme() {
   themeStore.toggleTheme()
@@ -269,25 +272,21 @@ const topicResults = computed(() => {
   )
 })
 
-// Author search from API
+// Author search from Store
 const apiAuthorResults = ref([])
 
 const authorResults = computed(() => {
   return apiAuthorResults.value.map(u => u.username)
 })
 
-// Fetch authors from API when searchQuery changes
+// Fetch authors from Store when searchQuery changes
 watch(searchQuery, async (newQuery) => {
   if (newQuery.length < 2) {
     apiAuthorResults.value = []
     return
   }
-  try {
-    const response = await usersApi.search(newQuery)
-    apiAuthorResults.value = response.data || []
-  } catch (e) {
-    apiAuthorResults.value = []
-  }
+  const results = await usersStore.search(newQuery)
+  apiAuthorResults.value = results || []
 }, { immediate: true })
 
 const searchResults = computed(() => [...topicResults.value, ...authorResults.value])

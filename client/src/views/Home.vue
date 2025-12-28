@@ -427,9 +427,7 @@ function formatDate(date) {
 
 
 
-onMounted(() => {
-  // Sidebar independent fetch
-  topicsStore.fetchSidebarTopics(0, 50) 
+  onMounted(() => {
   
   // Initial tab check
   const initialTab = route.query.tab

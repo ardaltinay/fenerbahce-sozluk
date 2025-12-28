@@ -111,6 +111,7 @@ export const usersApi = {
     api.post('/api/users/me/delete-account', { password }),
   delete: (id) => api.delete(`/api/users/${id}`),
   ban: (id, duration, reason) => api.post(`/api/users/${id}/ban`, { duration, reason }),
+  unban: (id) => api.post(`/api/users/${id}/unban`),
   promote: (id) => api.post(`/api/users/${id}/promote`),
   demote: (id) => api.post(`/api/users/${id}/demote`),
 }

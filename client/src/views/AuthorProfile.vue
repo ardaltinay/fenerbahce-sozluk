@@ -44,14 +44,23 @@
             <UserPlus class="icon" />
             takip et
           </button>
-          <!-- Admin: Remove User Button -->
+            <!-- Admin: Remove User Button -->
           <button 
-            v-if="authStore.canDeleteUser(username)"
+            v-if="authStore.canDeleteUser(username) && !isBanned"
             class="action-btn danger" 
             @click="confirmBanUser"
           >
             <UserX class="icon" />
             kullanıcıyı yasakla
+          </button>
+          <!-- Admin: Unban User Button -->
+          <button 
+            v-if="authStore.canDeleteUser(username) && isBanned"
+            class="action-btn success" 
+            @click="openUnbanModal"
+          >
+            <UserCheck class="icon" />
+            yasağı kaldır
           </button>
           <!-- Admin: Promote to Moderator -->
           <button 
@@ -71,6 +80,15 @@
             <ShieldOff class="icon" />
             moderatörlükten çıkar
           </button>
+        </div>
+
+        <div v-if="isBanned && (authStore.isAdmin || authStore.isModerator)" class="ban-info-box">
+           <AlertTriangle class="icon-sm" />
+           <div class="ban-details">
+             <span class="ban-status">Kullanıcı Yasaklı</span>
+             <span class="ban-date">Bitiş: {{ formatBanDate(author.bannedUntil) }}</span>
+             <span class="ban-reason">Sebep: {{ author.banReason }}</span>
+           </div>
         </div>
 
         <!-- Edit Profile (own profile) -->
@@ -479,13 +497,11 @@
         <div class="modal-body">
           <div class="form-group">
              <label>Süre</label>
-             <select v-model="banDuration" class="form-select">
-               <option :value="3600">1 Saat</option>
-               <option :value="86400">1 Gün</option>
-               <option :value="604800">1 Hafta</option>
-               <option :value="2592000">1 Ay</option>
-               <option :value="3153600000">Süresiz (100 Yıl)</option>
-             </select>
+             <SelectBox 
+               v-model="banDuration" 
+               :options="banOptions"
+               placeholder="Süre seçiniz"
+             />
           </div>
           <div class="form-group">
              <label>Sebep</label>
@@ -498,14 +514,43 @@
         </div>
       </div>
     </div>
+    <!-- Unban User Modal -->
+    <div v-if="showUnbanModal" class="modal-overlay" @click.self="closeUnbanModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Yasağı Kaldır</h2>
+          <button class="close-btn" @click="closeUnbanModal">
+            <X class="icon" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Bu kullanıcının yasağını kaldırmak istediğinize emin misiniz?</p>
+          <div class="ban-info-summary">
+             <div class="info-row">
+               <span class="label">Mevcut Yasak:</span>
+               <span class="value">{{ formatBanDate(author.bannedUntil) }}</span>
+             </div>
+             <div class="info-row">
+               <span class="label">Sebep:</span>
+               <span class="value">{{ author.banReason }}</span>
+             </div>
+          </div>
+          <div class="form-actions right">
+             <button class="btn-cancel" @click="closeUnbanModal">İptal</button>
+             <button class="btn-save" @click="executeUnban">Yasağı Kaldır</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import SelectBox from '@/components/ui/SelectBox.vue'
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
-  UserPlus, UserCheck, MessageCircle, Settings, Loader2,
+  UserPlus, UserCheck, Settings, Loader2,
   FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle, Shield, ShieldOff
 } from 'lucide-vue-next'
 import Header from '@/components/layout/Header.vue'
@@ -546,7 +591,57 @@ const author = ref({
   likeCount: 0,
   role: 'USER',
   createdAt: null,
+  isActive: true,
+  bannedUntil: null,
+  banReason: null
 })
+
+const isBanned = computed(() => {
+  if (!author.value.bannedUntil) return false
+  return new Date(author.value.bannedUntil) > new Date()
+})
+
+const banOptions = [
+  { label: '1 Saat', value: 3600 },
+  { label: '1 Gün', value: 86400 },
+  { label: '1 Hafta', value: 604800 },
+  { label: '1 Ay', value: 2592000 },
+  { label: 'Süresiz (100 Yıl)', value: 3153600000 }
+]
+
+// ... (existing code)
+
+function formatBanDate(date) {
+  if (!date) return ''
+  const d = new Date(date)
+  if (d.getFullYear() > new Date().getFullYear() + 50) {
+    return 'Süresiz'
+  }
+  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+const showUnbanModal = ref(false)
+
+function openUnbanModal() {
+  showUnbanModal.value = true
+}
+
+function closeUnbanModal() {
+  showUnbanModal.value = false
+}
+
+async function executeUnban() {
+  try {
+    await usersApi.unban(author.value.id)
+    toast.success('Kullanıcı yasağı kaldırıldı')
+    closeUnbanModal()
+    await loadUserData()
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'İşlem başarısız')
+  }
+}
+
+
 
 // Filter entries by username
 const userEntries = computed(() => {
@@ -752,6 +847,9 @@ async function loadUserData() {
       favoriteCount: response.data.favoriteCount || 0,
       role: response.data.role || 'USER',
       createdAt: response.data.createdAt,
+      isActive: response.data.isActive,
+      bannedUntil: response.data.bannedUntil,
+      banReason: response.data.banReason
     }
     
     // Fetch user's entries using the author ID
@@ -1736,6 +1834,74 @@ onMounted(() => {
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 0.25rem;
+}
+
+/* Ban Info Box */
+.ban-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 8px;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ban-info-box .icon-sm {
+  color: #f85149;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.ban-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ban-status {
+  font-weight: 600;
+  color: #f85149;
+  font-size: 0.95rem;
+  display: block;
+}
+
+.ban-date, .ban-reason {
+  font-size: 0.9rem;
+  color: #ccc;
+  display: block;
+}
+
+/* Ban Modal Summary */
+.ban-info-summary {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  border: 1px solid #2a2a4a;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-row .label {
+  color: #888;
+}
+
+.info-row .value {
+  color: #e0e0e0;
+  font-weight: 500;
 }
 .strength-fill { height: 100%; transition: all 0.2s; }
 .strength-fill.level-1 { background: #ef4444; }
