@@ -165,7 +165,7 @@ export const useEntriesStore = defineStore('entries', () => {
     try {
       const response = await entriesApi.create(entryData)
       const newEntry = response.data
-      allEntries.value.push(newEntry)
+      // Do not optimistic push. Let the component handle re-fetching/navigation.
       return { success: true, entry: newEntry }
     } catch (err) {
       error.value = err.response?.data?.message || 'Entry oluşturulamadı'

@@ -61,15 +61,15 @@ public class UserService {
   }
 
   @Transactional
-  public void deleteOwnAccount(User currentUser, String password) {
+  public void suspendOwnAccount(User currentUser, String password) {
     // Verify password
     if (!passwordEncoder.matches(password, currentUser.getPassword())) {
       throw new BusinessException("Şifre yanlış", HttpStatus.BAD_REQUEST);
     }
 
-    // Admins cannot delete their own account this way
+    // Admins cannot suspend their own account this way
     if (currentUser.getRole().equals(Role.ADMIN)) {
-      throw new BusinessException("Admin hesabı bu şekilde silinemez", HttpStatus.FORBIDDEN);
+      throw new BusinessException("Admin hesabı bu şekilde askıya alınamaz", HttpStatus.FORBIDDEN);
     }
 
     // Soft delete - deactivate account
@@ -78,42 +78,48 @@ public class UserService {
   }
 
   @Transactional
-  public void deleteUser(UUID userId, User currentUser) {
-    // Only ADMIN can delete users
+  public void suspendUser(UUID userId, User currentUser) {
+    // Only ADMIN can suspend users
     if (!currentUser.getRole().equals(Role.ADMIN)) {
       throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
     }
 
-    // Cannot delete yourself
+    // Cannot suspend yourself
     if (userId.equals(currentUser.getId())) {
-      throw new BusinessException("Kendi hesabınızı silemezsiniz", HttpStatus.BAD_REQUEST);
+      throw new BusinessException("Kendi hesabınızı askıya alamazsınız", HttpStatus.BAD_REQUEST);
     }
 
-    User userToDelete = userRepository.findById(userId)
+    User userToSuspend = userRepository.findById(userId)
         .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
 
-    // Cannot delete other admins
-    if (userToDelete.getRole().equals(Role.ADMIN)) {
-      throw new BusinessException("Admin kullanıcılar silinemez", HttpStatus.FORBIDDEN);
+    // Cannot suspend other admins
+    if (userToSuspend.getRole().equals(Role.ADMIN)) {
+      throw new BusinessException("Admin kullanıcılar askıya alınamaz", HttpStatus.FORBIDDEN);
     }
 
     // Soft delete - set inactive
-    userToDelete.setActive(false);
-    userRepository.save(userToDelete);
+    userToSuspend.setActive(false);
+    userRepository.save(userToSuspend);
   }
 
   @Transactional
   public void banUser(UUID userId, long durationSeconds, String reason, User currentUser) {
-    // Only ADMIN can ban users
-    if (!currentUser.getRole().equals(Role.ADMIN)) {
+    // ADMIN or MODERATOR can ban users
+    if (!currentUser.getRole().equals(Role.ADMIN) && !currentUser.getRole().equals(Role.MODERATOR)) {
       throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
     }
 
     User userToBan = userRepository.findById(userId)
         .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
 
+    // Cannot ban Admins
     if (userToBan.getRole().equals(Role.ADMIN)) {
       throw new BusinessException("Admin kullanıcılar yasaklanamaz", HttpStatus.FORBIDDEN);
+    }
+
+    // Moderators cannot ban other Moderators
+    if (currentUser.getRole().equals(Role.MODERATOR) && userToBan.getRole().equals(Role.MODERATOR)) {
+      throw new BusinessException("Moderatörler diğer moderatörleri yasaklayamaz", HttpStatus.FORBIDDEN);
     }
 
     userToBan.setBannedUntil(java.time.LocalDateTime.now().plusSeconds(durationSeconds));
@@ -123,13 +129,24 @@ public class UserService {
 
   @Transactional
   public void unbanUser(UUID userId, User currentUser) {
-    // Only ADMIN can unban users
-    if (!currentUser.getRole().equals(Role.ADMIN)) {
+    // ADMIN or MODERATOR can unban users
+    if (!currentUser.getRole().equals(Role.ADMIN) && !currentUser.getRole().equals(Role.MODERATOR)) {
       throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
     }
 
     User userToUnban = userRepository.findById(userId)
         .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+
+    // Moderators cannot unban Admins (if ever banned) or Moderators (if they didn't
+    // ban them? logic simplifies to role hierarchy)
+    // Actually, simply checking if target is Admin/Moderator is enough.
+    // However, if an Admin banned a user, can a Moderator unban them?
+    // For simplicity, let's assume Moderators can unban any USER.
+
+    if (currentUser.getRole().equals(Role.MODERATOR)
+        && (userToUnban.getRole().equals(Role.ADMIN) || userToUnban.getRole().equals(Role.MODERATOR))) {
+      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+    }
 
     userToUnban.setBannedUntil(null);
     userToUnban.setBanReason(null);

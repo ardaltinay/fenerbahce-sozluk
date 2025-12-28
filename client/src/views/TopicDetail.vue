@@ -620,10 +620,26 @@ async function submitEntry() {
   
   if (result.success) {
     newEntry.value = ''
-    // Refresh sidebar to show updated entry counts
     topicsStore.fetchSidebarTopics(0, 50)
-    // Also refresh topic info for entry count
-    topicsStore.fetchTopicById(topic.value.id)
+    // Refresh topic info for entry count
+    await topicsStore.fetchTopicById(topic.value.id)
+    
+    // Calculate last page
+    const entryCount = topic.value.entryCount
+    const lastPage = Math.max(0, Math.ceil(entryCount / 10) - 1)
+    
+    // Fetch and go to last page
+    await entriesStore.fetchEntriesByTopic(topic.value.id, lastPage, 10, true)
+    
+    // Scroll to the new entry (bottom of page usually)
+    setTimeout(() => {
+        const entriesContainer = document.querySelector('.entries-container')
+        if (entriesContainer) {
+             // Scroll to bottom of entries container or just page bottom
+             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+        }
+    }, 100)
+    
   } else {
     toast.error(result.message || 'Entry gönderilemedi')
   }

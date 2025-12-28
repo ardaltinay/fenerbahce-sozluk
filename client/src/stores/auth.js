@@ -80,6 +80,20 @@ export const useAuthStore = defineStore('auth', () => {
     return true
   }
 
+  function canBanUser(targetRole) {
+    if (!isAuthenticated.value) return false
+    if (targetRole === 'ADMIN') return false // No one can ban/unban admins via UI
+
+    if (isAdmin.value) return true // Admin can ban Moderator or User
+
+    if (isModerator.value) {
+      // Moderator can only ban/unban Users
+      return targetRole === 'USER'
+    }
+
+    return false
+  }
+
   async function login(credentials) {
     loading.value = true
     error.value = null
@@ -181,7 +195,9 @@ export const useAuthStore = defineStore('auth', () => {
     isModeratorOrAdmin,
     canEditEntry,
     canDeleteEntry,
+    canDeleteEntry,
     canDeleteUser,
+    canBanUser,
     canDeleteTopic,
     login,
     register,

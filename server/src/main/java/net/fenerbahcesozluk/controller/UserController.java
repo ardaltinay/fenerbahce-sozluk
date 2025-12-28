@@ -84,24 +84,25 @@ public class UserController {
         "message", "Şifreniz başarıyla güncellendi"));
   }
 
-  @PostMapping("/me/delete-account")
-  public ResponseEntity<Map<String, String>> deleteOwnAccount(
+  @PostMapping("/me/suspend-account")
+  public ResponseEntity<Map<String, String>> suspendOwnAccount(
       @Valid @RequestBody DeleteAccountRequest request,
       @AuthenticationPrincipal User currentUser) {
-    userService.deleteOwnAccount(currentUser, request.getPassword());
+    // Reusing DeleteAccountRequest for password validation
+    userService.suspendOwnAccount(currentUser, request.getPassword());
 
     return ResponseEntity.ok(Map.of(
-        "message", "Hesabınız başarıyla silindi"));
+        "message", "Hesabınız askıya alındı"));
   }
 
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Map<String, String>> deleteUser(
+  @PostMapping("/{id}/suspend")
+  public ResponseEntity<Map<String, String>> suspendUser(
       @PathVariable UUID id,
       @AuthenticationPrincipal User currentUser) {
-    userService.deleteUser(id, currentUser);
+    userService.suspendUser(id, currentUser);
 
     Map<String, String> response = new HashMap<>();
-    response.put("message", "Kullanıcı başarıyla kaldırıldı");
+    response.put("message", "Kullanıcı hesabı askıya alındı");
     return ResponseEntity.ok(response);
   }
 

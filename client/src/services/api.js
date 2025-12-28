@@ -107,9 +107,9 @@ export const usersApi = {
   search: (query) => api.get('/api/users/search', { params: { q: query } }),
   changePassword: (currentPassword, newPassword) =>
     api.post('/api/users/me/change-password', { currentPassword, newPassword }),
-  deleteAccount: (password) =>
-    api.post('/api/users/me/delete-account', { password }),
-  delete: (id) => api.delete(`/api/users/${id}`),
+  suspendAccount: (password) =>
+    api.post('/api/users/me/suspend-account', { password }),
+  suspend: (id) => api.post(`/api/users/${id}/suspend`),
   ban: (id, duration, reason) => api.post(`/api/users/${id}/ban`, { duration, reason }),
   unban: (id) => api.post(`/api/users/${id}/unban`),
   promote: (id) => api.post(`/api/users/${id}/promote`),

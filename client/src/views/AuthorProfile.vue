@@ -44,18 +44,18 @@
             <UserPlus class="icon" />
             takip et
           </button>
-            <!-- Admin: Remove User Button -->
+            <!-- Admin/Mod: Ban User Button -->
           <button 
-            v-if="authStore.canDeleteUser(username) && !isBanned"
+            v-if="authStore.canBanUser(userRole) && !isBanned"
             class="action-btn danger" 
-            @click="confirmBanUser"
+            @click="openBanModal"
           >
             <UserX class="icon" />
             kullanıcıyı yasakla
           </button>
-          <!-- Admin: Unban User Button -->
+          <!-- Admin/Mod: Unban User Button -->
           <button 
-            v-if="authStore.canDeleteUser(username) && isBanned"
+            v-if="authStore.canBanUser(userRole) && isBanned"
             class="action-btn success" 
             @click="openUnbanModal"
           >
@@ -341,7 +341,7 @@
           
           <div class="settings-section danger">
             <h3>Tehlikeli Bölge</h3>
-            <button class="settings-btn danger" @click="openDeleteAccountModal">Hesabı Sil</button>
+            <button class="settings-btn danger" @click="openSuspendAccountModal">Hesabı Askıya Al</button>
           </div>
         </div>
       </div>
@@ -417,13 +417,13 @@
       </div>
     </Teleport>
 
-    <!-- Delete Account Modal -->
+    <!-- Suspend Account Modal -->
     <Teleport to="body">
-      <div v-if="showDeleteAccountModal" class="modal-overlay" @click.self="closeDeleteAccountModal">
+      <div v-if="showSuspendAccountModal" class="modal-overlay" @click.self="closeSuspendAccountModal">
         <div class="modal">
           <div class="modal-header danger-header">
-            <h2>Hesabı Sil</h2>
-            <button class="close-btn" @click="closeDeleteAccountModal">
+            <h2>Hesabı Askıya Al</h2>
+            <button class="close-btn" @click="closeSuspendAccountModal">
               <X class="icon" />
             </button>
           </div>
@@ -431,29 +431,29 @@
             <div class="warning-box">
               <AlertTriangle class="warning-icon" />
               <div>
-                <strong>Bu işlem geri alınamaz!</strong>
-                <p>Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak kaldırılacaktır.</p>
+                <strong>Bu işlem hesabınızı donduracaktır!</strong>
+                <p>Hesabınız askıya alınacak ve giriş yapamayacaksınız. Tekrar aktif etmek için yönetici ile iletişime geçmeniz gerekebilir.</p>
               </div>
             </div>
-            <form @submit.prevent="handleDeleteAccount">
+            <form @submit.prevent="handleSuspendAccount">
               <div class="form-group">
                 <label>Şifrenizi Girin</label>
                 <input 
-                  v-model="deleteAccountPassword" 
+                  v-model="suspendAccountPassword" 
                   type="password" 
                   placeholder="Şifrenizi onaylayın"
                   required 
                 />
               </div>
-              <div v-if="deleteAccountError" class="error-box">{{ deleteAccountError }}</div>
+              <div v-if="suspendAccountError" class="error-box">{{ suspendAccountError }}</div>
               <div class="form-actions right">
-                <button type="button" class="btn-cancel" @click="closeDeleteAccountModal">Vazgeç</button>
+                <button type="button" class="btn-cancel" @click="closeSuspendAccountModal">Vazgeç</button>
                 <button 
                   type="submit" 
                   class="btn-delete" 
-                  :disabled="deleteAccountLoading || !deleteAccountPassword"
+                  :disabled="suspendAccountLoading || !suspendAccountPassword"
                 >
-                  {{ deleteAccountLoading ? 'Siliniyor...' : 'Hesabımı Sil' }}
+                  {{ suspendAccountLoading ? 'Askıya Alınıyor...' : 'Hesabımı Askıya Al' }}
                 </button>
               </div>
             </form>
@@ -927,6 +927,38 @@ const strengthLabels = {
   3: 'orta',
   4: 'güçlü',
 }
+// ===== SUSPEND ACCOUNT =====
+const router = useRouter()
+const showSuspendAccountModal = ref(false)
+const suspendAccountPassword = ref('')
+const suspendAccountLoading = ref(false)
+const suspendAccountError = ref('')
+
+function openSuspendAccountModal() {
+  showSuspendAccountModal.value = true
+  suspendAccountPassword.value = ''
+  suspendAccountError.value = ''
+}
+
+function closeSuspendAccountModal() {
+  showSuspendAccountModal.value = false
+}
+
+async function handleSuspendAccount() {
+  suspendAccountLoading.value = true
+  suspendAccountError.value = ''
+  
+  try {
+    await usersApi.suspendAccount(suspendAccountPassword.value)
+    toast.success('Hesabınız askıya alındı. Hoşça kalın!')
+    authStore.logout()
+    router.push('/')
+  } catch (err) {
+    suspendAccountError.value = err.response?.data?.message || 'Hesap askıya alınamadı'
+  } finally {
+    suspendAccountLoading.value = false
+  }
+}
 
 const newPasswordStrength = computed(() => {
   const p = passwordForm.newPassword
@@ -974,38 +1006,7 @@ async function handleChangePassword() {
   }
 }
 
-// ===== DELETE ACCOUNT =====
-const router = useRouter()
-const showDeleteAccountModal = ref(false)
-const deleteAccountPassword = ref('')
-const deleteAccountLoading = ref(false)
-const deleteAccountError = ref('')
 
-function openDeleteAccountModal() {
-  showDeleteAccountModal.value = true
-  deleteAccountPassword.value = ''
-  deleteAccountError.value = ''
-}
-
-function closeDeleteAccountModal() {
-  showDeleteAccountModal.value = false
-}
-
-async function handleDeleteAccount() {
-  deleteAccountLoading.value = true
-  deleteAccountError.value = ''
-  
-  try {
-    await usersApi.deleteAccount(deleteAccountPassword.value)
-    toast.success('Hesabınız silindi. Hoşça kalın!')
-    authStore.logout()
-    router.push('/')
-  } catch (err) {
-    deleteAccountError.value = err.response?.data?.message || 'Hesap silinemedi'
-  } finally {
-    deleteAccountLoading.value = false
-  }
-}
 
 onMounted(() => {
   loadUserData()
