@@ -9,9 +9,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface NewsRepository extends JpaRepository<News, UUID> {
-    Page<News> findAllByOrderByPubDateDesc(Pageable pageable);
+  Page<News> findAllByOrderByPubDateDesc(Pageable pageable);
 
-    boolean existsByGuid(String guid);
+  boolean existsByGuid(String guid);
 
-    void deleteByPubDateBefore(LocalDateTime date); // For cleanup
+  // Check if same title exists within a time window (prevents cross-source
+  // duplicates)
+  boolean existsByTitleIgnoreCaseAndPubDateAfter(String title, LocalDateTime after);
+
+  void deleteByPubDateBefore(LocalDateTime date); // For cleanup
 }
