@@ -4,6 +4,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -23,7 +24,12 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "entries")
+@Table(name = "entries", indexes = {
+    @Index(name = "idx_entry_topic_active_created", columnList = "topic_id, is_active, created_time"),
+    @Index(name = "idx_entry_author_active", columnList = "author_id, is_active"),
+    @Index(name = "idx_entry_active_likes", columnList = "is_active, like_count"),
+    @Index(name = "idx_entry_created", columnList = "created_time")
+})
 public class Entry extends BaseEntity {
 
   @Column(nullable = false, columnDefinition = "TEXT")

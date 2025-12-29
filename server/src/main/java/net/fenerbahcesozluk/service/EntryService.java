@@ -20,8 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,34 +38,35 @@ public class EntryService {
   private final WebSocketService webSocketService;
 
   public Page<EntryResponse> getEntriesByTopic(UUID topicId, User currentUser, Pageable pageable) {
-    return entryRepository.findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(topicId, pageable)
-        .map(entry -> toResponse(entry, currentUser));
+    Page<Entry> entries = entryRepository.findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(topicId, pageable);
+    return toResponsePage(entries, currentUser);
   }
 
   public Page<EntryResponse> getEntriesByAuthor(UUID authorId, User currentUser, Pageable pageable) {
-    return entryRepository.findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(authorId, pageable)
-        .map(entry -> toResponse(entry, currentUser));
+    Page<Entry> entries = entryRepository.findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(authorId, pageable);
+    return toResponsePage(entries, currentUser);
   }
 
   public Page<EntryResponse> getPopularEntries(User currentUser, Pageable pageable) {
-    return entryRepository.findPopularEntries(pageable)
-        .map(entry -> toResponse(entry, currentUser));
+    Page<Entry> entries = entryRepository.findPopularEntries(pageable);
+    return toResponsePage(entries, currentUser);
   }
 
   public Page<EntryResponse> getHistoryEntries(User currentUser, Pageable pageable) {
     LocalDateTime now = LocalDateTime.now();
-    return entryRepository.findHistoryEntries(now.getDayOfMonth(), now.getMonthValue(), now.getYear(), pageable)
-        .map(entry -> toResponse(entry, currentUser));
+    Page<Entry> entries = entryRepository.findHistoryEntries(now.getDayOfMonth(), now.getMonthValue(), now.getYear(),
+        pageable);
+    return toResponsePage(entries, currentUser);
   }
 
   public Page<EntryResponse> getLatestEntries(User currentUser, Pageable pageable) {
-    return entryRepository.findLatestEntries(pageable)
-        .map(entry -> toResponse(entry, currentUser));
+    Page<Entry> entries = entryRepository.findLatestEntries(pageable);
+    return toResponsePage(entries, currentUser);
   }
 
   public Page<EntryResponse> getRandomEntries(User currentUser, Pageable pageable) {
-    return entryRepository.findRandomEntries(pageable)
-        .map(entry -> toResponse(entry, currentUser));
+    Page<Entry> entries = entryRepository.findRandomEntries(pageable);
+    return toResponsePage(entries, currentUser);
   }
 
   public EntryResponse getRandomPopularEntry(User currentUser) {
@@ -71,32 +75,28 @@ public class EntryService {
     if (entries.isEmpty()) {
       return null;
     }
-    // Pick a random entry from the list
+    // Pick a random entry from the list - single entry so toResponse is fine
     int randomIndex = (int) (Math.random() * entries.size());
     return toResponse(entries.get(randomIndex), currentUser);
   }
 
   public List<EntryResponse> getFavoriteEntriesByUserId(UUID userId, User currentUser) {
-    return voteRepository.findByUserIdAndVoteType(userId, VoteType.FAVORITE)
+    List<Entry> favoriteEntries = voteRepository.findByUserIdAndVoteType(userId, VoteType.FAVORITE)
         .stream()
         .map(Vote::getEntry)
-        .filter(entry -> entry.isActive())
-        .map(entry -> toResponse(entry, currentUser))
-        .collect(java.util.stream.Collectors.toList());
+        .filter(Entry::isActive)
+        .collect(Collectors.toList());
+    return toResponseList(favoriteEntries, currentUser);
   }
 
   public List<EntryResponse> getTopLikedByAuthor(UUID authorId, User currentUser, int limit) {
-    return entryRepository.findTopLikedByAuthor(authorId, PageRequest.of(0, limit))
-        .stream()
-        .map(entry -> toResponse(entry, currentUser))
-        .collect(java.util.stream.Collectors.toList());
+    List<Entry> entries = entryRepository.findTopLikedByAuthor(authorId, PageRequest.of(0, limit));
+    return toResponseList(entries, currentUser);
   }
 
   public List<EntryResponse> getTopFavoritedByAuthor(UUID authorId, User currentUser, int limit) {
-    return entryRepository.findTopFavoritedByAuthor(authorId, PageRequest.of(0, limit))
-        .stream()
-        .map(entry -> toResponse(entry, currentUser))
-        .collect(java.util.stream.Collectors.toList());
+    List<Entry> entries = entryRepository.findTopFavoritedByAuthor(authorId, PageRequest.of(0, limit));
+    return toResponseList(entries, currentUser);
   }
 
   public EntryResponse getEntryById(UUID id, User currentUser) {
@@ -177,17 +177,47 @@ public class EntryService {
     topicService.evictTopicCaches();
   }
 
-  private EntryResponse toResponse(Entry entry, User currentUser) {
-    VoteType currentUserVote = null;
-
-    if (currentUser != null) {
-      Vote vote = voteRepository.findByEntryIdAndUserId(entry.getId(), currentUser.getId())
-          .orElse(null);
-      if (vote != null) {
-        currentUserVote = vote.getVoteType();
-      }
+  // Batch-optimized page conversion - loads all votes in one query
+  private Page<EntryResponse> toResponsePage(Page<Entry> entries, User currentUser) {
+    if (entries.isEmpty()) {
+      return entries.map(e -> toResponseWithVote(e, null));
     }
 
+    // Batch load votes for all entries
+    Map<UUID, VoteType> userVotes = Collections.emptyMap();
+    if (currentUser != null) {
+      List<UUID> entryIds = entries.stream().map(Entry::getId).collect(Collectors.toList());
+      userVotes = voteRepository.findByEntryIdsAndUserId(entryIds, currentUser.getId())
+          .stream()
+          .collect(Collectors.toMap(v -> v.getEntry().getId(), Vote::getVoteType));
+    }
+
+    final Map<UUID, VoteType> votes = userVotes;
+    return entries.map(entry -> toResponseWithVote(entry, votes.get(entry.getId())));
+  }
+
+  // Batch-optimized list conversion
+  private List<EntryResponse> toResponseList(List<Entry> entries, User currentUser) {
+    if (entries.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    Map<UUID, VoteType> userVotes = Collections.emptyMap();
+    if (currentUser != null) {
+      List<UUID> entryIds = entries.stream().map(Entry::getId).collect(Collectors.toList());
+      userVotes = voteRepository.findByEntryIdsAndUserId(entryIds, currentUser.getId())
+          .stream()
+          .collect(Collectors.toMap(v -> v.getEntry().getId(), Vote::getVoteType));
+    }
+
+    final Map<UUID, VoteType> votes = userVotes;
+    return entries.stream()
+        .map(entry -> toResponseWithVote(entry, votes.get(entry.getId())))
+        .collect(Collectors.toList());
+  }
+
+  // Single entry response with pre-loaded vote
+  private EntryResponse toResponseWithVote(Entry entry, VoteType currentUserVote) {
     return EntryResponse.builder()
         .id(entry.getId())
         .content(entry.getContent())
@@ -203,5 +233,20 @@ public class EntryService {
         .createdAt(entry.getCreatedAt())
         .updatedAt(entry.getUpdatedAt())
         .build();
+  }
+
+  // Keep original for single entry lookups
+  private EntryResponse toResponse(Entry entry, User currentUser) {
+    VoteType currentUserVote = null;
+
+    if (currentUser != null) {
+      Vote vote = voteRepository.findByEntryIdAndUserId(entry.getId(), currentUser.getId())
+          .orElse(null);
+      if (vote != null) {
+        currentUserVote = vote.getVoteType();
+      }
+    }
+
+    return toResponseWithVote(entry, currentUserVote);
   }
 }

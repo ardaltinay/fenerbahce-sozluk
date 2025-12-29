@@ -62,7 +62,7 @@ public class NewsService {
 
   private void cleanupOldNews() {
     try {
-      LocalDateTime threshold = LocalDateTime.now().minusDays(30);
+      LocalDateTime threshold = LocalDateTime.now().minusDays(10);
       newsRepository.deleteByPubDateBefore(threshold);
     } catch (Exception e) {
       log.error("Error cleaning up old news", e);
