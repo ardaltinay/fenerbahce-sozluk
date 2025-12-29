@@ -37,6 +37,13 @@
         >
           son
         </button>
+        <button 
+          class="nav-tab"
+          :class="{ 'active': activeTab === 'news' }"
+          @click="setTab('news')"
+        >
+          haberler
+        </button>
         
         <!-- Stats Link -->
         <router-link to="/istatistikler" class="nav-tab">

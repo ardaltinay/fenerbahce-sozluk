@@ -136,6 +136,12 @@ export const transfermarktApi = {
   unlinkFromTopic: (topicId) => api.delete(`/api/transfermarkt/topics/${topicId}/unlink`),
 }
 
+// News API
+export const newsApi = {
+  getAll: (page = 0, size = 10) =>
+    api.get('/api/news', { params: { page, size } }),
+}
+
 export default api
 
 

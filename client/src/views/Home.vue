@@ -15,8 +15,24 @@
           </div>
 
           <!-- Feed Content -->
-          <div :class="{ 'popular-grid': activeTab !== 'son' && activeTab !== 'random' && activeTab !== 'popular' }">
-            <template v-if="activeTab === 'gundem'">
+          <div :class="{ 'popular-grid': activeTab !== 'son' && activeTab !== 'random' && activeTab !== 'popular' || activeTab === 'news' }">
+            
+            <template v-if="activeTab === 'news'">
+                 <div v-if="newsLoading" class="loading-state">
+                    <p>Haberler yükleniyor...</p>
+                 </div>
+                 <div v-else-if="newsList.length === 0" class="empty-state">
+                    <p>Henüz haber bulunamadı.</p>
+                 </div>
+                 <NewsCard 
+                   v-else
+                   v-for="item in newsList" 
+                   :key="item.id" 
+                   :news="item" 
+                 />
+            </template>
+
+            <template v-else-if="activeTab === 'gundem'">
               <router-link 
                 v-for="topic in topicsStore.topics" 
                 :key="topic.id" 
@@ -258,6 +274,24 @@
             </article>
           </template>
         </div>
+
+        <!-- Haberler Listesi (Mobile) -->
+        <div v-else-if="mobileView === 'news'" class="mobile-entries">
+           <div class="mobile-section-header">
+             <button @click="mobileView = 'home'"><ArrowLeft class="icon" /></button>
+             <span>haberler</span>
+           </div>
+           
+           <div v-if="newsLoading" class="empty-state"><p>Yükleniyor...</p></div>
+           
+           <div class="popular-grid" style="grid-template-columns: 1fr;"> <!-- Reuse grid style but force 1 col -->
+              <NewsCard 
+                 v-for="item in newsList" 
+                 :key="item.id" 
+                 :news="item" 
+               />
+           </div>
+        </div>
       </div>
     </div>
   </div>
@@ -269,11 +303,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { Star, Share2, ArrowLeft, ThumbsUp, ThumbsDown, MessageSquare, RefreshCw } from 'lucide-vue-next'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
+import NewsCard from '@/components/news/NewsCard.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
-import { entriesApi, votesApi } from '@/services/api'
+import { entriesApi, votesApi, newsApi } from '@/services/api'
 
 const route = useRoute()
 const topicsStore = useTopicsStore()
@@ -298,6 +333,22 @@ function refreshPopularEntry() {
 }
 
 const headerRef = ref(null)
+
+// News state
+const newsList = ref([])
+const newsLoading = ref(false)
+
+async function fetchHomeNews() {
+  try {
+    newsLoading.value = true
+    const response = await newsApi.getAll(0, 20)
+    newsList.value = response.data.content
+  } catch(e) {
+    console.error(e)
+  } finally {
+    newsLoading.value = false
+  }
+}
 
 // Mobile view state: 'home', 'gundem', 'entries'
 const mobileView = ref('home')
@@ -328,6 +379,9 @@ function handleTabChange(tab) {
   } else if (tab === 'random') {
     mobileView.value = 'entries'
     entriesStore.fetchRandomEntries(4)
+  } else if (tab === 'news') {
+    mobileView.value = 'news'
+    fetchHomeNews()
   }
 }
 
@@ -346,6 +400,7 @@ function getTabTitle() {
   if (activeTab.value === 'random') return 'rastgele'
   if (activeTab.value === 'tarihte') return 'tarihte bugün'
   if (activeTab.value === 'gundem') return 'bugünün konuları'
+  if (activeTab.value === 'news') return 'haberler'
   return 'popüler'
 }
 
