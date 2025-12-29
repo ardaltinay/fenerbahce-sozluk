@@ -18,75 +18,70 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VoteService {
 
-  private final VoteRepository voteRepository;
-  private final EntryRepository entryRepository;
-  private final StatsService statsService;
+    private final VoteRepository voteRepository;
+    private final EntryRepository entryRepository;
+    private final StatsService statsService;
 
-  @Transactional
-  public void vote(VoteRequest request, User user) {
-    Entry entry = entryRepository.findById(request.getEntryId())
-        .orElseThrow(() -> new net.fenerbahcesozluk.exception.BusinessException("Entry bulunamadı",
-            org.springframework.http.HttpStatus.NOT_FOUND));
+    @Transactional
+    public void vote(VoteRequest request, User user) {
+        Entry entry = entryRepository.findById(request.getEntryId())
+                .orElseThrow(() -> new net.fenerbahcesozluk.exception.BusinessException("Entry bulunamadı",
+                        org.springframework.http.HttpStatus.NOT_FOUND));
 
-    // Check if user already voted
-    Optional<Vote> existingVote = voteRepository.findByEntryIdAndUserId(
-        request.getEntryId(), user.getId());
+        // Check if user already voted
+        Optional<Vote> existingVote = voteRepository.findByEntryIdAndUserId(request.getEntryId(), user.getId());
 
-    if (existingVote.isPresent()) {
-      Vote vote = existingVote.get();
-      VoteType oldVoteType = vote.getVoteType();
+        if (existingVote.isPresent()) {
+            Vote vote = existingVote.get();
+            VoteType oldVoteType = vote.getVoteType();
 
-      // If same vote type, remove the vote (toggle off)
-      if (oldVoteType == request.getVoteType()) {
-        removeVoteCount(entry.getId(), oldVoteType);
-        voteRepository.delete(vote);
+            // If same vote type, remove the vote (toggle off)
+            if (oldVoteType == request.getVoteType()) {
+                removeVoteCount(entry.getId(), oldVoteType);
+                voteRepository.delete(vote);
+                statsService.evictStatsCache();
+                return;
+            }
+
+            // Different vote type, update the vote
+            removeVoteCount(entry.getId(), oldVoteType);
+            addVoteCount(entry.getId(), request.getVoteType());
+            vote.setVoteType(request.getVoteType());
+            voteRepository.save(vote);
+        } else {
+            // New vote
+            Vote vote = Vote.builder().entry(entry).user(user).voteType(request.getVoteType()).build();
+
+            voteRepository.save(vote);
+            addVoteCount(entry.getId(), request.getVoteType());
+        }
         statsService.evictStatsCache();
-        return;
-      }
-
-      // Different vote type, update the vote
-      removeVoteCount(entry.getId(), oldVoteType);
-      addVoteCount(entry.getId(), request.getVoteType());
-      vote.setVoteType(request.getVoteType());
-      voteRepository.save(vote);
-    } else {
-      // New vote
-      Vote vote = Vote.builder()
-          .entry(entry)
-          .user(user)
-          .voteType(request.getVoteType())
-          .build();
-
-      voteRepository.save(vote);
-      addVoteCount(entry.getId(), request.getVoteType());
     }
-    statsService.evictStatsCache();
-  }
 
-  @Transactional
-  public void removeVote(UUID entryId, User user) {
-    Optional<Vote> existingVote = voteRepository.findByEntryIdAndUserId(entryId, user.getId());
+    @Transactional
+    public void removeVote(UUID entryId, User user) {
+        Optional<Vote> existingVote = voteRepository.findByEntryIdAndUserId(entryId, user.getId());
 
-    if (existingVote.isPresent()) {
-      Vote vote = existingVote.get();
-      removeVoteCount(entryId, vote.getVoteType());
-      voteRepository.delete(vote);
+        if (existingVote.isPresent()) {
+            Vote vote = existingVote.get();
+            removeVoteCount(entryId, vote.getVoteType());
+            voteRepository.delete(vote);
+        }
     }
-  }
 
-  private void addVoteCount(UUID entryId, VoteType voteType) {
-    switch (voteType) {
-      case LIKE -> entryRepository.incrementLikeCount(entryId);
-      case DISLIKE -> entryRepository.incrementDislikeCount(entryId);
-      case FAVORITE -> entryRepository.incrementFavoriteCount(entryId);
+    private void addVoteCount(UUID entryId, VoteType voteType) {
+        switch (voteType) {
+            case LIKE -> entryRepository.incrementLikeCount(entryId);
+            case DISLIKE -> entryRepository.incrementDislikeCount(entryId);
+            case FAVORITE -> entryRepository.incrementFavoriteCount(entryId);
+        }
     }
-  }
 
-  private void removeVoteCount(UUID entryId, VoteType voteType) {
-    switch (voteType) {
-      case LIKE -> entryRepository.decrementLikeCount(entryId);
-      case DISLIKE -> entryRepository.decrementDislikeCount(entryId);
-      case FAVORITE -> entryRepository.decrementFavoriteCount(entryId);
+    private void removeVoteCount(UUID entryId, VoteType voteType) {
+        switch (voteType) {
+            case LIKE -> entryRepository.decrementLikeCount(entryId);
+            case DISLIKE -> entryRepository.decrementDislikeCount(entryId);
+            case FAVORITE -> entryRepository.decrementFavoriteCount(entryId);
+        }
     }
-  }
 }

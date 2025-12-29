@@ -16,10 +16,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EntryRequest {
 
-  @NotNull(message = "Başlık ID'si boş olamaz")
-  private UUID topicId;
+    @NotNull(message = "Başlık ID'si boş olamaz")
+    private UUID topicId;
 
-  @NotBlank(message = "Entry içeriği boş olamaz")
-  @Size(min = 10, max = 50000, message = "Entry içeriği 10-50000 karakter arasında olmalıdır")
-  private String content;
+    @NotBlank(message = "Entry içeriği boş olamaz")
+    @Size(min = 10, max = 50000, message = "Entry içeriği 10-50000 karakter arasında olmalıdır")
+    private String content;
 }

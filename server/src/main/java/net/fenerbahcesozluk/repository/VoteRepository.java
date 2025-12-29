@@ -14,16 +14,16 @@ import java.util.UUID;
 @Repository
 public interface VoteRepository extends JpaRepository<Vote, UUID> {
 
-  Optional<Vote> findByEntryIdAndUserId(UUID entryId, UUID userId);
+    Optional<Vote> findByEntryIdAndUserId(UUID entryId, UUID userId);
 
-  List<Vote> findByUserIdAndVoteType(UUID userId, VoteType voteType);
+    List<Vote> findByUserIdAndVoteType(UUID userId, VoteType voteType);
 
-  // Batch load votes for multiple entries - solves N+1 problem
-  @Query("SELECT v FROM Vote v WHERE v.entry.id IN :entryIds AND v.user.id = :userId")
-  List<Vote> findByEntryIdsAndUserId(@Param("entryIds") List<UUID> entryIds, @Param("userId") UUID userId);
+    // Batch load votes for multiple entries - solves N+1 problem
+    @Query("SELECT v FROM Vote v WHERE v.entry.id IN :entryIds AND v.user.id = :userId")
+    List<Vote> findByEntryIdsAndUserId(@Param("entryIds") List<UUID> entryIds, @Param("userId") UUID userId);
 
-  long countByVoteType(VoteType voteType);
+    long countByVoteType(VoteType voteType);
 
-  @Query("SELECT COUNT(v) FROM Vote v WHERE v.entry.author.id = :authorId AND v.voteType = :voteType")
-  long countByEntryAuthorIdAndVoteType(@Param("authorId") UUID authorId, @Param("voteType") VoteType voteType);
+    @Query("SELECT COUNT(v) FROM Vote v WHERE v.entry.author.id = :authorId AND v.voteType = :voteType")
+    long countByEntryAuthorIdAndVoteType(@Param("authorId") UUID authorId, @Param("voteType") VoteType voteType);
 }

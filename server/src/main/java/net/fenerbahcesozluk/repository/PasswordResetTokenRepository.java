@@ -15,14 +15,14 @@ import java.util.UUID;
 @Repository
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
 
-  Optional<PasswordResetToken> findByTokenAndUsedFalse(String token);
+    Optional<PasswordResetToken> findByTokenAndUsedFalse(String token);
 
-  @Modifying
-  @Transactional
-  void deleteByUser(User user);
+    @Modifying
+    @Transactional
+    void deleteByUser(User user);
 
-  @Modifying
-  @Transactional
-  @Query("DELETE FROM PasswordResetToken t WHERE t.expiryDate < :now")
-  void deleteExpiredTokens(LocalDateTime now);
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM PasswordResetToken t WHERE t.expiryDate < :now")
+    void deleteExpiredTokens(LocalDateTime now);
 }

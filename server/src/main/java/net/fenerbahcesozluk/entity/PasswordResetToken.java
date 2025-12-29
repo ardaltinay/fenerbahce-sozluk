@@ -23,25 +23,25 @@ import java.time.LocalDateTime;
 @Table(name = "password_reset_tokens")
 public class PasswordResetToken extends BaseEntity {
 
-  @Column(nullable = false, unique = true)
-  private String token;
+    @Column(nullable = false, unique = true)
+    private String token;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @Column(name = "expiry_date", nullable = false)
-  private LocalDateTime expiryDate;
+    @Column(name = "expiry_date", nullable = false)
+    private LocalDateTime expiryDate;
 
-  @Column(name = "used")
-  @Builder.Default
-  private boolean used = false;
+    @Column(name = "used")
+    @Builder.Default
+    private boolean used = false;
 
-  public boolean isExpired() {
-    return LocalDateTime.now().isAfter(expiryDate);
-  }
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(expiryDate);
+    }
 
-  public boolean isValid() {
-    return !isExpired() && !used;
-  }
+    public boolean isValid() {
+        return !isExpired() && !used;
+    }
 }

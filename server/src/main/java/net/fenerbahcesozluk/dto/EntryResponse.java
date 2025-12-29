@@ -15,17 +15,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class EntryResponse {
 
-  private UUID id;
-  private String content;
-  private UUID topicId;
-  private String topicTitle;
-  private String authorUsername;
-  private UUID authorId;
-  private Integer likeCount;
-  private Integer dislikeCount;
-  private Integer favoriteCount;
-  private boolean isEdited;
-  private VoteType currentUserVote;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+    private UUID id;
+    private String content;
+    private UUID topicId;
+    private String topicTitle;
+    private String authorUsername;
+    private UUID authorId;
+    private Integer likeCount;
+    private Integer dislikeCount;
+    private Integer favoriteCount;
+    private boolean isEdited;
+    private VoteType currentUserVote;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

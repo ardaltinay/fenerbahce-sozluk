@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 public class DeleteAccountRequest {
 
-  @NotBlank(message = "Şifre boş olamaz")
-  private String password;
+    @NotBlank(message = "Şifre boş olamaz")
+    private String password;
 }

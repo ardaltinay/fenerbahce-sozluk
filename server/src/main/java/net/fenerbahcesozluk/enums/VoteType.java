@@ -1,7 +1,5 @@
 package net.fenerbahcesozluk.enums;
 
 public enum VoteType {
-  LIKE,
-  DISLIKE,
-  FAVORITE
+    LIKE, DISLIKE, FAVORITE
 }

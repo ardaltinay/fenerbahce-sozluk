@@ -34,76 +34,67 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final JwtAuthenticationFilter jwtAuthFilter;
-  private final UserRepository userRepository;
+    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final UserRepository userRepository;
 
-  @Value("${cors.allowed-origins:http://localhost:5173}")
-  private String allowedOrigins;
+    @Value("${cors.allowed-origins:http://localhost:5173}")
+    private String allowedOrigins;
 
-  @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .csrf(AbstractHttpConfigurer::disable)
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(
-                "/api/auth/**",
-                "/api/public/**",
-                "/ws/**",
-                "/error",
-                "/actuator/health")
-            .permitAll()
-            // Public read endpoints (GET only)
-            .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/entries/**").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/transfermarkt/**").permitAll()
-            .anyRequest().authenticated())
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authenticationProvider(authenticationProvider())
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource())).csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**", "/api/public/**", "/ws/**", "/error", "/actuator/health")
+                        .permitAll()
+                        // Public read endpoints (GET only)
+                        .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/entries/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/transfermarkt/**").permitAll().anyRequest()
+                        .authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
-  }
+        return http.build();
+    }
 
-  @Bean
-  public CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-    configuration.setAllowedHeaders(List.of("*"));
-    configuration.setAllowCredentials(true);
-    configuration.setMaxAge(3600L);
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration);
-    return source;
-  }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
-  @Bean
-  public UserDetailsService userDetailsService() {
-    return username -> userRepository.findByUsername(username)
-        .or(() -> userRepository.findByEmail(username))
-        .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı: " + username));
-  }
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> userRepository.findByUsername(username).or(() -> userRepository.findByEmail(username))
+                .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı: " + username));
+    }
 
-  @Bean
-  public AuthenticationProvider authenticationProvider() {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-    authProvider.setUserDetailsService(userDetailsService());
-    authProvider.setPasswordEncoder(passwordEncoder());
-    return authProvider;
-  }
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
 
-  @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-    return config.getAuthenticationManager();
-  }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }

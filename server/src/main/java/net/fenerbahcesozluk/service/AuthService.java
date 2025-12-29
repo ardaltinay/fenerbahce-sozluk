@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
@@ -28,160 +29,139 @@ import java.util.UUID;
 @Slf4j
 public class AuthService {
 
-  private final UserRepository userRepository;
-  private final PasswordResetTokenRepository passwordResetTokenRepository;
-  private final PasswordEncoder passwordEncoder;
-  private final JwtService jwtService;
-  private final AuthenticationManager authenticationManager;
-  private final EmailService emailService;
+    private final UserRepository userRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
-  public AuthResponse register(RegisterRequest request) {
-    // Check if username already exists
-    if (userRepository.existsByUsername(request.getUsername())) {
-      throw new BusinessException("Bu kullanıcı adı zaten kullanılıyor", HttpStatus.CONFLICT);
+    public AuthResponse register(RegisterRequest request) {
+        // Check if username already exists
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BusinessException("Bu kullanıcı adı zaten kullanılıyor", HttpStatus.CONFLICT);
+        }
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("Bu email adresi zaten kullanılıyor", HttpStatus.CONFLICT);
+        }
+
+        // Create new user
+        var user = User.builder().username(request.getUsername()).email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword())).role(Role.USER).build();
+
+        userRepository.save(user);
+
+        // Generate JWT token
+        var token = jwtService.generateToken(user);
+
+        return AuthResponse.builder().token(token).username(user.getUsername()).email(user.getEmail())
+                .role(user.getRole().name()).message("Kayıt başarılı").build();
     }
 
-    // Check if email already exists
-    if (userRepository.existsByEmail(request.getEmail())) {
-      throw new BusinessException("Bu email adresi zaten kullanılıyor", HttpStatus.CONFLICT);
+    public AuthResponse login(LoginRequest request) {
+        authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+
+        var user = userRepository.findByUsername(request.getUsername())
+                .or(() -> userRepository.findByEmail(request.getUsername()))
+                .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+
+        if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(LocalDateTime.now())) {
+            String reason = user.getBanReason() != null ? user.getBanReason() : "Belirtilmedi";
+
+            LocalDateTime bannedUntil = user.getBannedUntil();
+            String dateStr;
+
+            // Check if banned for more than 50 years (indefinite)
+            if (bannedUntil.getYear() > LocalDateTime.now().getYear() + 50) {
+                dateStr = "Süresiz";
+            } else {
+                DateTimeFormatter formatter = DateTimeFormatter
+                        .ofPattern("dd.MM.yyyy HH:mm");
+                dateStr = bannedUntil.format(formatter);
+            }
+
+            throw new BusinessException(
+                    String.format("Hesabınız yasaklanmıştır.\nSebep: %s\nYasak Bitiş: %s", reason, dateStr),
+                    HttpStatus.FORBIDDEN);
+        }
+
+        // Generate token with remember me support
+        var token = jwtService.generateToken(user, request.isRememberMe());
+        long expiresIn = jwtService.getExpirationDuration(request.isRememberMe());
+
+        return AuthResponse.builder().token(token).username(user.getUsername()).email(user.getEmail())
+                .role(user.getRole().name()).expiresIn(expiresIn).message("Giriş başarılı").build();
     }
 
-    // Create new user
-    var user = User.builder()
-        .username(request.getUsername())
-        .email(request.getEmail())
-        .password(passwordEncoder.encode(request.getPassword()))
-        .role(Role.USER)
-        .build();
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        var userOptional = userRepository.findByEmail(request.getEmail());
 
-    userRepository.save(user);
+        // Always return success to prevent email enumeration attacks
+        if (userOptional.isEmpty()) {
+            log.warn("Password reset requested for non-existent email: {}", request.getEmail());
+            return;
+        }
 
-    // Generate JWT token
-    var token = jwtService.generateToken(user);
+        var user = userOptional.get();
 
-    return AuthResponse.builder()
-        .token(token)
-        .username(user.getUsername())
-        .email(user.getEmail())
-        .role(user.getRole().name())
-        .message("Kayıt başarılı")
-        .build();
-  }
+        // Delete any existing tokens for this user
+        passwordResetTokenRepository.deleteByUser(user);
 
-  public AuthResponse login(LoginRequest request) {
-    authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(
-            request.getUsername(),
-            request.getPassword()));
+        // Generate new token
+        String token = UUID.randomUUID().toString();
+        var resetToken = PasswordResetToken.builder().token(token).user(user)
+                .expiryDate(LocalDateTime.now().plusHours(1)).used(false).build();
 
-    var user = userRepository.findByUsername(request.getUsername())
-        .or(() -> userRepository.findByEmail(request.getUsername()))
-        .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+        passwordResetTokenRepository.save(resetToken);
 
-    if (user.getBannedUntil() != null && user.getBannedUntil().isAfter(java.time.LocalDateTime.now())) {
-      String reason = user.getBanReason() != null ? user.getBanReason() : "Belirtilmedi";
+        // Send email
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getUsername(), token);
 
-      java.time.LocalDateTime bannedUntil = user.getBannedUntil();
-      String dateStr;
-
-      // Check if banned for more than 50 years (indefinite)
-      if (bannedUntil.getYear() > java.time.LocalDateTime.now().getYear() + 50) {
-        dateStr = "Süresiz";
-      } else {
-        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-        dateStr = bannedUntil.format(formatter);
-      }
-
-      throw new BusinessException(
-          String.format("Hesabınız yasaklanmıştır.\nSebep: %s\nYasak Bitiş: %s", reason, dateStr),
-          HttpStatus.FORBIDDEN);
+        log.info("Password reset token created for user: {}", user.getUsername());
     }
 
-    // Generate token with remember me support
-    var token = jwtService.generateToken(user, request.isRememberMe());
-    long expiresIn = jwtService.getExpirationDuration(request.isRememberMe());
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        var tokenEntity = passwordResetTokenRepository.findByTokenAndUsedFalse(request.getToken())
+                .orElseThrow(() -> new BusinessException("Geçersiz veya kullanılmış token", HttpStatus.BAD_REQUEST));
 
-    return AuthResponse.builder()
-        .token(token)
-        .username(user.getUsername())
-        .email(user.getEmail())
-        .role(user.getRole().name())
-        .expiresIn(expiresIn)
-        .message("Giriş başarılı")
-        .build();
-  }
+        if (tokenEntity.isExpired()) {
+            throw new BusinessException("Token süresi dolmuş. Lütfen yeni bir şifre sıfırlama talebi oluşturun.",
+                    HttpStatus.BAD_REQUEST);
+        }
 
-  @Transactional
-  public void forgotPassword(ForgotPasswordRequest request) {
-    var userOptional = userRepository.findByEmail(request.getEmail());
+        var user = tokenEntity.getUser();
 
-    // Always return success to prevent email enumeration attacks
-    if (userOptional.isEmpty()) {
-      log.warn("Password reset requested for non-existent email: {}", request.getEmail());
-      return;
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Mark token as used
+        tokenEntity.setUsed(true);
+        passwordResetTokenRepository.save(tokenEntity);
+
+        log.info("Password reset successful for user: {}", user.getUsername());
     }
 
-    var user = userOptional.get();
-
-    // Delete any existing tokens for this user
-    passwordResetTokenRepository.deleteByUser(user);
-
-    // Generate new token
-    String token = UUID.randomUUID().toString();
-    var resetToken = PasswordResetToken.builder()
-        .token(token)
-        .user(user)
-        .expiryDate(LocalDateTime.now().plusHours(1))
-        .used(false)
-        .build();
-
-    passwordResetTokenRepository.save(resetToken);
-
-    // Send email
-    emailService.sendPasswordResetEmail(user.getEmail(), user.getUsername(), token);
-
-    log.info("Password reset token created for user: {}", user.getUsername());
-  }
-
-  @Transactional
-  public void resetPassword(ResetPasswordRequest request) {
-    var tokenEntity = passwordResetTokenRepository.findByTokenAndUsedFalse(request.getToken())
-        .orElseThrow(() -> new BusinessException("Geçersiz veya kullanılmış token", HttpStatus.BAD_REQUEST));
-
-    if (tokenEntity.isExpired()) {
-      throw new BusinessException("Token süresi dolmuş. Lütfen yeni bir şifre sıfırlama talebi oluşturun.",
-          HttpStatus.BAD_REQUEST);
+    public boolean validateResetToken(String token) {
+        var tokenEntity = passwordResetTokenRepository.findByTokenAndUsedFalse(token);
+        return tokenEntity.isPresent() && tokenEntity.get().isValid();
     }
 
-    var user = tokenEntity.getUser();
-
-    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-    userRepository.save(user);
-
-    // Mark token as used
-    tokenEntity.setUsed(true);
-    passwordResetTokenRepository.save(tokenEntity);
-
-    log.info("Password reset successful for user: {}", user.getUsername());
-  }
-
-  public boolean validateResetToken(String token) {
-    var tokenEntity = passwordResetTokenRepository.findByTokenAndUsedFalse(token);
-    return tokenEntity.isPresent() && tokenEntity.get().isValid();
-  }
-
-  /**
-   * Scheduled cleanup of expired password reset tokens.
-   * Runs every day at 3 AM.
-   */
-  @Transactional
-  @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 3 * * *")
-  public void cleanupExpiredTokens() {
-    try {
-      passwordResetTokenRepository.deleteExpiredTokens(LocalDateTime.now());
-      log.info("Expired password reset tokens cleaned up");
-    } catch (Exception e) {
-      log.error("Error cleaning up expired tokens", e);
+    /**
+     * Scheduled cleanup of expired password reset tokens. Runs every day at 3 AM.
+     */
+    @Transactional
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 3 * * *")
+    public void cleanupExpiredTokens() {
+        try {
+            passwordResetTokenRepository.deleteExpiredTokens(LocalDateTime.now());
+            log.info("Expired password reset tokens cleaned up");
+        } catch (Exception e) {
+            log.error("Error cleaning up expired tokens", e);
+        }
     }
-  }
 }

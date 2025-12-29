@@ -14,17 +14,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TopicResponse {
 
-  private UUID id;
-  private String title;
-  private String authorUsername;
-  private UUID authorId;
-  private Integer entryCount;
-  private Long viewCount;
-  private boolean isLocked;
-  private boolean isPinned;
-  private String topicType;
-  private String transfermarktId;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
-  private LocalDateTime lastActivityAt;
+    private UUID id;
+    private String title;
+    private String authorUsername;
+    private UUID authorId;
+    private Integer entryCount;
+    private Long viewCount;
+    private boolean isLocked;
+    private boolean isPinned;
+    private String topicType;
+    private String transfermarktId;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime lastActivityAt;
 }

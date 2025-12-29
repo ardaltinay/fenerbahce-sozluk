@@ -18,14 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class NewsController {
 
-  private final NewsService newsService;
+    private final NewsService newsService;
 
-  @GetMapping
-  public ResponseEntity<Page<News>> getNews(
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "12") int size) {
+    @GetMapping
+    public ResponseEntity<Page<News>> getNews(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
 
-    Pageable pageable = PageRequest.of(page, size, Sort.by("pubDate").descending());
-    return ResponseEntity.ok(newsService.getNews(pageable));
-  }
+        Pageable pageable = PageRequest.of(page, size, Sort.by("pubDate").descending());
+        return ResponseEntity.ok(newsService.getNews(pageable));
+    }
 }

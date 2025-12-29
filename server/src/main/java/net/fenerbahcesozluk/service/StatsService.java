@@ -2,11 +2,11 @@ package net.fenerbahcesozluk.service;
 
 import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.dto.StatsResponse;
+import net.fenerbahcesozluk.enums.VoteType;
 import net.fenerbahcesozluk.repository.EntryRepository;
 import net.fenerbahcesozluk.repository.TopicRepository;
 import net.fenerbahcesozluk.repository.UserRepository;
 import net.fenerbahcesozluk.repository.VoteRepository;
-import net.fenerbahcesozluk.enums.VoteType;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -18,54 +18,40 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StatsService {
 
-  private final EntryRepository entryRepository;
-  private final TopicRepository topicRepository;
-  private final UserRepository userRepository;
-  private final VoteRepository voteRepository;
+    private final EntryRepository entryRepository;
+    private final TopicRepository topicRepository;
+    private final UserRepository userRepository;
+    private final VoteRepository voteRepository;
 
-  @Cacheable(value = "stats", key = "'global'")
-  public StatsResponse getStats() {
-    long totalEntries = entryRepository.count();
-    long totalTopics = topicRepository.count();
-    long totalAuthors = userRepository.count();
+    @Cacheable(value = "stats", key = "'global'")
+    public StatsResponse getStats() {
+        long totalEntries = entryRepository.count();
+        long totalTopics = topicRepository.count();
+        long totalAuthors = userRepository.count();
 
-    long totalLikes = voteRepository.countByVoteType(VoteType.LIKE);
-    long totalDislikes = voteRepository.countByVoteType(VoteType.DISLIKE);
-    long totalFavorites = voteRepository.countByVoteType(VoteType.FAVORITE);
+        long totalLikes = voteRepository.countByVoteType(VoteType.LIKE);
+        long totalDislikes = voteRepository.countByVoteType(VoteType.DISLIKE);
+        long totalFavorites = voteRepository.countByVoteType(VoteType.FAVORITE);
 
-    // Top 10 authors by entry count
-    List<Object[]> topAuthorsRaw = entryRepository.findTopAuthors(10);
-    List<StatsResponse.TopAuthor> topAuthors = topAuthorsRaw.stream()
-        .map(row -> StatsResponse.TopAuthor.builder()
-            .username((String) row[0])
-            .entryCount(((Number) row[1]).longValue())
-            .build())
-        .collect(Collectors.toList());
+        // Top 10 authors by entry count
+        List<Object[]> topAuthorsRaw = entryRepository.findTopAuthors(10);
+        List<StatsResponse.TopAuthor> topAuthors = topAuthorsRaw.stream().map(row -> StatsResponse.TopAuthor.builder()
+                .username((String) row[0]).entryCount(((Number) row[1]).longValue()).build())
+                .collect(Collectors.toList());
 
-    // Top 10 topics by entry count
-    List<Object[]> topTopicsRaw = topicRepository.findTopTopics(10);
-    List<StatsResponse.TopTopic> topTopics = topTopicsRaw.stream()
-        .map(row -> StatsResponse.TopTopic.builder()
-            .id(row[0].toString())
-            .title((String) row[1])
-            .entryCount(((Number) row[2]).longValue())
-            .build())
-        .collect(Collectors.toList());
+        // Top 10 topics by entry count
+        List<Object[]> topTopicsRaw = topicRepository.findTopTopics(10);
+        List<StatsResponse.TopTopic> topTopics = topTopicsRaw.stream().map(row -> StatsResponse.TopTopic.builder()
+                .id(row[0].toString()).title((String) row[1]).entryCount(((Number) row[2]).longValue()).build())
+                .collect(Collectors.toList());
 
-    return StatsResponse.builder()
-        .totalEntries(totalEntries)
-        .totalAuthors(totalAuthors)
-        .totalTopics(totalTopics)
-        .totalLikes(totalLikes)
-        .totalDislikes(totalDislikes)
-        .totalFavorites(totalFavorites)
-        .topAuthors(topAuthors)
-        .topTopics(topTopics)
-        .build();
-  }
+        return StatsResponse.builder().totalEntries(totalEntries).totalAuthors(totalAuthors).totalTopics(totalTopics)
+                .totalLikes(totalLikes).totalDislikes(totalDislikes).totalFavorites(totalFavorites)
+                .topAuthors(topAuthors).topTopics(topTopics).build();
+    }
 
-  @CacheEvict(value = "stats", allEntries = true)
-  public void evictStatsCache() {
-    // Cache will be evicted
-  }
+    @CacheEvict(value = "stats", allEntries = true)
+    public void evictStatsCache() {
+        // Cache will be evicted
+    }
 }

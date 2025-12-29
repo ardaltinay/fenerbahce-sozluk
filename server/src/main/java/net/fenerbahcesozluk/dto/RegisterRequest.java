@@ -14,15 +14,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RegisterRequest {
 
-  @NotBlank(message = "Kullanıcı adı boş olamaz")
-  @Size(min = 3, max = 50, message = "Kullanıcı adı 3-50 karakter arasında olmalıdır")
-  private String username;
+    @NotBlank(message = "Kullanıcı adı boş olamaz")
+    @Size(min = 3, max = 50, message = "Kullanıcı adı 3-50 karakter arasında olmalıdır")
+    private String username;
 
-  @NotBlank(message = "Email boş olamaz")
-  @Email(message = "Geçerli bir email adresi giriniz")
-  private String email;
+    @NotBlank(message = "Email boş olamaz")
+    @Email(message = "Geçerli bir email adresi giriniz")
+    private String email;
 
-  @NotBlank(message = "Şifre boş olamaz")
-  @Size(min = 6, max = 100, message = "Şifre en az 6 karakter olmalıdır")
-  private String password;
+    @NotBlank(message = "Şifre boş olamaz")
+    @Size(min = 6, max = 100, message = "Şifre en az 6 karakter olmalıdır")
+    private String password;
 }

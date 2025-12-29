@@ -11,19 +11,19 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WebSocketService {
 
-  private final SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
-  /**
-   * Broadcast new entry to all users viewing the topic
-   */
-  public void broadcastNewEntry(UUID topicId, EntryResponse entry) {
-    messagingTemplate.convertAndSend("/topic/entries/" + topicId, entry);
-  }
+    /**
+     * Broadcast new entry to all users viewing the topic
+     */
+    public void broadcastNewEntry(UUID topicId, EntryResponse entry) {
+        messagingTemplate.convertAndSend("/topic/entries/" + topicId, entry);
+    }
 
-  /**
-   * Broadcast sidebar update to all connected users
-   */
-  public void broadcastSidebarUpdate() {
-    messagingTemplate.convertAndSend("/topic/sidebar", "refresh");
-  }
+    /**
+     * Broadcast sidebar update to all connected users
+     */
+    public void broadcastSidebarUpdate() {
+        messagingTemplate.convertAndSend("/topic/sidebar", "refresh");
+    }
 }

@@ -15,9 +15,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class VoteRequest {
 
-  @NotNull(message = "Entry ID'si boş olamaz")
-  private UUID entryId;
+    @NotNull(message = "Entry ID'si boş olamaz")
+    private UUID entryId;
 
-  @NotNull(message = "Vote tipi boş olamaz")
-  private VoteType voteType;
+    @NotNull(message = "Vote tipi boş olamaz")
+    private VoteType voteType;
 }

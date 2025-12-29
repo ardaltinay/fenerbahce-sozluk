@@ -30,62 +30,54 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TopicController {
 
-  private final TopicService topicService;
+    private final TopicService topicService;
 
-  @GetMapping
-  public ResponseEntity<Page<TopicResponse>> getAllTopics(
-      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    return ResponseEntity.ok(topicService.getAllTopics(pageable));
-  }
+    @GetMapping
+    public ResponseEntity<Page<TopicResponse>> getAllTopics(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(topicService.getAllTopics(pageable));
+    }
 
-  @GetMapping("/popular")
-  public ResponseEntity<Page<TopicResponse>> getPopularTopics(
-      @PageableDefault(size = 20) Pageable pageable) {
-    return ResponseEntity.ok(topicService.getPopularTopics(pageable));
-  }
+    @GetMapping("/popular")
+    public ResponseEntity<Page<TopicResponse>> getPopularTopics(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(topicService.getPopularTopics(pageable));
+    }
 
-  @GetMapping("/trends")
-  public ResponseEntity<Page<TopicResponse>> getTrendingTopics(
-      @PageableDefault(size = 50) Pageable pageable) {
-    return ResponseEntity.ok(topicService.getTrendingTopics(pageable));
-  }
+    @GetMapping("/trends")
+    public ResponseEntity<Page<TopicResponse>> getTrendingTopics(@PageableDefault(size = 50) Pageable pageable) {
+        return ResponseEntity.ok(topicService.getTrendingTopics(pageable));
+    }
 
-  @GetMapping("/search")
-  public ResponseEntity<Page<TopicResponse>> searchTopics(
-      @RequestParam String keyword,
-      @PageableDefault(size = 20) Pageable pageable) {
-    return ResponseEntity.ok(topicService.searchTopics(keyword, pageable));
-  }
+    @GetMapping("/search")
+    public ResponseEntity<Page<TopicResponse>> searchTopics(@RequestParam String keyword,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(topicService.searchTopics(keyword, pageable));
+    }
 
-  @GetMapping("/{id}")
-  public ResponseEntity<TopicResponse> getTopicById(@PathVariable UUID id) {
-    topicService.incrementViewCount(id);
-    return ResponseEntity.ok(topicService.getTopicById(id));
-  }
+    @GetMapping("/{id}")
+    public ResponseEntity<TopicResponse> getTopicById(@PathVariable UUID id) {
+        topicService.incrementViewCount(id);
+        return ResponseEntity.ok(topicService.getTopicById(id));
+    }
 
-  @PostMapping
-  public ResponseEntity<TopicResponse> createTopic(
-      @Valid @RequestBody TopicRequest request,
-      @AuthenticationPrincipal User currentUser) {
-    return ResponseEntity.ok(topicService.createTopic(request, currentUser));
-  }
+    @PostMapping
+    public ResponseEntity<TopicResponse> createTopic(@Valid @RequestBody TopicRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(topicService.createTopic(request, currentUser));
+    }
 
-  @PutMapping("/{id}/transfermarkt")
-  public ResponseEntity<TopicResponse> updateTransfermarkt(
-      @PathVariable UUID id,
-      @RequestBody Map<String, String> body,
-      @AuthenticationPrincipal User currentUser) {
-    String transfermarktId = body.get("transfermarktId");
-    String topicType = body.get("topicType");
-    return ResponseEntity.ok(topicService.updateTransfermarkt(id, transfermarktId, topicType, currentUser));
-  }
+    @PutMapping("/{id}/transfermarkt")
+    public ResponseEntity<TopicResponse> updateTransfermarkt(@PathVariable UUID id,
+            @RequestBody Map<String, String> body, @AuthenticationPrincipal User currentUser) {
+        String transfermarktId = body.get("transfermarktId");
+        String topicType = body.get("topicType");
+        return ResponseEntity.ok(topicService.updateTransfermarkt(id, transfermarktId, topicType, currentUser));
+    }
 
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteTopic(
-      @PathVariable UUID id,
-      @RequestParam(required = false) String reason,
-      @AuthenticationPrincipal User currentUser) {
-    topicService.deleteTopic(id, reason, currentUser);
-    return ResponseEntity.noContent().build();
-  }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTopic(@PathVariable UUID id, @RequestParam(required = false) String reason,
+            @AuthenticationPrincipal User currentUser) {
+        topicService.deleteTopic(id, reason, currentUser);
+        return ResponseEntity.noContent().build();
+    }
 }

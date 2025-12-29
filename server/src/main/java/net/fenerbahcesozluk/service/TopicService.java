@@ -26,139 +26,122 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TopicService {
 
-  private final TopicRepository topicRepository;
-  private final StatsService statsService;
+    private final TopicRepository topicRepository;
+    private final StatsService statsService;
 
-  public Page<TopicResponse> getAllTopics(Pageable pageable) {
-    return topicRepository.findByIsActiveTrueOrderByCreatedAtDesc(pageable)
-        .map(this::toResponse);
-  }
-
-  public Page<TopicResponse> getPopularTopics(Pageable pageable) {
-    return getPopularTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
-  }
-
-  @Cacheable(value = "popularTopics", key = "#pageNumber")
-  public CacheablePage<TopicResponse> getPopularTopicsCached(int pageNumber, int pageSize) {
-    Page<TopicResponse> page = topicRepository.findPopularTopics(PageRequest.of(pageNumber, pageSize))
-        .map(this::toResponse);
-    return CacheablePage.of(page);
-  }
-
-  public Page<TopicResponse> getTrendingTopics(Pageable pageable) {
-    return getTrendingTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
-  }
-
-  @Cacheable(value = "trendingTopics", key = "#pageNumber")
-  public CacheablePage<TopicResponse> getTrendingTopicsCached(int pageNumber, int pageSize) {
-    LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
-    Page<TopicResponse> page = topicRepository.findTrends(thirtyDaysAgo, PageRequest.of(pageNumber, pageSize))
-        .map(this::toResponse);
-    return CacheablePage.of(page);
-  }
-
-  public Page<TopicResponse> searchTopics(String keyword, Pageable pageable) {
-    return topicRepository.searchByTitle(keyword, pageable)
-        .map(this::toResponse);
-  }
-
-  public TopicResponse getTopicById(UUID id) {
-    Topic topic = topicRepository.findById(id)
-        .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
-    return toResponse(topic);
-  }
-
-  @Transactional
-  public TopicResponse createTopic(TopicRequest request, User author) {
-    if (request.getTitle() != null && request.getTitle().length() > 50) {
-      throw new BusinessException("Başlık 50 karakterden uzun olamaz", HttpStatus.BAD_REQUEST);
+    public Page<TopicResponse> getAllTopics(Pageable pageable) {
+        return topicRepository.findByIsActiveTrueOrderByCreatedAtDesc(pageable).map(this::toResponse);
     }
 
-    topicRepository.findByTitleIgnoreCase(request.getTitle()).ifPresent(t -> {
-      throw new BusinessException("duplicate_topic:" + t.getId(), HttpStatus.CONFLICT);
-    });
-
-    Topic topic = Topic.builder()
-        .title(request.getTitle())
-        .author(author)
-        .topicType(request.getTopicType())
-        .transfermarktId(request.getTransfermarktId())
-        .build();
-
-    Topic saved = topicRepository.save(topic);
-    statsService.evictStatsCache();
-    return toResponse(saved);
-  }
-
-  @Transactional
-  public void incrementViewCount(UUID topicId) {
-    topicRepository.incrementViewCount(topicId);
-  }
-
-  @Transactional
-  public void deleteTopic(UUID topicId, String reason, User currentUser) {
-    Topic topic = topicRepository.findById(topicId)
-        .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
-
-    boolean isOwner = topic.getAuthor().getId().equals(currentUser.getId());
-    boolean isModerator = currentUser.getRole().name().equals("MODERATOR");
-    boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
-
-    if (!isOwner && !isModerator && !isAdmin) {
-      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+    public Page<TopicResponse> getPopularTopics(Pageable pageable) {
+        return getPopularTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
     }
 
-    // Soft delete
-    topic.setActive(false);
-    topic.setDeleteReason(reason);
-    topicRepository.save(topic);
-    statsService.evictStatsCache();
-  }
-
-  @Transactional
-  public TopicResponse updateTransfermarkt(UUID topicId, String transfermarktId, String topicType, User currentUser) {
-    Topic topic = topicRepository.findById(topicId)
-        .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
-
-    // Only admin and moderator can update transfermarkt info
-    boolean isModerator = currentUser.getRole().name().equals("MODERATOR");
-    boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
-
-    if (!isModerator && !isAdmin) {
-      throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+    @Cacheable(value = "popularTopics", key = "#pageNumber")
+    public CacheablePage<TopicResponse> getPopularTopicsCached(int pageNumber, int pageSize) {
+        Page<TopicResponse> page = topicRepository.findPopularTopics(PageRequest.of(pageNumber, pageSize))
+                .map(this::toResponse);
+        return CacheablePage.of(page);
     }
 
-    topic.setTransfermarktId(transfermarktId);
-    topic.setTopicType(topicType);
-    Topic saved = topicRepository.save(topic);
+    public Page<TopicResponse> getTrendingTopics(Pageable pageable) {
+        return getTrendingTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
+    }
 
-    return toResponse(saved);
-  }
+    @Cacheable(value = "trendingTopics", key = "#pageNumber")
+    public CacheablePage<TopicResponse> getTrendingTopicsCached(int pageNumber, int pageSize) {
+        LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
+        Page<TopicResponse> page = topicRepository.findTrends(thirtyDaysAgo, PageRequest.of(pageNumber, pageSize))
+                .map(this::toResponse);
+        return CacheablePage.of(page);
+    }
 
-  private TopicResponse toResponse(Topic topic) {
-    return TopicResponse.builder()
-        .id(topic.getId())
-        .title(topic.getTitle())
-        .authorId(topic.getAuthor().getId())
-        .authorUsername(topic.getAuthor().getUsername())
-        .entryCount(topic.getEntryCount())
-        .viewCount(topic.getViewCount())
-        .isLocked(topic.isLocked())
-        .isPinned(topic.isPinned())
-        .topicType(topic.getTopicType())
-        .transfermarktId(topic.getTransfermarktId())
-        .createdAt(topic.getCreatedAt())
-        .updatedAt(topic.getUpdatedAt())
-        .lastActivityAt(topic.getUpdatedAt())
-        .build();
-  }
+    public Page<TopicResponse> searchTopics(String keyword, Pageable pageable) {
+        return topicRepository.searchByTitle(keyword, pageable).map(this::toResponse);
+    }
 
-  @Caching(evict = {
-      @CacheEvict(value = "trendingTopics", allEntries = true),
-      @CacheEvict(value = "popularTopics", allEntries = true)
-  })
-  public void evictTopicCaches() {
-    // Evict topic list caches
-  }
+    public TopicResponse getTopicById(UUID id) {
+        Topic topic = topicRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
+        return toResponse(topic);
+    }
+
+    @Transactional
+    public TopicResponse createTopic(TopicRequest request, User author) {
+        if (request.getTitle() != null && request.getTitle().length() > 50) {
+            throw new BusinessException("Başlık 50 karakterden uzun olamaz", HttpStatus.BAD_REQUEST);
+        }
+
+        topicRepository.findByTitleIgnoreCase(request.getTitle()).ifPresent(t -> {
+            throw new BusinessException("duplicate_topic:" + t.getId(), HttpStatus.CONFLICT);
+        });
+
+        Topic topic = Topic.builder().title(request.getTitle()).author(author).topicType(request.getTopicType())
+                .transfermarktId(request.getTransfermarktId()).build();
+
+        Topic saved = topicRepository.save(topic);
+        statsService.evictStatsCache();
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public void incrementViewCount(UUID topicId) {
+        topicRepository.incrementViewCount(topicId);
+    }
+
+    @Transactional
+    public void deleteTopic(UUID topicId, String reason, User currentUser) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
+
+        boolean isOwner = topic.getAuthor().getId().equals(currentUser.getId());
+        boolean isModerator = currentUser.getRole().name().equals("MODERATOR");
+        boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
+
+        if (!isOwner && !isModerator && !isAdmin) {
+            throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+        }
+
+        // Soft delete
+        topic.setActive(false);
+        topic.setDeleteReason(reason);
+        topicRepository.save(topic);
+        statsService.evictStatsCache();
+    }
+
+    @Transactional
+    public TopicResponse updateTransfermarkt(UUID topicId, String transfermarktId, String topicType, User currentUser) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
+
+        // Only admin and moderator can update transfermarkt info
+        boolean isModerator = currentUser.getRole().name().equals("MODERATOR");
+        boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
+
+        if (!isModerator && !isAdmin) {
+            throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+        }
+
+        topic.setTransfermarktId(transfermarktId);
+        topic.setTopicType(topicType);
+        Topic saved = topicRepository.save(topic);
+
+        return toResponse(saved);
+    }
+
+    private TopicResponse toResponse(Topic topic) {
+        return TopicResponse.builder().id(topic.getId()).title(topic.getTitle()).authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername()).entryCount(topic.getEntryCount())
+                .viewCount(topic.getViewCount()).isLocked(topic.isLocked()).isPinned(topic.isPinned())
+                .topicType(topic.getTopicType()).transfermarktId(topic.getTransfermarktId())
+                .createdAt(topic.getCreatedAt()).updatedAt(topic.getUpdatedAt()).lastActivityAt(topic.getUpdatedAt())
+                .build();
+    }
+
+    @Caching(evict = {@CacheEvict(value = "trendingTopics", allEntries = true),
+            @CacheEvict(value = "popularTopics", allEntries = true)})
+    public void evictTopicCaches() {
+        // Evict topic list caches
+    }
 
 }

@@ -12,12 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginRequest {
 
-  @NotBlank(message = "Kullanıcı adı veya email boş olamaz")
-  private String username;
+    @NotBlank(message = "Kullanıcı adı veya email boş olamaz")
+    private String username;
 
-  @NotBlank(message = "Şifre boş olamaz")
-  private String password;
+    @NotBlank(message = "Şifre boş olamaz")
+    private String password;
 
-  @Builder.Default
-  private boolean rememberMe = false;
+    @Builder.Default
+    private boolean rememberMe = false;
 }

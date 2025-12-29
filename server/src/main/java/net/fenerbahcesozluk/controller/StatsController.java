@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class StatsController {
 
-  private final StatsService statsService;
+    private final StatsService statsService;
 
-  @GetMapping
-  public ResponseEntity<StatsResponse> getStats() {
-    return ResponseEntity.ok(statsService.getStats());
-  }
+    @GetMapping
+    public ResponseEntity<StatsResponse> getStats() {
+        return ResponseEntity.ok(statsService.getStats());
+    }
 }

@@ -21,21 +21,18 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VoteController {
 
-  private final VoteService voteService;
+    private final VoteService voteService;
 
-  @PostMapping
-  public ResponseEntity<Void> vote(
-      @Valid @RequestBody VoteRequest request,
-      @AuthenticationPrincipal User currentUser) {
-    voteService.vote(request, currentUser);
-    return ResponseEntity.ok().build();
-  }
+    @PostMapping
+    public ResponseEntity<Void> vote(@Valid @RequestBody VoteRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        voteService.vote(request, currentUser);
+        return ResponseEntity.ok().build();
+    }
 
-  @DeleteMapping("/{entryId}")
-  public ResponseEntity<Void> removeVote(
-      @PathVariable UUID entryId,
-      @AuthenticationPrincipal User currentUser) {
-    voteService.removeVote(entryId, currentUser);
-    return ResponseEntity.noContent().build();
-  }
+    @DeleteMapping("/{entryId}")
+    public ResponseEntity<Void> removeVote(@PathVariable UUID entryId, @AuthenticationPrincipal User currentUser) {
+        voteService.removeVote(entryId, currentUser);
+        return ResponseEntity.noContent().build();
+    }
 }

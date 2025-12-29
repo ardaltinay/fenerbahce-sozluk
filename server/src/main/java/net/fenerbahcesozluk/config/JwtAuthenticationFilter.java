@@ -21,52 +21,47 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-  private final JwtService jwtService;
-  private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-  @Override
-  protected void doFilterInternal(
-      @NonNull HttpServletRequest request,
-      @NonNull HttpServletResponse response,
-      @NonNull FilterChain filterChain) throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-    final String authHeader = request.getHeader("Authorization");
-    final String jwt;
-    final String username;
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String username;
 
-    // Check if Authorization header exists and starts with "Bearer "
-    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-      filterChain.doFilter(request, response);
-      return;
-    }
-
-    // Extract JWT token
-    jwt = authHeader.substring(7);
-
-    try {
-      username = jwtService.extractUsername(jwt);
-
-      // If username is extracted and no authentication exists in context
-      if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-        UserDetails userDetails = userRepository.findByUsername(username)
-            .or(() -> userRepository.findByEmail(username))
-            .orElse(null);
-
-        // Validate token
-        if (userDetails != null && jwtService.isTokenValid(jwt, userDetails)) {
-          UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-              userDetails,
-              null,
-              userDetails.getAuthorities());
-          authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-          SecurityContextHolder.getContext().setAuthentication(authToken);
+        // Check if Authorization header exists and starts with "Bearer "
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
-      }
-    } catch (Exception e) {
-      // Token is invalid, continue without authentication
-      logger.error("JWT token validation failed: " + e.getMessage());
-    }
 
-    filterChain.doFilter(request, response);
-  }
+        // Extract JWT token
+        jwt = authHeader.substring(7);
+
+        try {
+            username = jwtService.extractUsername(jwt);
+
+            // If username is extracted and no authentication exists in context
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userRepository.findByUsername(username)
+                        .or(() -> userRepository.findByEmail(username)).orElse(null);
+
+                // Validate token
+                if (userDetails != null && jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                            null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (Exception e) {
+            // Token is invalid, continue without authentication
+            logger.error("JWT token validation failed: " + e.getMessage());
+        }
+
+        filterChain.doFilter(request, response);
+    }
 }

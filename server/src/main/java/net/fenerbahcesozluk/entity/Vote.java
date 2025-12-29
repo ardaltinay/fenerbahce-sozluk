@@ -24,21 +24,19 @@ import net.fenerbahcesozluk.enums.VoteType;
 @Builder
 @Entity
 @Table(name = "votes", indexes = {
-    @Index(name = "idx_vote_entry_user", columnList = "entry_id, user_id")
-}, uniqueConstraints = {
-    @UniqueConstraint(columnNames = { "entry_id", "user_id" })
-})
+        @Index(name = "idx_vote_entry_user", columnList = "entry_id, user_id")}, uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"entry_id", "user_id"})})
 public class Vote extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "entry_id", nullable = false)
-  private Entry entry;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entry_id", nullable = false)
+    private Entry entry;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private VoteType voteType;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private VoteType voteType;
 }

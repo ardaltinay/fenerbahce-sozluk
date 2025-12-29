@@ -13,11 +13,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TopicRequest {
 
-  @NotBlank(message = "Başlık boş olamaz")
-  @Size(min = 3, max = 50, message = "Başlık 3-50 karakter arasında olmalıdır")
-  private String title;
+    @NotBlank(message = "Başlık boş olamaz")
+    @Size(min = 3, max = 50, message = "Başlık 3-50 karakter arasında olmalıdır")
+    private String title;
 
-  // Optional Transfermarkt integration
-  private String topicType;
-  private String transfermarktId;
+    // Optional Transfermarkt integration
+    private String topicType;
+    private String transfermarktId;
 }

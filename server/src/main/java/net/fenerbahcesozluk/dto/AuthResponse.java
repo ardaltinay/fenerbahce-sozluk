@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthResponse {
 
-  private String token;
-  private String username;
-  private String email;
-  private String role;
-  private String message;
-  private Long expiresIn; // Token expiration in milliseconds
+    private String token;
+    private String username;
+    private String email;
+    private String role;
+    private String message;
+    private Long expiresIn; // Token expiration in milliseconds
 }

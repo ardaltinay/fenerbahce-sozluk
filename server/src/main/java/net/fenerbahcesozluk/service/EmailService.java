@@ -5,7 +5,9 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.fenerbahcesozluk.dto.ContactRequest;
+import net.fenerbahcesozluk.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -46,12 +48,10 @@ public class EmailService {
             log.info("Password reset email sent to: {}", toEmail);
         } catch (MessagingException e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
-            throw new net.fenerbahcesozluk.exception.BusinessException("Email gönderilemedi",
-                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+            throw new BusinessException("Email gönderilemedi", HttpStatus.SERVICE_UNAVAILABLE);
         } catch (Exception e) {
             log.error("Unexpected error sending email to: {}", toEmail, e);
-            throw new net.fenerbahcesozluk.exception.BusinessException("Email gönderilemedi",
-                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+            throw new BusinessException("Email gönderilemedi", HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -73,12 +73,10 @@ public class EmailService {
             log.info("Contact email sent from: {}", request.getEmail());
         } catch (MessagingException e) {
             log.error("Failed to send contact email from: {}", request.getEmail(), e);
-            throw new net.fenerbahcesozluk.exception.BusinessException("Mesaj gönderilemedi",
-                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+            throw new BusinessException("Mesaj gönderilemedi", HttpStatus.SERVICE_UNAVAILABLE);
         } catch (Exception e) {
             log.error("Unexpected error sending contact email from: {}", request.getEmail(), e);
-            throw new net.fenerbahcesozluk.exception.BusinessException("Mesaj gönderilemedi",
-                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+            throw new BusinessException("Mesaj gönderilemedi", HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -148,11 +146,7 @@ public class EmailService {
                 </body>
                 </html>
                 """
-                .formatted(
-                        request.getName(),
-                        request.getEmail(),
-                        request.getEmail(),
-                        request.getSubject(),
+                .formatted(request.getName(), request.getEmail(), request.getEmail(), request.getSubject(),
                         request.getMessage());
     }
 
