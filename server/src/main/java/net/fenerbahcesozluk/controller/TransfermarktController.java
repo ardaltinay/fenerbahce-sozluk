@@ -68,7 +68,8 @@ public class TransfermarktController {
     }
 
     Topic topic = topicRepository.findById(topicId)
-        .orElseThrow(() -> new RuntimeException("Topic not found"));
+        .orElseThrow(() -> new net.fenerbahcesozluk.exception.BusinessException("Topic bulunamadı",
+            org.springframework.http.HttpStatus.NOT_FOUND));
 
     topic.setTopicType(type);
     topic.setTransfermarktId(transfermarktId);
@@ -80,7 +81,8 @@ public class TransfermarktController {
   @DeleteMapping("/topics/{topicId}/unlink")
   public ResponseEntity<?> unlinkTransfermarkt(@PathVariable UUID topicId) {
     Topic topic = topicRepository.findById(topicId)
-        .orElseThrow(() -> new RuntimeException("Topic not found"));
+        .orElseThrow(() -> new net.fenerbahcesozluk.exception.BusinessException("Topic bulunamadı",
+            org.springframework.http.HttpStatus.NOT_FOUND));
 
     topic.setTopicType(null);
     topic.setTransfermarktId(null);

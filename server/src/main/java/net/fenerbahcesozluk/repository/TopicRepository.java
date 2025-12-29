@@ -20,13 +20,8 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
 
   Page<Topic> findByIsActiveTrueOrderByCreatedAtDesc(Pageable pageable);
 
-  Page<Topic> findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
-
   @Query("SELECT t FROM Topic t WHERE t.isActive = true AND t.entryCount > 0 ORDER BY t.entryCount DESC")
   Page<Topic> findPopularTopics(Pageable pageable);
-
-  @Query("SELECT t FROM Topic t WHERE t.isActive = true AND t.isPinned = true ORDER BY t.createdAt DESC")
-  Page<Topic> findPinnedTopics(Pageable pageable);
 
   @Query("SELECT t FROM Topic t WHERE t.isActive = true AND LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
   Page<Topic> searchByTitle(@Param("keyword") String keyword, Pageable pageable);

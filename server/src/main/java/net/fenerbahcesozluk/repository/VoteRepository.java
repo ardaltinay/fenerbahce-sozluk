@@ -16,17 +16,11 @@ public interface VoteRepository extends JpaRepository<Vote, UUID> {
 
   Optional<Vote> findByEntryIdAndUserId(UUID entryId, UUID userId);
 
-  boolean existsByEntryIdAndUserId(UUID entryId, UUID userId);
-
-  List<Vote> findByUserId(UUID userId);
-
   List<Vote> findByUserIdAndVoteType(UUID userId, VoteType voteType);
 
   // Batch load votes for multiple entries - solves N+1 problem
   @Query("SELECT v FROM Vote v WHERE v.entry.id IN :entryIds AND v.user.id = :userId")
   List<Vote> findByEntryIdsAndUserId(@Param("entryIds") List<UUID> entryIds, @Param("userId") UUID userId);
-
-  void deleteByEntryIdAndUserId(UUID entryId, UUID userId);
 
   long countByVoteType(VoteType voteType);
 

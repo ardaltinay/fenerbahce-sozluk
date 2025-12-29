@@ -169,4 +169,19 @@ public class AuthService {
     var tokenEntity = passwordResetTokenRepository.findByTokenAndUsedFalse(token);
     return tokenEntity.isPresent() && tokenEntity.get().isValid();
   }
+
+  /**
+   * Scheduled cleanup of expired password reset tokens.
+   * Runs every day at 3 AM.
+   */
+  @Transactional
+  @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 3 * * *")
+  public void cleanupExpiredTokens() {
+    try {
+      passwordResetTokenRepository.deleteExpiredTokens(LocalDateTime.now());
+      log.info("Expired password reset tokens cleaned up");
+    } catch (Exception e) {
+      log.error("Error cleaning up expired tokens", e);
+    }
+  }
 }

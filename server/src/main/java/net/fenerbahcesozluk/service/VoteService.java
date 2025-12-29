@@ -25,7 +25,8 @@ public class VoteService {
   @Transactional
   public void vote(VoteRequest request, User user) {
     Entry entry = entryRepository.findById(request.getEntryId())
-        .orElseThrow(() -> new RuntimeException("Entry bulunamadı"));
+        .orElseThrow(() -> new net.fenerbahcesozluk.exception.BusinessException("Entry bulunamadı",
+            org.springframework.http.HttpStatus.NOT_FOUND));
 
     // Check if user already voted
     Optional<Vote> existingVote = voteRepository.findByEntryIdAndUserId(
