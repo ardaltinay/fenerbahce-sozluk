@@ -78,8 +78,7 @@ public class AuthService {
             if (bannedUntil.getYear() > LocalDateTime.now().getYear() + 50) {
                 dateStr = "Süresiz";
             } else {
-                DateTimeFormatter formatter = DateTimeFormatter
-                        .ofPattern("dd.MM.yyyy HH:mm");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
                 dateStr = bannedUntil.format(formatter);
             }
 
