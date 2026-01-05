@@ -1,58 +1,58 @@
 <template>
   <aside class="sidebar">
     <!-- bugün section -->
-    <template v-if="todayTopics.length > 0">
+    <template v-if="topicsStore.todayTopics.length > 0">
       <div class="sidebar-header">bugün</div>
       <nav class="topic-list">
         <button
-          v-for="topic in todayTopics"
+          v-for="topic in topicsStore.todayTopics"
           :key="topic.id"
           class="topic-item"
-          :class="{ 'active': isTopicActive(topic) }"
-          @click="navigateToTopic(topic)"
+          :class="{ 'active': isTopicActive(topic, 'today') }"
+          @click="navigateToTopic(topic, 'today')"
         >
           <span class="topic-title">{{ topic.title }}</span>
-          <span class="topic-count">{{ formatCount(topic.entryCount) }}</span>
+          <span class="topic-count">{{ formatCount(topic.todayEntryCount || topic.entryCount) }}</span>
         </button>
       </nav>
     </template>
 
     <!-- dün section -->
-    <template v-if="yesterdayTopics.length > 0">
+    <template v-if="topicsStore.yesterdayTopics.length > 0">
       <div class="sidebar-header">dün</div>
       <nav class="topic-list">
         <button
-          v-for="topic in yesterdayTopics"
+          v-for="topic in topicsStore.yesterdayTopics"
           :key="topic.id"
           class="topic-item"
-          :class="{ 'active': isTopicActive(topic) }"
-          @click="navigateToTopic(topic)"
+          :class="{ 'active': isTopicActive(topic, 'yesterday') }"
+          @click="navigateToTopic(topic, 'yesterday')"
         >
           <span class="topic-title">{{ topic.title }}</span>
-          <span class="topic-count">{{ formatCount(topic.entryCount) }}</span>
+          <span class="topic-count">{{ formatCount(topic.todayEntryCount || topic.entryCount) }}</span>
         </button>
       </nav>
     </template>
 
     <!-- önceki günler section -->
-    <template v-if="olderTopics.length > 0">
+    <template v-if="topicsStore.olderTopics.length > 0">
       <div class="sidebar-header">önceki günler</div>
       <nav class="topic-list">
         <button
-          v-for="topic in olderTopics"
+          v-for="topic in topicsStore.olderTopics"
           :key="topic.id"
           class="topic-item"
-          :class="{ 'active': isTopicActive(topic) }"
-          @click="navigateToTopic(topic)"
+          :class="{ 'active': isTopicActive(topic, 'older') }"
+          @click="navigateToTopic(topic, 'older')"
         >
           <span class="topic-title">{{ topic.title }}</span>
-          <span class="topic-count">{{ formatCount(topic.entryCount) }}</span>
+          <span class="topic-count">{{ formatCount(topic.olderEntryCount || topic.entryCount) }}</span>
         </button>
       </nav>
     </template>
 
     <!-- Fallback if no topics at all -->
-    <template v-if="topicsStore.sidebarTopics.length === 0">
+    <template v-if="topicsStore.todayTopics.length === 0 && topicsStore.yesterdayTopics.length === 0 && topicsStore.olderTopics.length === 0">
       <div class="sidebar-header">bugünün konuları</div>
       <div class="empty-sidebar">henüz konu yok</div>
     </template>
@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTopicsStore } from '@/stores/topics'
 import { useWebSocket } from '@/composables/useWebSocket'
@@ -70,67 +70,36 @@ const route = useRoute()
 const topicsStore = useTopicsStore()
 const { connect, subscribeToSidebar } = useWebSocket()
 
-// Date helpers
-function isToday(date) {
-  if (!date) return false
-  const today = new Date()
-  const d = new Date(date)
-  return d.getDate() === today.getDate() &&
-         d.getMonth() === today.getMonth() &&
-         d.getFullYear() === today.getFullYear()
+function navigateToTopic(topic, dateFilter = null) {
+  if (dateFilter) {
+    router.push({ path: `/baslik/${topic.id}`, query: { dateFilter } })
+  } else {
+    router.push(`/baslik/${topic.id}`)
+  }
 }
 
-function isYesterday(date) {
-  if (!date) return false
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const d = new Date(date)
-  return d.getDate() === yesterday.getDate() &&
-         d.getMonth() === yesterday.getMonth() &&
-         d.getFullYear() === yesterday.getFullYear()
-}
-
-// Grouped topics computed
-const todayTopics = computed(() => 
-  topicsStore.sidebarTopics.filter(t => isToday(t.lastActivityAt || t.updatedAt))
-)
-
-const yesterdayTopics = computed(() => 
-  topicsStore.sidebarTopics.filter(t => isYesterday(t.lastActivityAt || t.updatedAt))
-)
-
-const olderTopics = computed(() => 
-  topicsStore.sidebarTopics.filter(t => {
-    const date = t.lastActivityAt || t.updatedAt
-    return date && !isToday(date) && !isYesterday(date)
-  })
-)
-
-function navigateToTopic(topic) {
-  router.push(`/baslik/${topic.id}`)
-}
-
-function isTopicActive(topic) {
+function isTopicActive(topic, sectionDateFilter) {
   if (route.name === 'TopicDetail') {
     const currentId = route.params.id
-    return currentId === topic.id
+    const currentDateFilter = route.query.dateFilter || null
+    return currentId === topic.id && currentDateFilter === sectionDateFilter
   }
   return false
 }
 
 function formatCount(n) {
+  if (!n) return 0
   return n >= 1000 ? Math.floor(n/1000) + 'b' : n
 }
 
 onMounted(() => {
-  if (topicsStore.sidebarTopics.length === 0) {
-    topicsStore.fetchSidebarTopics(0, 50)
-  }
+  // Fetch date-based topics for sidebar
+  topicsStore.fetchAllSidebarTopicsByDate()
   
   connect()
   subscribeToSidebar(() => {
     // Force refresh to bypass cache when WebSocket notifies of changes
-    topicsStore.fetchSidebarTopics(0, 50, true)
+    topicsStore.fetchAllSidebarTopicsByDate(true)
   })
 })
 </script>
@@ -205,3 +174,4 @@ onMounted(() => {
   font-size: 0.8rem;
 }
 </style>
+

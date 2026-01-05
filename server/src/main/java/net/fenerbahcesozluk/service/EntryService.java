@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +40,43 @@ public class EntryService {
 
     public Page<EntryResponse> getEntriesByTopic(UUID topicId, User currentUser, Pageable pageable) {
         Page<Entry> entries = entryRepository.findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(topicId, pageable);
+        return toResponsePage(entries, currentUser);
+    }
+
+    /**
+     * Get entries by topic with optional date filter
+     * 
+     * @param dateFilter: "today", "yesterday", "older", or null for all
+     */
+    public Page<EntryResponse> getEntriesByTopicWithDateFilter(UUID topicId, String dateFilter, User currentUser,
+            Pageable pageable) {
+        if (dateFilter == null || dateFilter.isEmpty()) {
+            return getEntriesByTopic(topicId, currentUser, pageable);
+        }
+
+        LocalDate today = LocalDate.now();
+        Page<Entry> entries;
+
+        switch (dateFilter.toLowerCase()) {
+            case "today" -> {
+                LocalDateTime todayStart = today.atStartOfDay();
+                LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+                entries = entryRepository.findByTopicIdAndDateRange(topicId, todayStart, todayEnd, pageable);
+            }
+            case "yesterday" -> {
+                LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
+                LocalDateTime yesterdayEnd = today.atStartOfDay();
+                entries = entryRepository.findByTopicIdAndDateRange(topicId, yesterdayStart, yesterdayEnd, pageable);
+            }
+            case "older" -> {
+                LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
+                entries = entryRepository.findByTopicIdBefore(topicId, yesterdayStart, pageable);
+            }
+            default -> {
+                entries = entryRepository.findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(topicId, pageable);
+            }
+        }
+
         return toResponsePage(entries, currentUser);
     }
 

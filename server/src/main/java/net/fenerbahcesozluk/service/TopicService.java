@@ -7,6 +7,7 @@ import net.fenerbahcesozluk.dto.TopicResponse;
 import net.fenerbahcesozluk.entity.Topic;
 import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.exception.BusinessException;
+import net.fenerbahcesozluk.repository.EntryRepository;
 import net.fenerbahcesozluk.repository.TopicRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class TopicService {
 
     private final TopicRepository topicRepository;
+    private final EntryRepository entryRepository;
     private final StatsService statsService;
 
     public Page<TopicResponse> getAllTopics(Pageable pageable) {
@@ -56,6 +58,34 @@ public class TopicService {
         return CacheablePage.of(page);
     }
 
+    /**
+     * Get topics by date period: today, yesterday, or older
+     */
+    public Page<TopicResponse> getTopicsByDatePeriod(String period, Pageable pageable) {
+        LocalDate today = LocalDate.now();
+
+        return switch (period.toLowerCase()) {
+            case "today" -> {
+                LocalDateTime todayStart = today.atStartOfDay();
+                LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+                yield topicRepository.findTopicsWithEntriesInDateRange(todayStart, todayEnd, pageable)
+                        .map(topic -> toResponseWithDateCounts(topic, todayStart, todayEnd));
+            }
+            case "yesterday" -> {
+                LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
+                LocalDateTime yesterdayEnd = today.atStartOfDay();
+                yield topicRepository.findTopicsWithEntriesInDateRange(yesterdayStart, yesterdayEnd, pageable)
+                        .map(topic -> toResponseWithDateCounts(topic, yesterdayStart, yesterdayEnd));
+            }
+            case "older" -> {
+                LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
+                yield topicRepository.findTopicsWithEntriesBefore(yesterdayStart, pageable)
+                        .map(topic -> toResponseWithOlderCounts(topic, yesterdayStart));
+            }
+            default -> topicRepository.findByIsActiveTrueOrderByCreatedAtDesc(pageable).map(this::toResponse);
+        };
+    }
+
     public Page<TopicResponse> searchTopics(String keyword, Pageable pageable) {
         return topicRepository.searchByTitle(keyword, pageable).map(this::toResponse);
     }
@@ -63,7 +93,13 @@ public class TopicService {
     public TopicResponse getTopicById(UUID id) {
         Topic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
-        return toResponse(topic);
+
+        // Check if topic is active (not deleted)
+        if (!topic.isActive()) {
+            throw new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND);
+        }
+
+        return toResponseWithAllDateCounts(topic);
     }
 
     @Transactional
@@ -72,7 +108,7 @@ public class TopicService {
             throw new BusinessException("Başlık 50 karakterden uzun olamaz", HttpStatus.BAD_REQUEST);
         }
 
-        topicRepository.findByTitleIgnoreCase(request.getTitle()).ifPresent(t -> {
+        topicRepository.findByTitleIgnoreCaseAndIsActiveTrue(request.getTitle()).ifPresent(t -> {
             throw new BusinessException("duplicate_topic:" + t.getId(), HttpStatus.CONFLICT);
         });
 
@@ -130,16 +166,97 @@ public class TopicService {
     }
 
     private TopicResponse toResponse(Topic topic) {
-        return TopicResponse.builder().id(topic.getId()).title(topic.getTitle()).authorId(topic.getAuthor().getId())
-                .authorUsername(topic.getAuthor().getUsername()).entryCount(topic.getEntryCount())
-                .viewCount(topic.getViewCount()).isLocked(topic.isLocked()).isPinned(topic.isPinned())
-                .topicType(topic.getTopicType()).transfermarktId(topic.getTransfermarktId())
-                .createdAt(topic.getCreatedAt()).updatedAt(topic.getUpdatedAt()).lastActivityAt(topic.getUpdatedAt())
+        return TopicResponse.builder()
+                .id(topic.getId())
+                .title(topic.getTitle())
+                .authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername())
+                .entryCount(topic.getEntryCount())
+                .viewCount(topic.getViewCount())
+                .isLocked(topic.isLocked())
+                .isPinned(topic.isPinned())
+                .topicType(topic.getTopicType())
+                .transfermarktId(topic.getTransfermarktId())
+                .createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt())
+                .lastActivityAt(topic.getUpdatedAt())
                 .build();
     }
 
-    @Caching(evict = {@CacheEvict(value = "trendingTopics", allEntries = true),
-            @CacheEvict(value = "popularTopics", allEntries = true)})
+    private TopicResponse toResponseWithDateCounts(Topic topic, LocalDateTime periodStart, LocalDateTime periodEnd) {
+        Integer periodCount = entryRepository.countByTopicIdAndDateRange(topic.getId(), periodStart, periodEnd);
+
+        return TopicResponse.builder()
+                .id(topic.getId())
+                .title(topic.getTitle())
+                .authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername())
+                .entryCount(topic.getEntryCount())
+                .todayEntryCount(periodCount) // For sidebar, we show the period count in todayEntryCount
+                .viewCount(topic.getViewCount())
+                .isLocked(topic.isLocked())
+                .isPinned(topic.isPinned())
+                .topicType(topic.getTopicType())
+                .transfermarktId(topic.getTransfermarktId())
+                .createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt())
+                .lastActivityAt(topic.getUpdatedAt())
+                .build();
+    }
+
+    private TopicResponse toResponseWithOlderCounts(Topic topic, LocalDateTime before) {
+        Integer olderCount = entryRepository.countByTopicIdBefore(topic.getId(), before);
+
+        return TopicResponse.builder()
+                .id(topic.getId())
+                .title(topic.getTitle())
+                .authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername())
+                .entryCount(topic.getEntryCount())
+                .olderEntryCount(olderCount)
+                .viewCount(topic.getViewCount())
+                .isLocked(topic.isLocked())
+                .isPinned(topic.isPinned())
+                .topicType(topic.getTopicType())
+                .transfermarktId(topic.getTransfermarktId())
+                .createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt())
+                .lastActivityAt(topic.getUpdatedAt())
+                .build();
+    }
+
+    private TopicResponse toResponseWithAllDateCounts(Topic topic) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime todayStart = today.atStartOfDay();
+        LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+        LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
+
+        Integer todayCount = entryRepository.countByTopicIdAndDateRange(topic.getId(), todayStart, todayEnd);
+        Integer yesterdayCount = entryRepository.countByTopicIdAndDateRange(topic.getId(), yesterdayStart, todayStart);
+        Integer olderCount = entryRepository.countByTopicIdBefore(topic.getId(), yesterdayStart);
+
+        return TopicResponse.builder()
+                .id(topic.getId())
+                .title(topic.getTitle())
+                .authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername())
+                .entryCount(topic.getEntryCount())
+                .todayEntryCount(todayCount)
+                .yesterdayEntryCount(yesterdayCount)
+                .olderEntryCount(olderCount)
+                .viewCount(topic.getViewCount())
+                .isLocked(topic.isLocked())
+                .isPinned(topic.isPinned())
+                .topicType(topic.getTopicType())
+                .transfermarktId(topic.getTransfermarktId())
+                .createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt())
+                .lastActivityAt(topic.getUpdatedAt())
+                .build();
+    }
+
+    @Caching(evict = { @CacheEvict(value = "trendingTopics", allEntries = true),
+            @CacheEvict(value = "popularTopics", allEntries = true) })
     public void evictTopicCaches() {
         // Evict topic list caches
     }

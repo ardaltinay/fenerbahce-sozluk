@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,25 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
     Page<Entry> findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(UUID topicId, Pageable pageable);
 
     Page<Entry> findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
+
+    // Date-filtered entries for a topic
+    @Query("SELECT e FROM Entry e WHERE e.topic.id = :topicId AND e.isActive = true AND e.createdAt >= :start AND e.createdAt < :end ORDER BY e.createdAt ASC")
+    Page<Entry> findByTopicIdAndDateRange(@Param("topicId") UUID topicId, @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end, Pageable pageable);
+
+    // Count entries by topic and date range
+    @Query("SELECT COUNT(e) FROM Entry e WHERE e.topic.id = :topicId AND e.isActive = true AND e.createdAt >= :start AND e.createdAt < :end")
+    Integer countByTopicIdAndDateRange(@Param("topicId") UUID topicId, @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    // Count entries before a date (for "older" count)
+    @Query("SELECT COUNT(e) FROM Entry e WHERE e.topic.id = :topicId AND e.isActive = true AND e.createdAt < :before")
+    Integer countByTopicIdBefore(@Param("topicId") UUID topicId, @Param("before") LocalDateTime before);
+
+    // Find entries before a date (for "older" section)
+    @Query("SELECT e FROM Entry e WHERE e.topic.id = :topicId AND e.isActive = true AND e.createdAt < :before ORDER BY e.createdAt ASC")
+    Page<Entry> findByTopicIdBefore(@Param("topicId") UUID topicId, @Param("before") LocalDateTime before,
+            Pageable pageable);
 
     @Query("SELECT e FROM Entry e WHERE e.isActive = true ORDER BY e.likeCount DESC, e.createdAt DESC")
     Page<Entry> findPopularEntries(Pageable pageable);

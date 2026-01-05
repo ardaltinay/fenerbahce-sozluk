@@ -6,6 +6,9 @@ export const useTopicsStore = defineStore('topics', () => {
 
   const topics = ref([])
   const sidebarTopics = ref([])
+  const todayTopics = ref([])
+  const yesterdayTopics = ref([])
+  const olderTopics = ref([])
   const popularTopics = ref([])
   const currentTopic = ref(null)
   const loading = ref(false)
@@ -91,6 +94,38 @@ export const useTopicsStore = defineStore('topics', () => {
     }
   }
 
+  /**
+   * Fetch topics by date period for sidebar grouping
+   * @param period: 'today', 'yesterday', 'older'
+   */
+  async function fetchTopicsByDate(period, page = 0, size = 50, force = false) {
+    const targetRef = period === 'today' ? todayTopics
+      : period === 'yesterday' ? yesterdayTopics
+        : olderTopics
+
+    if (!force && targetRef.value.length > 0) {
+      return
+    }
+
+    try {
+      const response = await topicsApi.getByDate(period, page, size)
+      targetRef.value = response.data.content || response.data
+    } catch (err) {
+      console.error(`${period} topics fetch error:`, err.message)
+    }
+  }
+
+  /**
+   * Fetch all date-based topics for sidebar
+   */
+  async function fetchAllSidebarTopicsByDate(force = false) {
+    await Promise.all([
+      fetchTopicsByDate('today', 0, 50, force),
+      fetchTopicsByDate('yesterday', 0, 50, force),
+      fetchTopicsByDate('older', 0, 50, force)
+    ])
+  }
+
 
   async function fetchTopicById(id) {
     loading.value = true
@@ -163,6 +198,9 @@ export const useTopicsStore = defineStore('topics', () => {
   return {
     topics,
     sidebarTopics,
+    todayTopics,
+    yesterdayTopics,
+    olderTopics,
     popularTopics,
     currentTopic,
     loading,
@@ -173,6 +211,8 @@ export const useTopicsStore = defineStore('topics', () => {
     fetchPopularTopics,
     fetchTrendingTopics,
     fetchSidebarTopics,
+    fetchTopicsByDate,
+    fetchAllSidebarTopicsByDate,
     fetchTopicById,
     searchTopics,
     createTopic,
@@ -180,3 +220,4 @@ export const useTopicsStore = defineStore('topics', () => {
     setCurrentTopic,
   }
 })
+

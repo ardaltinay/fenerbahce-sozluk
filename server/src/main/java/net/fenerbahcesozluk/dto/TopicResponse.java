@@ -19,6 +19,9 @@ public class TopicResponse {
     private String authorUsername;
     private UUID authorId;
     private Integer entryCount;
+    private Integer todayEntryCount;
+    private Integer yesterdayEntryCount;
+    private Integer olderEntryCount;
     private Long viewCount;
     private boolean isLocked;
     private boolean isPinned;

@@ -40,9 +40,11 @@ public class EntryController {
 
     @GetMapping("/topic/{topicId}")
     public ResponseEntity<Page<EntryResponse>> getEntriesByTopic(@PathVariable UUID topicId,
+            @RequestParam(required = false) String dateFilter,
             @AuthenticationPrincipal User currentUser,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(entryService.getEntriesByTopic(topicId, currentUser, pageable));
+        return ResponseEntity
+                .ok(entryService.getEntriesByTopicWithDateFilter(topicId, dateFilter, currentUser, pageable));
     }
 
     @GetMapping("/author/{authorId}")

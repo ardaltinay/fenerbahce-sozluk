@@ -58,6 +58,8 @@ export const topicsApi = {
     api.get(`/api/topics/popular`, { params: { page, size } }),
   getTrends: (page = 0, size = 50) =>
     api.get(`/api/topics/trends`, { params: { page, size } }),
+  getByDate: (period, page = 0, size = 50) =>
+    api.get(`/api/topics/by-date/${period}`, { params: { page, size } }),
   getById: (id) => api.get(`/api/topics/${id}`),
 
   search: (keyword, page = 0, size = 20) =>
@@ -70,8 +72,8 @@ export const topicsApi = {
 
 // Entries API
 export const entriesApi = {
-  getByTopic: (topicId, page = 0, size = 20) =>
-    api.get(`/api/entries/topic/${topicId}`, { params: { page, size } }),
+  getByTopic: (topicId, page = 0, size = 20, dateFilter = null) =>
+    api.get(`/api/entries/topic/${topicId}`, { params: { page, size, dateFilter } }),
   getByAuthor: (authorId, page = 0, size = 20) =>
     api.get(`/api/entries/author/${authorId}`, { params: { page, size } }),
   getPopular: (page = 0, size = 20) =>

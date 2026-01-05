@@ -59,6 +59,12 @@ public class TopicController {
         return ResponseEntity.ok(topicService.searchTopics(keyword, pageable));
     }
 
+    @GetMapping("/by-date/{period}")
+    public ResponseEntity<Page<TopicResponse>> getTopicsByDate(@PathVariable String period,
+            @PageableDefault(size = 50) Pageable pageable) {
+        return ResponseEntity.ok(topicService.getTopicsByDatePeriod(period, pageable));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<TopicResponse> getTopicById(@PathVariable UUID id) {
         topicService.incrementViewCount(id);

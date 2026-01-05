@@ -21,6 +21,38 @@
               <div class="topic-meta">
                 <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || 0 }} entry</span>
               </div>
+
+              <!-- Date Filter Tabs -->
+              <div v-if="topic" class="date-filter-tabs">
+                <button 
+                  :class="{ active: !activeDateFilter }"
+                  @click="setDateFilter(null)"
+                >
+                  tümü ({{ topic.entryCount || 0 }})
+                </button>
+                <button 
+                  v-if="topic.todayEntryCount > 0"
+                  :class="{ active: activeDateFilter === 'today' }"
+                  @click="setDateFilter('today')"
+                >
+                  bugün ({{ topic.todayEntryCount }})
+                </button>
+                <button 
+                  v-if="topic.yesterdayEntryCount > 0"
+                  :class="{ active: activeDateFilter === 'yesterday' }"
+                  @click="setDateFilter('yesterday')"
+                >
+                  dün ({{ topic.yesterdayEntryCount }})
+                </button>
+                <button 
+                  v-if="topic.olderEntryCount > 0"
+                  :class="{ active: activeDateFilter === 'older' }"
+                  @click="setDateFilter('older')"
+                >
+                  önceki günler ({{ topic.olderEntryCount }})
+                </button>
+              </div>
+
               <!-- Topic Actions -->
               <div class="topic-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
                 <!-- Add Transfermarkt Button (only if no transfermarkt exists) -->
@@ -449,6 +481,7 @@ function goBack() {
 const loading = ref(true)
 const newEntry = ref('')
 const submitting = ref(false)
+const activeDateFilter = ref(null)
 
 // Transfermarkt modal
 const showTransfermarktModal = ref(false)
@@ -597,6 +630,8 @@ async function confirmDeleteTopic() {
   const result = await topicsStore.deleteTopic(topic.value.id, deleteTopicReason.value)
   if (result.success) {
     closeTopicDeleteModal()
+    // Refresh sidebar to remove deleted topic
+    topicsStore.fetchAllSidebarTopicsByDate(true)
     router.push('/')
   } else {
     toast.error(result.message || 'Başlık silinemedi')
@@ -620,16 +655,20 @@ async function submitEntry() {
   
   if (result.success) {
     newEntry.value = ''
-    topicsStore.fetchSidebarTopics(0, 50)
+    topicsStore.fetchAllSidebarTopicsByDate(true)
     // Refresh topic info for entry count
     await topicsStore.fetchTopicById(topic.value.id)
     
-    // Calculate last page
-    const entryCount = topic.value.entryCount
-    const lastPage = Math.max(0, Math.ceil(entryCount / 10) - 1)
+    // New entry is created today, so switch to "today" filter or "all" to see it
+    activeDateFilter.value = 'today'
+    router.replace({ path: route.path, query: { dateFilter: 'today' } })
     
-    // Fetch and go to last page
-    await entriesStore.fetchEntriesByTopic(topic.value.id, lastPage, 10, true)
+    // Calculate last page for today's entries
+    const todayEntryCount = topic.value.todayEntryCount || 1
+    const lastPage = Math.max(0, Math.ceil(todayEntryCount / 10) - 1)
+    
+    // Fetch and go to last page of today's entries
+    await entriesStore.fetchEntriesByTopic(topic.value.id, lastPage, 10, true, 'today')
     
     // Scroll to the new entry (bottom of page usually)
     setTimeout(() => {
@@ -648,14 +687,26 @@ async function submitEntry() {
 
 function changePage(page) {
   if (page < 0 || page >= entriesStore.totalPages) return
-  entriesStore.fetchEntriesByTopic(topic.value.id, page, 10)
+  entriesStore.fetchEntriesByTopic(topic.value.id, page, 10, false, activeDateFilter.value)
   window.scrollTo(0, 0)
 }
-async function fetchData(id) {
+
+function setDateFilter(filter) {
+  activeDateFilter.value = filter
+  if (filter) {
+    router.replace({ path: route.path, query: { dateFilter: filter } })
+  } else {
+    router.replace({ path: route.path, query: {} })
+  }
+  entriesStore.fetchEntriesByTopic(topic.value.id, 0, 10, true, filter)
+}
+
+async function fetchData(id, dateFilter = null) {
   loading.value = true
   await topicsStore.fetchTopicById(id)
   if (topic.value?.id) {
-    await entriesStore.fetchEntriesByTopic(topic.value.id, 0, 10)
+    activeDateFilter.value = dateFilter
+    await entriesStore.fetchEntriesByTopic(topic.value.id, 0, 10, false, dateFilter)
   } else {
     // Topic not found or invalid ID, redirect to 404
     router.push('/404')
@@ -665,13 +716,25 @@ async function fetchData(id) {
 
 watch(() => route.params.id, (newId) => {
   if (newId) {
-    fetchData(newId)
+    const dateFilter = route.query.dateFilter || null
+    fetchData(newId, dateFilter)
+  }
+})
+
+// Watch for dateFilter query changes (same topic, different date section)
+watch(() => route.query.dateFilter, (newDateFilter, oldDateFilter) => {
+  // Only react if we're on the same topic (id didn't change)
+  if (route.params.id && newDateFilter !== oldDateFilter) {
+    const dateFilter = newDateFilter || null
+    activeDateFilter.value = dateFilter
+    entriesStore.fetchEntriesByTopic(topic.value.id, 0, 10, true, dateFilter)
   }
 })
 
 onMounted(() => {
   if (route.params.id) {
-    fetchData(route.params.id)
+    const dateFilter = route.query.dateFilter || null
+    fetchData(route.params.id, dateFilter)
   }
   
   // Check for draft content from NewTopicModal redirect
@@ -859,6 +922,35 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+.date-filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.date-filter-tabs button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(212, 200, 74, 0.3);
+  border-radius: 16px;
+  background: rgba(26, 26, 46, 0.6);
+  color: #999;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-filter-tabs button:hover {
+  border-color: #d4c84a;
+  color: #d4c84a;
+}
+
+.date-filter-tabs button.active {
+  background: rgba(212, 200, 74, 0.15);
+  border-color: #d4c84a;
+  color: #d4c84a;
 }
 
 .icon {

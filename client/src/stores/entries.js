@@ -27,13 +27,14 @@ export const useEntriesStore = defineStore('entries', () => {
     currentFetchId++ // Invalidate any pending requests
   }
 
-  async function fetchEntriesByTopic(topicId, page = 0, size = 10, clearFirst = false) {
+  async function fetchEntriesByTopic(topicId, page = 0, size = 10, clearFirst = false, dateFilter = null) {
     // Return cached if context matches
     if (!clearFirst &&
       allEntries.value.length > 0 &&
       lastFetchContext.value.type === 'topic' &&
       lastFetchContext.value.id === topicId &&
-      lastFetchContext.value.page === page) {
+      lastFetchContext.value.page === page &&
+      lastFetchContext.value.dateFilter === dateFilter) {
       return
     }
 
@@ -43,14 +44,14 @@ export const useEntriesStore = defineStore('entries', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await entriesApi.getByTopic(topicId, page, size)
+      const response = await entriesApi.getByTopic(topicId, page, size, dateFilter)
       // Discard if a new fetch has started
       if (fetchId !== currentFetchId) return
 
       allEntries.value = response.data.content || response.data
       totalPages.value = response.data.totalPages || 1
       currentPage.value = page
-      lastFetchContext.value = { type: 'topic', id: topicId, page: page }
+      lastFetchContext.value = { type: 'topic', id: topicId, page: page, dateFilter: dateFilter }
     } catch (err) {
       if (fetchId !== currentFetchId) return
 
