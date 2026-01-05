@@ -129,7 +129,8 @@ onMounted(() => {
   
   connect()
   subscribeToSidebar(() => {
-    topicsStore.fetchSidebarTopics(0, 50)
+    // Force refresh to bypass cache when WebSocket notifies of changes
+    topicsStore.fetchSidebarTopics(0, 50, true)
   })
 })
 </script>

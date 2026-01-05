@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -20,8 +21,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +45,7 @@ public class NewsService {
 
     @EventListener(ApplicationReadyEvent.class)
     @Scheduled(fixedRate = 3600000) // Every 1 hour
+    @Transactional
     public void fetchNewsTask() {
         log.info("Starting scheduled news fetch task...");
         for (String feedUrl : RSS_FEEDS) {
@@ -77,16 +81,34 @@ public class NewsService {
 
         NodeList items = doc.getElementsByTagName("item");
 
+        // Batch load existing data for duplicate checking (2 queries instead of N*2)
+        Set<String> existingGuids = newsRepository.findAllGuids();
+        Set<String> recentTitles = newsRepository.findRecentTitlesLowerCase(LocalDateTime.now().minusHours(6));
+
+        List<News> newsToSave = new ArrayList<>();
+
         for (int i = 0; i < items.getLength(); i++) {
             Node node = items.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE) {
                 Element element = (Element) node;
-                processItem(element, sourceName);
+                News news = processItem(element, sourceName, existingGuids, recentTitles);
+                if (news != null) {
+                    newsToSave.add(news);
+                    // Add to sets to prevent duplicates within same feed
+                    existingGuids.add(news.getGuid());
+                    recentTitles.add(news.getTitle().toLowerCase(Locale.forLanguageTag("tr")));
+                }
             }
+        }
+
+        // Batch save all news at once
+        if (!newsToSave.isEmpty()) {
+            newsRepository.saveAll(newsToSave);
+            log.info("Saved {} news items from {}", newsToSave.size(), sourceName);
         }
     }
 
-    private void processItem(Element element, String sourceName) {
+    private News processItem(Element element, String sourceName, Set<String> existingGuids, Set<String> recentTitles) {
         try {
             String title = getElementValue(element, "title");
             String link = getElementValue(element, "link");
@@ -101,24 +123,26 @@ public class NewsService {
             // 1. Check if relevant to Fenerbahçe (unless source is specific like
             // fanatik/fenerbahce)
             if (!isRelevant(title, description, sourceName)) {
-                return;
+                return null;
             }
 
-            // 2. Check duplicates by GUID
-            if (newsRepository.existsByGuid(guid)) {
-                return;
+            // 2. Check duplicates by GUID (memory check instead of DB)
+            if (existingGuids.contains(guid)) {
+                return null;
             }
 
-            // 3. Check if same title exists from another source (within last 6 hours)
-            if (newsRepository.existsByTitleIgnoreCaseAndPubDateAfter(title, LocalDateTime.now().minusHours(6))) {
+            // 3. Check if same title exists from another source (memory check instead of
+            // DB)
+            String titleLower = title.toLowerCase(Locale.forLanguageTag("tr"));
+            if (recentTitles.contains(titleLower)) {
                 log.debug("Duplicate news title found, skipping: {}", title);
-                return;
+                return null;
             }
 
-            // 3. Extract Image
+            // 4. Extract Image
             String imageUrl = extractImage(element, description);
 
-            // 4. Parse Date
+            // 5. Parse Date
             LocalDateTime pubDate;
             try {
                 if (pubDateStr != null && !pubDateStr.isEmpty()) {
@@ -131,14 +155,19 @@ public class NewsService {
                 pubDate = LocalDateTime.now();
             }
 
-            News news = News.builder().title(title).link(link).description(cleanHtml(description)).imageUrl(imageUrl)
-                    .source(sourceName).pubDate(pubDate).guid(guid).build();
-
-            newsRepository.save(news);
-            log.debug("Saved news: {}", title);
+            return News.builder()
+                    .title(title)
+                    .link(link)
+                    .description(cleanHtml(description))
+                    .imageUrl(imageUrl)
+                    .source(sourceName)
+                    .pubDate(pubDate)
+                    .guid(guid)
+                    .build();
 
         } catch (Exception e) {
             log.error("Error processing item", e);
+            return null;
         }
     }
 

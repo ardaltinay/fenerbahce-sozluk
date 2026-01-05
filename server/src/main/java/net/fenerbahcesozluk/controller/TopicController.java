@@ -1,11 +1,15 @@
 package net.fenerbahcesozluk.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.dto.TopicRequest;
 import net.fenerbahcesozluk.dto.TopicResponse;
 import net.fenerbahcesozluk.entity.User;
+import net.fenerbahcesozluk.exception.RateLimitExceededException;
+import net.fenerbahcesozluk.service.RateLimitService;
 import net.fenerbahcesozluk.service.TopicService;
+import net.fenerbahcesozluk.util.HttpUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,6 +35,7 @@ import java.util.UUID;
 public class TopicController {
 
     private final TopicService topicService;
+    private final RateLimitService rateLimitService;
 
     @GetMapping
     public ResponseEntity<Page<TopicResponse>> getAllTopics(
@@ -62,7 +67,15 @@ public class TopicController {
 
     @PostMapping
     public ResponseEntity<TopicResponse> createTopic(@Valid @RequestBody TopicRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal User currentUser, HttpServletRequest httpRequest) {
+        String clientIp = HttpUtils.getClientIp(httpRequest);
+
+        if (!rateLimitService.isAllowed("topic-create", clientIp)) {
+            long retryAfter = rateLimitService.getSecondsUntilReset("topic-create", clientIp);
+            throw new RateLimitExceededException(
+                    "Çok fazla başlık açtınız. Lütfen " + retryAfter + " saniye sonra tekrar deneyin.", retryAfter);
+        }
+
         return ResponseEntity.ok(topicService.createTopic(request, currentUser));
     }
 
@@ -80,4 +93,5 @@ public class TopicController {
         topicService.deleteTopic(id, reason, currentUser);
         return ResponseEntity.noContent().build();
     }
+
 }

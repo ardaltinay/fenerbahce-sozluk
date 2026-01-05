@@ -7,6 +7,7 @@ import net.fenerbahcesozluk.dto.ContactRequest;
 import net.fenerbahcesozluk.exception.RateLimitExceededException;
 import net.fenerbahcesozluk.service.EmailService;
 import net.fenerbahcesozluk.service.RateLimitService;
+import net.fenerbahcesozluk.util.HttpUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,7 +28,7 @@ public class ContactController {
     public ResponseEntity<Map<String, String>> sendContactMessage(@Valid @RequestBody ContactRequest request,
             HttpServletRequest httpRequest) {
 
-        String clientIp = getClientIp(httpRequest);
+        String clientIp = HttpUtils.getClientIp(httpRequest);
 
         // Rate limit: max 3 contact messages per hour
         if (!rateLimitService.isAllowed("contact", clientIp)) {
@@ -42,15 +43,4 @@ public class ContactController {
                 .ok(Map.of("message", "Mesajınız başarıyla gönderildi. En kısa sürede size dönüş yapacağız."));
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
-    }
 }

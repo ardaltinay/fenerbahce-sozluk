@@ -1,11 +1,15 @@
 package net.fenerbahcesozluk.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.dto.EntryRequest;
 import net.fenerbahcesozluk.dto.EntryResponse;
 import net.fenerbahcesozluk.entity.User;
+import net.fenerbahcesozluk.exception.RateLimitExceededException;
 import net.fenerbahcesozluk.service.EntryService;
+import net.fenerbahcesozluk.util.HttpUtils;
+import net.fenerbahcesozluk.service.RateLimitService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -32,6 +36,7 @@ import java.util.UUID;
 public class EntryController {
 
     private final EntryService entryService;
+    private final RateLimitService rateLimitService;
 
     @GetMapping("/topic/{topicId}")
     public ResponseEntity<Page<EntryResponse>> getEntriesByTopic(@PathVariable UUID topicId,
@@ -99,7 +104,15 @@ public class EntryController {
 
     @PostMapping
     public ResponseEntity<EntryResponse> createEntry(@Valid @RequestBody EntryRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal User currentUser, HttpServletRequest httpRequest) {
+        String clientIp = HttpUtils.getClientIp(httpRequest);
+
+        if (!rateLimitService.isAllowed("entry-create", clientIp)) {
+            long retryAfter = rateLimitService.getSecondsUntilReset("entry-create", clientIp);
+            throw new RateLimitExceededException(
+                    "Çok fazla entry yazdınız. Lütfen " + retryAfter + " saniye sonra tekrar deneyin.", retryAfter);
+        }
+
         return ResponseEntity.ok(entryService.createEntry(request, currentUser));
     }
 
@@ -116,4 +129,5 @@ public class EntryController {
         entryService.deleteEntry(id, reason, currentUser);
         return ResponseEntity.noContent().build();
     }
+
 }

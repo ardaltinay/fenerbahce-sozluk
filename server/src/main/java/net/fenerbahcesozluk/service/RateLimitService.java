@@ -17,40 +17,32 @@ public class RateLimitService {
     private final Map<String, RequestInfo> requestCounts = new ConcurrentHashMap<>();
 
     // Rate limit configurations
-    private static final int LOGIN_MAX_REQUESTS = 5;
-    private static final long LOGIN_WINDOW_MINUTES = 1;
-
-    private static final int REGISTER_MAX_REQUESTS = 3;
-    private static final long REGISTER_WINDOW_MINUTES = 60;
+    private static final Map<String, RateLimitConfig> RATE_LIMITS = Map.of(
+            "login", new RateLimitConfig(5, 1), // 5 per minute
+            "register", new RateLimitConfig(3, 60), // 3 per hour
+            "forgot-password", new RateLimitConfig(3, 60), // 3 per hour
+            "contact", new RateLimitConfig(3, 60), // 3 per hour
+            "entry-create", new RateLimitConfig(10, 1), // 10 per minute
+            "topic-create", new RateLimitConfig(5, 5), // 5 per 5 minutes
+            "vote", new RateLimitConfig(30, 1) // 30 per minute
+    );
 
     /**
      * Check if the request should be rate limited.
      * 
-     * @param endpoint
-     *            The endpoint type ("login" or "register")
-     * @param ip
-     *            The client IP address
+     * @param endpoint The endpoint type
+     * @param ip       The client IP address
      * @return true if the request is allowed, false if rate limited
      */
     public boolean isAllowed(String endpoint, String ip) {
+        RateLimitConfig config = RATE_LIMITS.get(endpoint);
+        if (config == null) {
+            return true; // No rate limiting for unconfigured endpoints
+        }
+
         String key = endpoint + ":" + ip;
         long now = System.currentTimeMillis();
-
-        int maxRequests;
-        long windowMs;
-
-        switch (endpoint) {
-            case "login" :
-                maxRequests = LOGIN_MAX_REQUESTS;
-                windowMs = TimeUnit.MINUTES.toMillis(LOGIN_WINDOW_MINUTES);
-                break;
-            case "register" :
-                maxRequests = REGISTER_MAX_REQUESTS;
-                windowMs = TimeUnit.MINUTES.toMillis(REGISTER_WINDOW_MINUTES);
-                break;
-            default :
-                return true; // No rate limiting for unknown endpoints
-        }
+        long windowMs = TimeUnit.MINUTES.toMillis(config.windowMinutes);
 
         RequestInfo info = requestCounts.compute(key, (k, existing) -> {
             if (existing == null || now - existing.windowStart > windowMs) {
@@ -63,59 +55,42 @@ public class RateLimitService {
             }
         });
 
-        return info.count <= maxRequests;
+        return info.count <= config.maxRequests;
     }
 
     /**
      * Get remaining requests for an endpoint/IP combination.
      */
     public int getRemainingRequests(String endpoint, String ip) {
+        RateLimitConfig config = RATE_LIMITS.get(endpoint);
+        if (config == null) {
+            return Integer.MAX_VALUE;
+        }
+
         String key = endpoint + ":" + ip;
         long now = System.currentTimeMillis();
-
-        int maxRequests;
-        long windowMs;
-
-        switch (endpoint) {
-            case "login" :
-                maxRequests = LOGIN_MAX_REQUESTS;
-                windowMs = TimeUnit.MINUTES.toMillis(LOGIN_WINDOW_MINUTES);
-                break;
-            case "register" :
-                maxRequests = REGISTER_MAX_REQUESTS;
-                windowMs = TimeUnit.MINUTES.toMillis(REGISTER_WINDOW_MINUTES);
-                break;
-            default :
-                return Integer.MAX_VALUE;
-        }
+        long windowMs = TimeUnit.MINUTES.toMillis(config.windowMinutes);
 
         RequestInfo info = requestCounts.get(key);
         if (info == null || now - info.windowStart > windowMs) {
-            return maxRequests;
+            return config.maxRequests;
         }
 
-        return Math.max(0, maxRequests - info.count);
+        return Math.max(0, config.maxRequests - info.count);
     }
 
     /**
      * Get seconds until rate limit resets.
      */
     public long getSecondsUntilReset(String endpoint, String ip) {
+        RateLimitConfig config = RATE_LIMITS.get(endpoint);
+        if (config == null) {
+            return 0;
+        }
+
         String key = endpoint + ":" + ip;
         long now = System.currentTimeMillis();
-
-        long windowMs;
-
-        switch (endpoint) {
-            case "login" :
-                windowMs = TimeUnit.MINUTES.toMillis(LOGIN_WINDOW_MINUTES);
-                break;
-            case "register" :
-                windowMs = TimeUnit.MINUTES.toMillis(REGISTER_WINDOW_MINUTES);
-                break;
-            default :
-                return 0;
-        }
+        long windowMs = TimeUnit.MINUTES.toMillis(config.windowMinutes);
 
         RequestInfo info = requestCounts.get(key);
         if (info == null) {
@@ -132,9 +107,19 @@ public class RateLimitService {
      */
     public void cleanup() {
         long now = System.currentTimeMillis();
-        long maxWindow = TimeUnit.MINUTES.toMillis(REGISTER_WINDOW_MINUTES); // Use longest window
+        long maxWindow = TimeUnit.MINUTES.toMillis(60); // Use longest window (1 hour)
 
         requestCounts.entrySet().removeIf(entry -> now - entry.getValue().windowStart > maxWindow);
+    }
+
+    private static class RateLimitConfig {
+        final int maxRequests;
+        final long windowMinutes;
+
+        RateLimitConfig(int maxRequests, long windowMinutes) {
+            this.maxRequests = maxRequests;
+            this.windowMinutes = windowMinutes;
+        }
     }
 
     private static class RequestInfo {
