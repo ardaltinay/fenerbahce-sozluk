@@ -192,19 +192,55 @@
         <div v-else-if="mobileView === 'gundem'" class="mobile-topics">
           <div class="mobile-section-header">
             <button @click="mobileView = 'home'"><ArrowLeft class="icon" /></button>
-            <span>bugünün konuları</span>
+            <span>gündem</span>
           </div>
-          <button
-            v-for="topic in topicsStore.topics"
-            :key="topic.id"
-            class="mobile-topic-item"
-            @click="openMobileEntries(topic)"
-          >
-            <span>
-              {{ topic.title }}
-            </span>
-            <span class="count">{{ formatCount(topic.entryCount) }}</span>
-          </button>
+          
+          <!-- bugün -->
+          <template v-if="topicsStore.todayTopics.length > 0">
+            <div class="mobile-date-header">bugün</div>
+            <button
+              v-for="topic in topicsStore.todayTopics"
+              :key="topic.id"
+              class="mobile-topic-item"
+              @click="openMobileEntriesWithFilter(topic, 'today')"
+            >
+              <span>{{ topic.title }}</span>
+              <span class="count">{{ formatCount(topic.todayEntryCount || topic.entryCount) }}</span>
+            </button>
+          </template>
+          
+          <!-- dün -->
+          <template v-if="topicsStore.yesterdayTopics.length > 0">
+            <div class="mobile-date-header">dün</div>
+            <button
+              v-for="topic in topicsStore.yesterdayTopics"
+              :key="topic.id"
+              class="mobile-topic-item"
+              @click="openMobileEntriesWithFilter(topic, 'yesterday')"
+            >
+              <span>{{ topic.title }}</span>
+              <span class="count">{{ formatCount(topic.todayEntryCount || topic.entryCount) }}</span>
+            </button>
+          </template>
+          
+          <!-- önceki günler -->
+          <template v-if="topicsStore.olderTopics.length > 0">
+            <div class="mobile-date-header">önceki günler</div>
+            <button
+              v-for="topic in topicsStore.olderTopics"
+              :key="topic.id"
+              class="mobile-topic-item"
+              @click="openMobileEntriesWithFilter(topic, 'older')"
+            >
+              <span>{{ topic.title }}</span>
+              <span class="count">{{ formatCount(topic.olderEntryCount || topic.entryCount) }}</span>
+            </button>
+          </template>
+          
+          <!-- Boş durum -->
+          <div v-if="topicsStore.todayTopics.length === 0 && topicsStore.yesterdayTopics.length === 0 && topicsStore.olderTopics.length === 0" class="empty-state">
+            <p>henüz başlık bulunamadı</p>
+          </div>
         </div>
 
         <!-- Entry Listesi -->
@@ -375,7 +411,7 @@ function handleTabChange(tab) {
     entriesStore.fetchLatestEntries()
   } else if (tab === 'gundem') {
     mobileView.value = 'gundem'
-    topicsStore.fetchTrendingTopics(0, 10)
+    topicsStore.fetchAllSidebarTopicsByDate()
   } else if (tab === 'random') {
     mobileView.value = 'entries'
     entriesStore.fetchRandomEntries(4)
@@ -408,6 +444,10 @@ function getTabTitle() {
 
 function openMobileEntries(topic) {
   router.push(`/baslik/${topic.id}`)
+}
+
+function openMobileEntriesWithFilter(topic, dateFilter) {
+  router.push({ path: `/baslik/${topic.id}`, query: { dateFilter } })
 }
 
 function refreshRandom() {
@@ -771,6 +811,21 @@ function formatDate(date) {
   .mobile-topic-item .count {
     color: #444;
     font-size: 0.75rem;
+  }
+
+  .mobile-date-header {
+    font-size: 0.7rem;
+    color: #666;
+    padding: 0.75rem 0.5rem 0.25rem;
+    text-transform: lowercase;
+    font-weight: 600;
+    border-top: 1px solid #1a1a2e;
+    margin-top: 0.5rem;
+  }
+
+  .mobile-date-header:first-child {
+    border-top: none;
+    margin-top: 0;
   }
 
   .mobile-entry {

@@ -312,6 +312,37 @@
               <div class="topic-meta">
                 <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || entries.length }} entry</span>
               </div>
+              
+              <!-- Date Filter Tabs - Mobile -->
+              <div v-if="topic" class="date-filter-tabs">
+                <button 
+                  :class="{ active: !activeDateFilter }"
+                  @click="setDateFilter(null)"
+                >
+                  tümü ({{ topic.entryCount || 0 }})
+                </button>
+                <button 
+                  v-if="topic.todayEntryCount > 0"
+                  :class="{ active: activeDateFilter === 'today' }"
+                  @click="setDateFilter('today')"
+                >
+                  bugün ({{ topic.todayEntryCount }})
+                </button>
+                <button 
+                  v-if="topic.yesterdayEntryCount > 0"
+                  :class="{ active: activeDateFilter === 'yesterday' }"
+                  @click="setDateFilter('yesterday')"
+                >
+                  dün ({{ topic.yesterdayEntryCount }})
+                </button>
+                <button 
+                  v-if="topic.olderEntryCount > 0"
+                  :class="{ active: activeDateFilter === 'older' }"
+                  @click="setDateFilter('older')"
+                >
+                  önceki günler ({{ topic.olderEntryCount }})
+                </button>
+              </div>
              </div>
 
              <!-- Mobile entries reuse the same logic, simplified view if needed or just same content -->
@@ -357,6 +388,13 @@
                           </footer>
                     </article>
                  </template>
+                 
+                 <!-- Pagination - Mobile -->
+                 <Pagination 
+                   :current-page="entriesStore.currentPage"
+                   :total-pages="entriesStore.totalPages"
+                   @change="changePage"
+                 />
               </div>
 
               <!-- Entry Form - Mobile -->

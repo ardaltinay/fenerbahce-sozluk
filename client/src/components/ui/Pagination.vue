@@ -164,14 +164,13 @@ const visiblePages = computed(() => {
   }
   
   .page-numbers {
-    display: none;
+    display: flex;
+    gap: 0.15rem;
   }
   
-  .pagination::after {
-    content: attr(data-info);
-    font-size: 0.75rem;
-    color: var(--text-secondary, #888);
-    padding: 0 0.5rem;
+  .number-btn {
+    min-width: 28px;
+    height: 28px;
   }
 }
 </style>
