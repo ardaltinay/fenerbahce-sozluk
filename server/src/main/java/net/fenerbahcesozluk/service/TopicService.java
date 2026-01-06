@@ -112,8 +112,7 @@ public class TopicService {
             throw new BusinessException("duplicate_topic:" + t.getId(), HttpStatus.CONFLICT);
         });
 
-        Topic topic = Topic.builder().title(request.getTitle()).author(author).topicType(request.getTopicType())
-                .transfermarktId(request.getTransfermarktId()).build();
+        Topic topic = Topic.builder().title(request.getTitle()).author(author).build();
 
         Topic saved = topicRepository.save(topic);
         statsService.evictStatsCache();
@@ -145,26 +144,6 @@ public class TopicService {
         statsService.evictStatsCache();
     }
 
-    @Transactional
-    public TopicResponse updateTransfermarkt(UUID topicId, String transfermarktId, String topicType, User currentUser) {
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new BusinessException("Başlık bulunamadı", HttpStatus.NOT_FOUND));
-
-        // Only admin and moderator can update transfermarkt info
-        boolean isModerator = currentUser.getRole().name().equals("MODERATOR");
-        boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
-
-        if (!isModerator && !isAdmin) {
-            throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
-        }
-
-        topic.setTransfermarktId(transfermarktId);
-        topic.setTopicType(topicType);
-        Topic saved = topicRepository.save(topic);
-
-        return toResponse(saved);
-    }
-
     private TopicResponse toResponse(Topic topic) {
         return TopicResponse.builder()
                 .id(topic.getId())
@@ -175,8 +154,9 @@ public class TopicService {
                 .viewCount(topic.getViewCount())
                 .isLocked(topic.isLocked())
                 .isPinned(topic.isPinned())
-                .topicType(topic.getTopicType())
-                .transfermarktId(topic.getTransfermarktId())
+
+                .kunyeImageUrl(topic.getKunyeImageUrl())
+                .kunyeData(topic.getKunyeData())
                 .createdAt(topic.getCreatedAt())
                 .updatedAt(topic.getUpdatedAt())
                 .lastActivityAt(topic.getUpdatedAt())
@@ -196,8 +176,9 @@ public class TopicService {
                 .viewCount(topic.getViewCount())
                 .isLocked(topic.isLocked())
                 .isPinned(topic.isPinned())
-                .topicType(topic.getTopicType())
-                .transfermarktId(topic.getTransfermarktId())
+
+                .kunyeImageUrl(topic.getKunyeImageUrl())
+                .kunyeData(topic.getKunyeData())
                 .createdAt(topic.getCreatedAt())
                 .updatedAt(topic.getUpdatedAt())
                 .lastActivityAt(topic.getUpdatedAt())
@@ -217,8 +198,9 @@ public class TopicService {
                 .viewCount(topic.getViewCount())
                 .isLocked(topic.isLocked())
                 .isPinned(topic.isPinned())
-                .topicType(topic.getTopicType())
-                .transfermarktId(topic.getTransfermarktId())
+
+                .kunyeImageUrl(topic.getKunyeImageUrl())
+                .kunyeData(topic.getKunyeData())
                 .createdAt(topic.getCreatedAt())
                 .updatedAt(topic.getUpdatedAt())
                 .lastActivityAt(topic.getUpdatedAt())
@@ -247,8 +229,9 @@ public class TopicService {
                 .viewCount(topic.getViewCount())
                 .isLocked(topic.isLocked())
                 .isPinned(topic.isPinned())
-                .topicType(topic.getTopicType())
-                .transfermarktId(topic.getTransfermarktId())
+
+                .kunyeImageUrl(topic.getKunyeImageUrl())
+                .kunyeData(topic.getKunyeData())
                 .createdAt(topic.getCreatedAt())
                 .updatedAt(topic.getUpdatedAt())
                 .lastActivityAt(topic.getUpdatedAt())

@@ -1309,7 +1309,7 @@ onMounted(() => {
 }
 
 .entry-card {
-  padding: 1.5rem;
+  padding: 1rem;
   background: rgba(26, 26, 46, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);

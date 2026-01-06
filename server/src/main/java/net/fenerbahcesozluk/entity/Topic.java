@@ -24,9 +24,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "topics", indexes = {@Index(name = "idx_topic_active_entrycount", columnList = "is_active, entry_count"),
+@Table(name = "topics", indexes = { @Index(name = "idx_topic_active_entrycount", columnList = "is_active, entry_count"),
         @Index(name = "idx_topic_active_created", columnList = "is_active, created_time"),
-        @Index(name = "idx_topic_title", columnList = "title")})
+        @Index(name = "idx_topic_title", columnList = "title") })
 public class Topic extends BaseEntity {
 
     @Column(nullable = false, length = 50)
@@ -59,12 +59,12 @@ public class Topic extends BaseEntity {
     @Column(name = "delete_reason")
     private String deleteReason;
 
-    // Transfermarkt integration
-    @Column(name = "topic_type")
-    private String topicType; // "player", "club", "general"
+    // Künye fields
+    @Column(name = "kunye_image_url", length = 500)
+    private String kunyeImageUrl;
 
-    @Column(name = "transfermarkt_id")
-    private String transfermarktId;
+    @Column(name = "kunye_data", columnDefinition = "TEXT")
+    private String kunyeData; // JSON string for key-value pairs
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

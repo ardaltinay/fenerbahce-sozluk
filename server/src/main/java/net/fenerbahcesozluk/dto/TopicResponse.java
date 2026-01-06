@@ -25,8 +25,8 @@ public class TopicResponse {
     private Long viewCount;
     private boolean isLocked;
     private boolean isPinned;
-    private String topicType;
-    private String transfermarktId;
+    private String kunyeImageUrl;
+    private String kunyeData;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastActivityAt;

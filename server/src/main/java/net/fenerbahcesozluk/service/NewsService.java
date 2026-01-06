@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.fenerbahcesozluk.entity.News;
 import net.fenerbahcesozluk.repository.NewsRepository;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +41,7 @@ public class NewsService {
     private static final List<String> KEYWORDS = List.of("Fenerbahçe", "Fenerbahce", "Sarı Kanarya", "Sarı Lacivert",
             "FB", "Kadıköy");
 
+    @Cacheable(value = "news", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize")
     public Page<News> getNews(Pageable pageable) {
         return newsRepository.findAllByOrderByPubDateDesc(pageable);
     }
@@ -46,6 +49,7 @@ public class NewsService {
     @EventListener(ApplicationReadyEvent.class)
     @Scheduled(fixedRate = 3600000) // Every 1 hour
     @Transactional
+    @CacheEvict(value = "news", allEntries = true)
     public void fetchNewsTask() {
         log.info("Starting scheduled news fetch task...");
         for (String feedUrl : RSS_FEEDS) {
@@ -55,7 +59,7 @@ public class NewsService {
                 log.error("Error fetching feed: {}", feedUrl, e);
             }
         }
-        log.info("News fetch task completed.");
+        log.info("News fetch task completed. Cache evicted.");
 
         // Cleanup old news (older than 30 days)
         cleanupOldNews();

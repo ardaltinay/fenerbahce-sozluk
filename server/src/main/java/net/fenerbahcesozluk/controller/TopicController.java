@@ -85,14 +85,6 @@ public class TopicController {
         return ResponseEntity.ok(topicService.createTopic(request, currentUser));
     }
 
-    @PutMapping("/{id}/transfermarkt")
-    public ResponseEntity<TopicResponse> updateTransfermarkt(@PathVariable UUID id,
-            @RequestBody Map<String, String> body, @AuthenticationPrincipal User currentUser) {
-        String transfermarktId = body.get("transfermarktId");
-        String topicType = body.get("topicType");
-        return ResponseEntity.ok(topicService.updateTransfermarkt(id, transfermarktId, topicType, currentUser));
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTopic(@PathVariable UUID id, @RequestParam(required = false) String reason,
             @AuthenticationPrincipal User currentUser) {

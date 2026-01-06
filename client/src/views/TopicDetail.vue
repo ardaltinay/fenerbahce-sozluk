@@ -57,13 +57,13 @@
               <div class="topic-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
                 <!-- Add Transfermarkt Button (only if no transfermarkt exists) -->
                 <button 
-                  v-if="authStore.isModeratorOrAdmin && !topic.transfermarktId" 
+                  v-if="authStore.isModeratorOrAdmin" 
                   class="topic-edit-btn" 
-                  @click="showTransfermarktModal = true"
-                  title="transfermarkt künyesi ekle"
+                  @click="openKunyeModal"
+                  :title="hasKunye ? 'künyeyi düzenle' : 'künye ekle'"
                 >
                   <Edit3 class="icon-sm" />
-                  <span>künye ekle</span>
+                  <span>{{ hasKunye ? 'künye düzenle' : 'künye ekle' }}</span>
                 </button>
                 <button 
                   v-if="authStore.canDeleteTopic(topic)" 
@@ -77,82 +77,67 @@
               </div>
             </div>
 
-            <!-- Transfermarkt Info Card -->
-            <TransfermarktCard 
-              v-if="topic?.transfermarktId && topic?.topicType"
-              :type="topic.topicType"
-              :transfermarkt-id="topic.transfermarktId"
-            />
+            <!-- Künye Card -->
+            <div v-if="hasKunye" class="transfermarkt-card">
+              <div class="player-card">
+                <div class="player-image">
+                  <img v-if="topic.kunyeImageUrl" :src="topic.kunyeImageUrl" :alt="topic.title" />
+                  <div v-else class="placeholder-image">
+                    <User class="icon" />
+                  </div>
+                </div>
+                <div class="player-info">
+                  <h3 class="player-name">{{ topic.title }}</h3>
+                  <div class="player-details">
+                    <template v-if="parsedKunyeData">
+                      <div v-for="(value, key) in parsedKunyeData" :key="key" class="detail-row">
+                        <span class="label">{{ key }}:</span>
+                        <span class="value">{{ value }}</span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+              <div class="tm-badge">
+                <span>Künye</span>
+              </div>
+            </div>
 
-            <!-- Transfermarkt Edit Modal -->
-            <div v-if="showTransfermarktModal" class="modal-overlay" @click.self="showTransfermarktModal = false">
+            <!-- Künye Edit Modal -->
+            <div v-if="showKunyeModal" class="modal-overlay" @click.self="showKunyeModal = false">
               <div class="modal">
                 <div class="modal-header">
-                  <h3>Transfermarkt Künyesi Ekle</h3>
-                  <button class="close-btn" @click="showTransfermarktModal = false">
+                  <h3>{{ hasKunye ? 'Künye Düzenle' : 'Künye Ekle' }}</h3>
+                  <button class="close-btn" @click="showKunyeModal = false">
                     <X class="icon" />
                   </button>
                 </div>
                 <div class="modal-body">
                   <div class="form-group">
-                    <label>Künye Tipi</label>
-                    <!-- Custom Dropdown with Tailwind -->
-                    <div class="relative">
-                      <button 
-                        type="button"
-                        @click="dropdownOpen = !dropdownOpen"
-                        class="w-full flex items-center justify-between px-4 py-3 bg-[#0d0d1a] border border-[#2a2a4a] rounded-lg text-[#e0e0e0] text-sm cursor-pointer hover:border-[#58a6ff] transition-colors"
-                      >
-                        <span :class="transfermarktForm.topicType ? 'text-[#e0e0e0]' : 'text-[#666]'">
-                          {{ topicTypeLabel }}
-                        </span>
-                        <ChevronDown class="w-4 h-4 text-[#888] transition-transform" :class="{ 'rotate-180': dropdownOpen }" />
-                      </button>
-                      
-                      <!-- Dropdown Menu -->
-                      <div 
-                        v-if="dropdownOpen" 
-                        class="absolute z-50 w-full mt-1 bg-[#0d0d1a] border border-[#2a2a4a] rounded-lg shadow-xl overflow-hidden"
-                      >
-                        <button
-                          type="button"
-                          @click="selectTopicType('')"
-                          class="w-full px-4 py-3 text-left text-sm text-[#666] hover:bg-[#1a1a2e] transition-colors"
-                        >
-                          Seçiniz...
-                        </button>
-                        <button
-                          type="button"
-                          @click="selectTopicType('player')"
-                          class="w-full px-4 py-3 text-left text-sm text-[#e0e0e0] hover:bg-[#1a1a2e] transition-colors"
-                          :class="{ 'bg-[#1a1a2e]': transfermarktForm.topicType === 'player' }"
-                        >
-                          Oyuncu
-                        </button>
-                        <button
-                          type="button"
-                          @click="selectTopicType('club')"
-                          class="w-full px-4 py-3 text-left text-sm text-[#e0e0e0] hover:bg-[#1a1a2e] transition-colors"
-                          :class="{ 'bg-[#1a1a2e]': transfermarktForm.topicType === 'club' }"
-                        >
-                          Kulüp
-                        </button>
-                      </div>
-                    </div>
+                    <label>Resim URL</label>
+                    <input 
+                      v-model="kunyeForm.imageUrl" 
+                      type="text" 
+                      placeholder="https://example.com/image.jpg"
+                    />
                   </div>
                   <div class="form-group">
-                    <label>Transfermarkt id</label>
-                    <input 
-                      v-model="transfermarktForm.transfermarktId" 
-                      type="text" 
-                      placeholder="örn: 8263 (oyuncu ID)"
-                    />
-                    <small>transfermarkt.com URL'sinden id'yi alın</small>
+                    <label>Künye Bilgileri (JSON)</label>
+                    <textarea 
+                      v-model="kunyeForm.kunyeData" 
+                      rows="6"
+                      class="form-textarea"
+                      placeholder='{"Doğum Tarihi": "1990-01-01", "Mevki": "Forvet", "Kulüp": "Fenerbahçe"}'
+                    ></textarea>
+                    <small>JSON formatında key-value çiftleri girin</small>
                   </div>
                 </div>
                 <div class="modal-footer">
-                  <button class="btn-secondary" @click="showTransfermarktModal = false">İptal</button>
-                  <button class="btn-primary" @click="saveTransfermarkt" :disabled="!transfermarktForm.topicType || !transfermarktForm.transfermarktId">
+                  <button class="btn-secondary" @click="showKunyeModal = false">İptal</button>
+                  <button 
+                    class="btn-primary" 
+                    @click="saveKunye"
+                  >
                     Kaydet
                   </button>
                 </div>
@@ -266,7 +251,63 @@
               <div class="form-header">
                 <span>entry yaz</span>
               </div>
+              <!-- Toolbar -->
+              <div class="entry-toolbar">
+                <button 
+                  type="button" 
+                  class="toolbar-btn" 
+                  @click="showBkzPopover = !showBkzPopover; showLinkPopover = false"
+                  :class="{ active: showBkzPopover }"
+                  title="referans ekle (bkz)"
+                >
+                  bkz
+                </button>
+                <button 
+                  type="button" 
+                  class="toolbar-btn" 
+                  @click="showLinkPopover = !showLinkPopover; showBkzPopover = false"
+                  :class="{ active: showLinkPopover }"
+                  title="link ekle"
+                >
+                  link
+                </button>
+              </div>
+              
+              <!-- Bkz Popover -->
+              <div v-if="showBkzPopover" class="toolbar-popover">
+                <div class="popover-content">
+                  <input 
+                    v-model="bkzInput" 
+                    type="text" 
+                    placeholder="başlık adı girin..."
+                    @keyup.enter="insertBkz"
+                    ref="bkzInputRef"
+                  />
+                  <button type="button" class="popover-btn" @click="insertBkz">ekle</button>
+                </div>
+              </div>
+              
+              <!-- Link Popover -->
+              <div v-if="showLinkPopover" class="toolbar-popover">
+                <div class="popover-content">
+                  <input 
+                    v-model="linkUrl" 
+                    type="text" 
+                    placeholder="link URL (https://...)"
+                    ref="linkInputRef"
+                  />
+                  <input 
+                    v-model="linkText" 
+                    type="text" 
+                    placeholder="görünecek isim"
+                    @keyup.enter="insertLink"
+                  />
+                  <button type="button" class="popover-btn" @click="insertLink">ekle</button>
+                </div>
+              </div>
+              
               <textarea 
+                ref="entryTextarea"
                 v-model="newEntry" 
                 placeholder="düşüncelerini paylaş..."
                 rows="4"
@@ -483,22 +524,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   ArrowLeft, MessageSquare, Eye, ThumbsUp, ThumbsDown, 
-  Star, Share2, Loader2, PenSquare, Edit2, Edit3, Trash2, X, ChevronDown
+  Star, Share2, Loader2, PenSquare, Edit2, Edit3, Trash2, X, User
 } from 'lucide-vue-next'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
-import TransfermarktCard from '@/components/TransfermarktCard.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useWebSocket } from '@/composables/useWebSocket'
-import { topicsApi } from '@/services/api'
+import api from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -521,40 +561,94 @@ const newEntry = ref('')
 const submitting = ref(false)
 const activeDateFilter = ref(null)
 
-// Transfermarkt modal
-const showTransfermarktModal = ref(false)
-const dropdownOpen = ref(false)
-const transfermarktForm = ref({
-  topicType: '',
-  transfermarktId: ''
-})
+// Entry toolbar refs and state
+const entryTextarea = ref(null)
+const showBkzPopover = ref(false)
+const showLinkPopover = ref(false)
+const bkzInput = ref('')
+const linkUrl = ref('')
+const linkText = ref('')
 
-const topicTypeLabel = computed(() => {
-  const labels = {
-    'player': 'Oyuncu',
-    'club': 'Kulüp'
-  }
-  return labels[transfermarktForm.value.topicType] || 'Seçiniz...'
-})
-
-function selectTopicType(value) {
-  transfermarktForm.value.topicType = value
-  dropdownOpen.value = false
+function insertBkz() {
+  if (!bkzInput.value.trim()) return
+  
+  const bkzStr = `(bkz: ${bkzInput.value.trim()})`
+  insertAtCursor(bkzStr)
+  
+  bkzInput.value = ''
+  showBkzPopover.value = false
 }
 
-async function saveTransfermarkt() {
+function insertLink() {
+  if (!linkUrl.value.trim() || !linkText.value.trim()) return
+  
+  // Format: [link text](url)
+  const linkStr = `[${linkText.value.trim()}](${linkUrl.value.trim()})`
+  insertAtCursor(linkStr)
+  
+  linkUrl.value = ''
+  linkText.value = ''
+  showLinkPopover.value = false
+}
+
+function insertAtCursor(text) {
+  const textarea = entryTextarea.value
+  if (!textarea) {
+    newEntry.value += text
+    return
+  }
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const before = newEntry.value.substring(0, start)
+  const after = newEntry.value.substring(end)
+  
+  newEntry.value = before + text + after
+  
+  // Set cursor after inserted text
+  nextTick(() => {
+    textarea.focus()
+    textarea.selectionStart = textarea.selectionEnd = start + text.length
+  })
+}
+
+// Künye modal
+const showKunyeModal = ref(false)
+const kunyeForm = ref({
+  imageUrl: '',
+  kunyeData: ''
+})
+
+// Check if topic has künye data
+const hasKunye = computed(() => {
+  return !!(topic.value?.kunyeImageUrl || topic.value?.kunyeData)
+})
+
+function openKunyeModal() {
+  // Pre-fill form if künye exists
+  if (hasKunye.value) {
+    kunyeForm.value.imageUrl = topic.value.kunyeImageUrl || ''
+    kunyeForm.value.kunyeData = topic.value.kunyeData || ''
+  } else {
+    kunyeForm.value.imageUrl = ''
+    kunyeForm.value.kunyeData = ''
+  }
+  showKunyeModal.value = true
+}
+
+async function saveKunye() {
   try {
-    await topicsApi.updateTransfermarkt(
-      topicId.value, 
-      transfermarktForm.value.transfermarktId, 
-      transfermarktForm.value.topicType
-    )
-    toast.success('Künye eklendi!')
-    showTransfermarktModal.value = false
+    await api.post(`/api/kunye/topics/${topicId.value}`, {
+      imageUrl: kunyeForm.value.imageUrl,
+      kunyeData: kunyeForm.value.kunyeData
+    })
+    
+    toast.success(hasKunye.value ? 'Künye güncellendi!' : 'Künye eklendi!')
+    showKunyeModal.value = false
     // Refresh topic data
     await topicsStore.fetchTopicById(topicId.value)
   } catch (error) {
-    toast.error('Künye eklenirken bir hata oluştu')
+    toast.error('Künye kaydedilirken bir hata oluştu')
   }
 }
 
@@ -562,11 +656,26 @@ const topicId = computed(() => route.params.id)
 const topic = computed(() => topicsStore.currentTopic)
 const entries = computed(() => entriesStore.entries)
 
+// Parse künye JSON data
+const parsedKunyeData = computed(() => {
+  if (!topic.value?.kunyeData) return null
+  try {
+    return JSON.parse(topic.value.kunyeData)
+  } catch (e) {
+    console.error('Failed to parse kunyeData:', e)
+    return null
+  }
+})
+
 function formatContent(content) {
   if (!content) return ''
   return content
+    // @mentions
     .replace(/@(\w+)/g, '<a href="/biri/$1">@$1</a>')
-    .replace(/\(bkz: ([^)]+)\)/g, '<a href="/arama?q=$1">(bkz: $1)</a>')
+    // (bkz: topic) - link to search page
+    .replace(/\(bkz: ([^)]+)\)/g, '<a href="/arama?q=$1" class="bkz-link">(bkz: <span class="bkz-topic">$1</span>)</a>')
+    // [text](url) - markdown style links
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="external-link">$1</a>')
 }
 
 function formatDate(date) {
@@ -1099,7 +1208,7 @@ onUnmounted(() => {
 
 /* Entry Card */
 .entry-card {
-  padding: 1.5rem;
+  padding: 1rem;
   background: rgba(26, 26, 46, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1601,5 +1710,217 @@ textarea:focus {
   color: #e0e0e0;
   font-size: 0.9rem;
   resize: vertical;
+}
+
+/* Transfermarkt Card Styles (used for custom künye too) */
+.transfermarkt-card {
+  background: var(--entry-bg, rgba(26, 26, 46, 0.45));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border, rgba(255, 237, 0, 0.1));
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.player-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.player-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.player-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.placeholder-image .icon {
+  width: 32px;
+  height: 32px;
+  color: #555;
+}
+
+.player-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent, #d4c84a);
+  margin: 0 0 0.5rem;
+}
+
+.player-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem 1rem;
+}
+
+@media (max-width: 480px) {
+  .player-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .player-image {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+.detail-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.detail-row .label {
+  color: var(--text-secondary, #888);
+}
+
+.detail-row .value {
+  color: var(--text-primary, #e0e0e0);
+}
+
+.tm-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.65rem;
+  color: var(--text-muted, #666);
+  opacity: 0.6;
+}
+
+/* Entry Toolbar */
+.entry-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.toolbar-btn {
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+}
+
+.toolbar-btn.active {
+  background: var(--accent, #d4c84a);
+  color: #000;
+  border-color: var(--accent, #d4c84a);
+}
+
+.toolbar-popover {
+  background: rgba(13, 13, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 0.75rem;
+  margin-bottom: -1px;
+}
+
+.popover-content {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.popover-content input {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.popover-content input::placeholder {
+  color: #666;
+}
+
+.popover-btn {
+  padding: 0.5rem 1rem;
+  background: var(--accent, #d4c84a);
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.popover-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Link Styles in Entry Content - use :deep for v-html */
+.entry-content :deep(.bkz-link) {
+  color: #888;
+  text-decoration: none;
+}
+
+.entry-content :deep(.bkz-link .bkz-topic) {
+  color: #d4c84a;
+  font-weight: 500;
+}
+
+.entry-content :deep(.bkz-link:hover) {
+  text-decoration: none;
+}
+
+.entry-content :deep(.bkz-link:hover .bkz-topic) {
+  text-decoration: underline;
+}
+
+.entry-content :deep(.external-link) {
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+.entry-content :deep(.external-link:hover) {
+  text-decoration: underline;
+}
+
+.entry-content :deep(.external-link::after) {
+  content: '↗';
+  font-size: 0.7em;
+  margin-left: 2px;
+  vertical-align: super;
 }
 </style>

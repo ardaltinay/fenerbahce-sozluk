@@ -25,81 +25,63 @@
             </span>
           </div>
 
-      <!-- Topic Type -->
       <div class="form-group">
-        <label>Başlık Türü <span class="optional">(opsiyonel)</span></label>
-        <div class="type-buttons">
+        <label>İçerik</label>
+        <!-- Toolbar -->
+        <div class="entry-toolbar">
           <button 
             type="button" 
-            class="type-btn" 
-            :class="{ active: form.topicType === 'general' }"
-            @click="selectTopicType('general')"
+            class="toolbar-btn" 
+            @click="showBkzPopover = !showBkzPopover; showLinkPopover = false"
+            :class="{ active: showBkzPopover }"
+            title="referans ekle (bkz)"
           >
-            Genel
+            bkz
           </button>
           <button 
             type="button" 
-            class="type-btn" 
-            :class="{ active: form.topicType === 'player' }"
-            @click="selectTopicType('player')"
+            class="toolbar-btn" 
+            @click="showLinkPopover = !showLinkPopover; showBkzPopover = false"
+            :class="{ active: showLinkPopover }"
+            title="link ekle"
           >
-            <User class="btn-icon" /> Oyuncu
-          </button>
-          <button 
-            type="button" 
-            class="type-btn" 
-            :class="{ active: form.topicType === 'club' }"
-            @click="selectTopicType('club')"
-          >
-            <Shield class="btn-icon" /> Kulüp
+            link
           </button>
         </div>
-      </div>
-
-      <!-- Transfermarkt Search -->
-      <div v-if="form.topicType === 'player' || form.topicType === 'club'" class="form-group">
-        <label>Transfermarkt Eşleştirme</label>
-        <div class="tm-search-box">
-          <input 
-            v-model="tmSearchQuery" 
-            type="text" 
-            :placeholder="form.topicType === 'player' ? 'Oyuncu ara...' : 'Kulüp ara...'"
-            @keyup.enter="searchTransfermarkt"
-          />
-          <button type="button" class="search-btn" @click="searchTransfermarkt" :disabled="tmSearching">
-            <Search v-if="!tmSearching" class="btn-icon" />
-            <Loader2 v-else class="btn-icon spin" />
-          </button>
+        
+        <!-- Bkz Popover -->
+        <div v-if="showBkzPopover" class="toolbar-popover">
+          <div class="popover-content">
+            <input 
+              v-model="bkzInput" 
+              type="text" 
+              placeholder="başlık adı girin..."
+              @keyup.enter.prevent="insertBkz"
+            />
+            <button type="button" class="popover-btn" @click="insertBkz">ekle</button>
+          </div>
         </div>
-
-        <!-- Search Results -->
-        <div v-if="tmResults.length > 0" class="tm-results">
-          <div 
-            v-for="result in tmResults" 
-            :key="result.id" 
-            class="tm-result-item"
-            :class="{ selected: form.transfermarktId === result.id }"
-            @click="selectTransfermarkt(result)"
-          >
-            <span class="result-name">{{ result.name }}</span>
-            <span v-if="result.club" class="result-club">{{ result.club.name }}</span>
-            <span v-if="result.country" class="result-club">{{ result.country }}</span>
-            <Check v-if="form.transfermarktId === result.id" class="check-icon" />
+        
+        <!-- Link Popover -->
+        <div v-if="showLinkPopover" class="toolbar-popover">
+          <div class="popover-content">
+            <input 
+              v-model="linkUrl" 
+              type="text" 
+              placeholder="link URL (https://...)"
+            />
+            <input 
+              v-model="linkText" 
+              type="text" 
+              placeholder="görünecek isim"
+              @keyup.enter.prevent="insertLink"
+            />
+            <button type="button" class="popover-btn" @click="insertLink">ekle</button>
           </div>
         </div>
 
-        <div v-if="form.transfermarktId" class="tm-selected">
-          <Check class="check-icon" />
-          <span>Seçili: {{ selectedTmName }}</span>
-          <button type="button" class="clear-btn" @click="clearTransfermarkt">
-            <X class="btn-icon" />
-          </button>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>İçerik</label>
         <textarea 
+          ref="contentTextarea"
           v-model="form.content" 
           placeholder="ilk entry içeriği..."
           rows="6"
@@ -134,11 +116,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { X, User, Shield, Search, Loader2, Check } from 'lucide-vue-next'
+import { ref, reactive, computed, nextTick } from 'vue'
+import { X } from 'lucide-vue-next'
 import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, helpers } from '@vuelidate/validators'
-import { entriesApi, transfermarktApi } from '@/services/api'
+import { entriesApi } from '@/services/api'
 import { useTopicsStore } from '@/stores/topics'
 import { useRouter } from 'vue-router'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
@@ -154,16 +136,57 @@ const existingTopicId = ref(null)
 
 const form = reactive({
   title: '',
-  content: '',
-  topicType: 'general',
-  transfermarktId: null
+  content: ''
 })
 
-// Transfermarkt state
-const tmSearchQuery = ref('')
-const tmSearching = ref(false)
-const tmResults = ref([])
-const selectedTmName = ref('')
+// Bkz/Link toolbar state
+const contentTextarea = ref(null)
+const showBkzPopover = ref(false)
+const showLinkPopover = ref(false)
+const bkzInput = ref('')
+const linkUrl = ref('')
+const linkText = ref('')
+
+function insertBkz() {
+  if (!bkzInput.value.trim()) return
+  
+  const bkzStr = `(bkz: ${bkzInput.value.trim()})`
+  insertAtCursor(bkzStr)
+  
+  bkzInput.value = ''
+  showBkzPopover.value = false
+}
+
+function insertLink() {
+  if (!linkUrl.value.trim() || !linkText.value.trim()) return
+  
+  const linkStr = `[${linkText.value.trim()}](${linkUrl.value.trim()})`
+  insertAtCursor(linkStr)
+  
+  linkUrl.value = ''
+  linkText.value = ''
+  showLinkPopover.value = false
+}
+
+function insertAtCursor(text) {
+  const textarea = contentTextarea.value
+  if (!textarea) {
+    form.content += text
+    return
+  }
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const before = form.content.substring(0, start)
+  const after = form.content.substring(end)
+  
+  form.content = before + text + after
+  
+  nextTick(() => {
+    textarea.focus()
+    textarea.selectionStart = textarea.selectionEnd = start + text.length
+  })
+}
 
 const rules = computed(() => ({
   title: {
@@ -188,9 +211,7 @@ async function handleSubmit() {
 
   try {
     const newTopic = await topicsStore.createTopic({
-      title: form.title,
-      topicType: form.topicType !== 'general' ? form.topicType : null,
-      transfermarktId: form.transfermarktId
+      title: form.title
     })
     
     await entriesApi.create({
@@ -224,49 +245,6 @@ function handleDuplicateConfirm() {
     path: `/baslik/${existingTopicId.value}`,
     query: form.content ? { draft: encodeURIComponent(form.content) } : {}
   })
-}
-
-// Transfermarkt functions
-function selectTopicType(type) {
-  form.topicType = type
-  if (type === 'general') {
-    form.transfermarktId = null
-    tmResults.value = []
-    selectedTmName.value = ''
-  }
-}
-
-async function searchTransfermarkt() {
-  if (!tmSearchQuery.value.trim()) return
-  
-  tmSearching.value = true
-  tmResults.value = []
-  
-  try {
-    let response
-    if (form.topicType === 'player') {
-      response = await transfermarktApi.searchPlayers(tmSearchQuery.value)
-    } else {
-      response = await transfermarktApi.searchClubs(tmSearchQuery.value)
-    }
-    tmResults.value = response.data.results || []
-  } catch (err) {
-    console.error('Transfermarkt search error:', err)
-  } finally {
-    tmSearching.value = false
-  }
-}
-
-function selectTransfermarkt(result) {
-  form.transfermarktId = result.id
-  selectedTmName.value = result.name
-  tmResults.value = []
-}
-
-function clearTransfermarkt() {
-  form.transfermarktId = null
-  selectedTmName.value = ''
-  tmSearchQuery.value = ''
 }
 </script>
 
@@ -597,5 +575,82 @@ function clearTransfermarkt() {
 
 .clear-btn:hover {
   color: #ef4444;
+}
+
+/* Entry Toolbar */
+.entry-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.toolbar-btn {
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+}
+
+.toolbar-btn.active {
+  background: var(--accent, #d4c84a);
+  color: #000;
+  border-color: var(--accent, #d4c84a);
+}
+
+.toolbar-popover {
+  background: rgba(13, 13, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 0.75rem;
+  margin-bottom: -1px;
+}
+
+.popover-content {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.popover-content input {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.popover-content input::placeholder {
+  color: #666;
+}
+
+.popover-btn {
+  padding: 0.5rem 1rem;
+  background: var(--accent, #d4c84a);
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.popover-btn:hover {
+  filter: brightness(1.1);
 }
 </style>

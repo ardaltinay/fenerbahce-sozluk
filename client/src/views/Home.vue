@@ -60,11 +60,9 @@
                 
                 <article v-if="popularEntry" class="entry">
                   <div class="entry-topic-ref">
-                    <span class="ref-text">(bkz: </span>
-                    <router-link :to="`/baslik/${popularEntry.topicId}`" class="ref-link">
+                    <router-link :to="`/baslik/${popularEntry.topicId}`" class="topic-link">
                       {{ popularEntry.topicTitle }}
                     </router-link>
-                    <span class="ref-text">)</span>
                   </div>
                   <div class="entry-body" v-html="formatContent(popularEntry.content)"></div>
                   <footer class="entry-footer">
@@ -108,11 +106,9 @@
 
             <article v-for="entry in entriesStore.entries" :key="entry.id" class="entry">
               <div class="entry-topic-ref">
-                 <span class="ref-text">(bkz: </span>
-                 <router-link :to="`/baslik/${entry.topicId}`" class="ref-link">
+                 <router-link :to="`/baslik/${entry.topicId}`" class="topic-link">
                    {{ entry.topicTitle }}
                  </router-link>
-                 <span class="ref-text">)</span>
               </div>
               <div class="entry-body" v-html="formatContent(entry.content)"></div>
               <footer class="entry-footer">
@@ -155,11 +151,9 @@
           
           <article v-if="popularEntry" class="mobile-entry">
             <div class="entry-topic-ref">
-              <span class="ref-text">(bkz: </span>
-              <router-link :to="`/baslik/${popularEntry.topicId}`" class="ref-link">
+              <router-link :to="`/baslik/${popularEntry.topicId}`" class="topic-link">
                 {{ popularEntry.topicTitle }}
               </router-link>
-              <span class="ref-text">)</span>
             </div>
             <div class="entry-body" v-html="formatContent(popularEntry.content)"></div>
             <footer class="mobile-entry-footer">
@@ -266,11 +260,9 @@
           <template v-else>
             <article v-for="entry in currentEntries" :key="entry.id" class="mobile-entry stable-card">
               <div class="entry-topic-ref" style="margin-bottom: 0.5rem; font-size: 0.8rem;">
-                 <span class="ref-text" style="color: #666;">(bkz: </span>
-                 <router-link :to="`/baslik/${entry.topicId}`" class="ref-link" style="color: #d4c84a; font-weight: 500;">
+                 <router-link :to="`/baslik/${entry.topicId}`" class="topic-link">
                    {{ entry.topicTitle }}
                  </router-link>
-                 <span class="ref-text" style="color: #666;">)</span>
               </div>
               <p v-html="formatContent(entry.content)" style="margin-top: 0;"></p>
               <footer class="mobile-entry-footer">
@@ -507,7 +499,8 @@ function truncate(text, len) {
 function formatContent(content) {
   return content
     .replace(/@(\w+)/g, '<a href="/biri/$1">@$1</a>')
-    .replace(/\(bkz: ([^)]+)\)/g, '<a href="/baslik/$1">(bkz: $1)</a>')
+    .replace(/\(bkz: ([^)]+)\)/g, '<a href="/arama?q=$1" class="bkz-link">(bkz: <span class="bkz-topic">$1</span>)</a>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="external-link">$1</a>')
 }
 
 function formatDate(date) {
@@ -638,7 +631,7 @@ function formatDate(date) {
 
 /* Entries */
 .entry {
-  padding: 1.5rem;
+  padding: 1rem;
   background: var(--entry-bg, rgba(26, 26, 46, 0.45));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -925,6 +918,17 @@ function formatDate(date) {
 
 .ref-link:hover { text-decoration: underline; }
 
+.topic-link {
+  color: #d4c84a;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.topic-link:hover { 
+  text-decoration: underline; 
+}
+
 .badge {
   display: inline-block;
   padding: 0.2rem 0.5rem;
@@ -980,6 +984,37 @@ function formatDate(date) {
     align-items: flex-start;
     gap: 0.4rem;
   }
+}
+
+/* bkz and link styles in entry content - use :deep for v-html */
+.entry-body :deep(.bkz-link) {
+  color: #888;
+  text-decoration: none;
+}
+
+.entry-body :deep(.bkz-link .bkz-topic) {
+  color: #d4c84a;
+  font-weight: 500;
+}
+
+.entry-body :deep(.bkz-link:hover .bkz-topic) {
+  text-decoration: underline;
+}
+
+.entry-body :deep(.external-link) {
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+.entry-body :deep(.external-link:hover) {
+  text-decoration: underline;
+}
+
+.entry-body :deep(.external-link::after) {
+  content: '↗';
+  font-size: 0.7em;
+  margin-left: 2px;
+  vertical-align: super;
 }
 </style>
 
