@@ -123,15 +123,7 @@
 
       <!-- Auth -->
       <div class="auth-area desktop-only">
-        <!-- Theme Switch -->
-        <button class="theme-switch" @click="toggleTheme" :title="themeStore.theme === 'dark' ? 'Gündüz modu' : 'Gece modu'">
-          <span class="switch-track" :class="{ 'light': themeStore.theme === 'light' }">
-            <span class="switch-thumb">
-              <Sun v-if="themeStore.theme === 'dark'" class="switch-icon" />
-              <Moon v-else class="switch-icon" />
-            </span>
-          </span>
-        </button>
+
 
         <template v-if="!authStore.isAuthenticated">
           <button class="auth-btn secondary" @click="showLoginModal = true">giriş</button>
@@ -168,14 +160,7 @@
           </button>
         </template>
         <template v-else>
-          <button class="theme-switch mobile-theme" @click="toggleTheme">
-            <span class="switch-track" :class="{ 'light': themeStore.theme === 'light' }">
-              <span class="switch-thumb">
-                <Sun v-if="themeStore.theme === 'dark'" class="switch-icon" />
-                <Moon v-else class="switch-icon" />
-              </span>
-            </span>
-          </button>
+
           <button class="user-btn" @click="showMenu = !showMenu">
             <span class="avatar">{{ authStore.username.charAt(0) }}</span>
           </button>
@@ -230,9 +215,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, FileText, User, LogIn, UserPlus, Edit3, Sun, Moon } from 'lucide-vue-next'
+import { Search, FileText, User, LogIn, UserPlus, Edit3 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
+
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
 import { useUsersStore } from '@/stores/users'
@@ -245,14 +230,12 @@ const emit = defineEmits(['tab-change'])
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const themeStore = useThemeStore()
+
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
 const usersStore = useUsersStore()
 
-function toggleTheme() {
-  themeStore.toggleTheme()
-}
+
 
 const searchQuery = ref('')
 const showMenu = ref(false)
@@ -726,55 +709,7 @@ defineExpose({
   color: #d4c84a;
 }
 
-/* Theme Switch Button */
-.theme-switch {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  margin-right: 0.75rem;
-}
 
-.switch-track {
-  display: flex;
-  align-items: center;
-  width: 44px;
-  height: 24px;
-  background: #2a2a4a;
-  border-radius: 12px;
-  padding: 2px;
-  transition: all 0.3s ease;
-}
-
-.switch-track.light {
-  background: #e0d454;
-}
-
-.switch-thumb {
-  width: 20px;
-  height: 20px;
-  background: #0d0d1a;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.switch-track.light .switch-thumb {
-  transform: translateX(20px);
-  background: #1a1a2e;
-}
-
-.switch-icon {
-  width: 12px;
-  height: 12px;
-  color: #d4c84a;
-}
-
-.switch-track.light .switch-icon {
-  color: #d4c84a;
-}
 
 /* Nav Icon */
 .nav-icon {
@@ -866,4 +801,6 @@ defineExpose({
   }
   .nav-tab { padding: 0 0.6rem; font-size: 0.75rem; }
 }
+
+
 </style>

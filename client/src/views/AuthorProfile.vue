@@ -691,7 +691,8 @@ function toggleFollow() {
 function formatContent(content) {
   return content
     .replace(/@(\w+)/g, '<a href="/biri/$1">@$1</a>')
-    .replace(/\(bkz: ([^)]+)\)/g, '<a href="/baslik/$1">(bkz: $1)</a>')
+    .replace(/\(bkz: ([^)]+)\)/g, '<a href="/arama?q=$1" class="bkz-link">(bkz: <span class="bkz-topic">$1</span>)</a>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="external-link">$1</a>')
 }
 
 function formatDate(date) {
@@ -1335,6 +1336,22 @@ onMounted(() => {
 
 .entry-topic:hover {
   text-decoration: underline;
+}
+
+/* Entry content link styles */
+.entry-content :deep(a) { text-decoration: none; color: inherit; }
+
+.entry-content :deep(.bkz-link) { color: #888; text-decoration: none; }
+.entry-content :deep(.bkz-link .bkz-topic) { color: #d4c84a; font-weight: 500; }
+.entry-content :deep(.bkz-link:hover .bkz-topic) { text-decoration: underline; }
+
+.entry-content :deep(.external-link) { color: #58a6ff; }
+.entry-content :deep(.external-link:hover) { text-decoration: underline; }
+.entry-content :deep(.external-link::after) {
+  content: '↗';
+  font-size: 0.7em;
+  margin-left: 2px;
+  vertical-align: super;
 }
 
 .entry-content {
@@ -1986,4 +2003,6 @@ onMounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+
 </style>

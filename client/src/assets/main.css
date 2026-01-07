@@ -81,22 +81,7 @@ a {
   --card-shadow: rgba(0, 0, 0, 0.2);
 }
 
-[data-theme="light"] {
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --text-primary: #1a1a2e;
-  --text-secondary: #555;
-  --text-muted: #777;
-  --accent: #00205B;
-  --accent-hover: #003087;
-  --border: rgba(0, 32, 91, 0.15);
-  --border-hover: rgba(0, 32, 91, 0.3);
-  --entry-bg: rgba(255, 255, 255, 0.85);
-  --entry-hover: rgba(255, 255, 255, 0.95);
-  --header-bg: rgba(255, 255, 255, 0.95);
-  --card-shadow: rgba(0, 32, 91, 0.1);
-}
+
 
 body {
   font-family: var(--font-sans);
@@ -113,10 +98,8 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
-[data-theme="light"] body {
-  background-color: #e8ecf0;
-  background-image: linear-gradient(rgba(232, 236, 240, 0.9), rgba(248, 249, 250, 0.95)), url('/background.jpeg');
-}
+
+
 
 @media (max-width: 1024px) {
   body {
@@ -143,6 +126,9 @@ body {
 ::-webkit-scrollbar-track {
   background: var(--color-fb-dark);
 }
+
+
+
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-fb-navy-light);
