@@ -464,16 +464,6 @@ function handleDuplicateConfirm() {
   font-weight: normal;
 }
 
-/* Transfermarkt Search */
-.tm-search-box {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.tm-search-box input {
-  flex: 1;
-}
-
 .search-btn {
   padding: 0.5rem 0.75rem;
   background: rgba(212, 200, 74, 0.2);

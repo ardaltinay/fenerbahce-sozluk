@@ -121,6 +121,12 @@
         <span>başlık aç</span>
       </button>
 
+      <!-- Messages Icon -->
+      <router-link v-if="authStore.isAuthenticated" to="/mesajlar" class="message-icon-btn desktop-only">
+        <MessageCircle class="icon" />
+        <span v-if="messagesStore.unreadCount > 0" class="message-badge">{{ messagesStore.unreadCount > 99 ? '99+' : messagesStore.unreadCount }}</span>
+      </router-link>
+
       <!-- Auth -->
       <div class="auth-area desktop-only">
 
@@ -150,6 +156,11 @@
         <button class="mobile-auth-icon mobile-search-btn" @click.stop="showMobileSearch = !showMobileSearch" title="ara">
           <Search class="icon" />
         </button>
+
+        <router-link v-if="authStore.isAuthenticated" to="/mesajlar" class="mobile-auth-icon message-link">
+          <MessageCircle class="icon" />
+          <span v-if="messagesStore.unreadCount > 0" class="message-badge mobile">{{ messagesStore.unreadCount > 9 ? '9+' : messagesStore.unreadCount }}</span>
+        </router-link>
 
         <template v-if="!authStore.isAuthenticated">
           <button class="mobile-auth-icon" @click="showLoginModal = true" title="giriş">
@@ -215,8 +226,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, FileText, User, LogIn, UserPlus, Edit3 } from 'lucide-vue-next'
+import { Search, FileText, User, LogIn, UserPlus, Edit3, MessageCircle } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
+import { useMessagesStore } from '@/stores/messages'
+import { useWebSocket } from '@/composables/useWebSocket'
 
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
@@ -235,6 +248,8 @@ const authStore = useAuthStore()
 const topicsStore = useTopicsStore()
 const entriesStore = useEntriesStore()
 const usersStore = useUsersStore()
+const messagesStore = useMessagesStore()
+const { connect, subscribeToUserMessages } = useWebSocket()
 
 
 
@@ -339,6 +354,30 @@ function handleClickOutside(e) {
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   topicsStore.fetchTopics()
+  
+  // Mesaj bildirimleri için WebSocket
+  if (authStore.isAuthenticated && authStore.user?.username) {
+    messagesStore.fetchUnreadCount()
+    connect()
+    subscribeToUserMessages(
+      authStore.user.username,
+      (msg) => messagesStore.handleIncomingMessage(msg),
+      (count) => messagesStore.updateUnreadCount(count)
+    )
+  }
+})
+
+// Kullanıcı giriş yaptığında okunmamış mesaj sayısını fetch et
+watch(() => authStore.isAuthenticated, (isAuth) => {
+  if (isAuth && authStore.user?.username) {
+    messagesStore.fetchUnreadCount()
+    connect()
+    subscribeToUserMessages(
+      authStore.user.username,
+      (msg) => messagesStore.handleIncomingMessage(msg),
+      (count) => messagesStore.updateUnreadCount(count)
+    )
+  }
 })
 
 function handleTopicCreated() {
@@ -662,6 +701,48 @@ defineExpose({
   background: none;
   border: none;
   cursor: pointer;
+}
+
+/* Message Icon */
+.message-icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.message-icon-btn:hover {
+  color: #d4c84a;
+}
+
+.message-link {
+  position: relative;
+}
+
+.message-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  background: #e53935;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.message-badge.mobile {
+  top: -4px;
+  right: -6px;
+  font-size: 0.6rem;
+  padding: 0.05rem 0.25rem;
+  min-width: 14px;
 }
 
 .desktop-user-btn {

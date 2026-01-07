@@ -52,6 +52,7 @@ public class UserController {
         response.put("bannedUntil", user.getBannedUntil());
         response.put("banReason", user.getBanReason());
         response.put("createdAt", user.getCreatedAt());
+        response.put("generation", userService.calculateGeneration(user.getCreatedAt()));
         response.put("entryCount", entryRepository.countByAuthorId(user.getId()));
         response.put("likeCount", voteRepository.countByEntryAuthorIdAndVoteType(user.getId(), VoteType.LIKE));
         response.put("dislikeCount", voteRepository.countByEntryAuthorIdAndVoteType(user.getId(), VoteType.DISLIKE));

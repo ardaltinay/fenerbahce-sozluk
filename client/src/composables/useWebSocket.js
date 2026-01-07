@@ -98,6 +98,26 @@ export function useWebSocket() {
     unsubscribe(`/topic/entries/${topicId}`)
   }
 
+  /**
+   * Kullanıcıya gelen özel mesajlara abone ol
+   */
+  function subscribeToUserMessages(username, onMessage, onUnreadCount, onMessagesRead) {
+    // Yeni mesaj bildirimi
+    subscribe(`/user/${username}/queue/messages`, onMessage)
+    // Okunmamış sayı güncellemesi
+    subscribe(`/user/${username}/queue/unread-count`, onUnreadCount)
+    // Mesajların okunduğu bildirimi
+    if (onMessagesRead) {
+      subscribe(`/user/${username}/queue/messages-read`, onMessagesRead)
+    }
+  }
+
+  function unsubscribeFromUserMessages(username) {
+    unsubscribe(`/user/${username}/queue/messages`)
+    unsubscribe(`/user/${username}/queue/unread-count`)
+    unsubscribe(`/user/${username}/queue/messages-read`)
+  }
+
   onUnmounted(() => {
     // Clean up subscriptions when component unmounts
     subscriptions.value.forEach((sub) => sub.unsubscribe())
@@ -112,6 +132,8 @@ export function useWebSocket() {
     unsubscribe,
     subscribeToTopic,
     subscribeToSidebar,
-    unsubscribeFromTopic
+    unsubscribeFromTopic,
+    subscribeToUserMessages,
+    unsubscribeFromUserMessages
   }
 }

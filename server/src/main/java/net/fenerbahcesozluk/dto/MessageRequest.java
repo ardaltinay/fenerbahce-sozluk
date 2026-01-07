@@ -11,11 +11,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TopicRequest {
+public class MessageRequest {
 
-    @NotBlank(message = "Başlık boş olamaz")
-    @Size(min = 3, max = 50, message = "Başlık 3-50 karakter arasında olmalıdır")
-    private String title;
+  @NotBlank(message = "Alıcı kullanıcı adı boş olamaz")
+  private String receiverUsername;
 
-    private String topicType;
+  @NotBlank(message = "Mesaj içeriği boş olamaz")
+  @Size(max = 2000, message = "Mesaj en fazla 2000 karakter olabilir")
+  private String content;
 }

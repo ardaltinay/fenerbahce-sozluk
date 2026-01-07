@@ -48,6 +48,18 @@ const routes = [
     component: () => import('@/views/Statistics.vue'),
   },
   {
+    path: '/mesajlar',
+    name: 'Messages',
+    component: () => import('@/views/MessagesView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/mesajlar/:username',
+    name: 'MessageConversation',
+    component: () => import('@/views/MessagesView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),

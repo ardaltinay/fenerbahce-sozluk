@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +47,22 @@ public class UserService {
     public User getUserById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Kullanıcı bulunamadı", HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * Kullanıcının nesil numarasını hesaplar.
+     * Uygulama açılış tarihi: 1 Şubat 2026
+     * Her 6 ay bir nesil = 1. nesil (0-6 ay), 2. nesil (6-12 ay), vb.
+     */
+    public int calculateGeneration(LocalDateTime createdAt) {
+        LocalDateTime appLaunchDate = LocalDateTime.of(2026, 2, 1, 0, 0);
+
+        if (createdAt.isBefore(appLaunchDate)) {
+            return 1; // Beta kullanıcıları 1. nesil
+        }
+
+        long monthsBetween = ChronoUnit.MONTHS.between(appLaunchDate, createdAt);
+        return (int) (monthsBetween / 6) + 1;
     }
 
     @Transactional

@@ -9,9 +9,14 @@
           <Avatar :username="username" size="xl" />
           <div class="info">
             <h1>{{ username }}</h1>
-            <span class="badge" :class="userRole?.toLowerCase()">
-              {{ getRoleBadge(userRole) }}
-            </span>
+            <div class="badges">
+              <span class="badge" :class="userRole?.toLowerCase()">
+                {{ getRoleBadge(userRole) }}
+              </span>
+              <span v-if="author.generation" class="badge generation">
+                {{ author.generation }}. nesil
+              </span>
+            </div>
           </div>
         </div>
 
@@ -44,6 +49,14 @@
             <UserPlus class="icon" />
             takip et
           </button>
+          <!-- Mesaj Gönder -->
+          <router-link 
+            :to="`/mesajlar/${username}`"
+            class="action-btn primary"
+          >
+            <MessageCircle class="icon" />
+            mesaj gönder
+          </router-link>
             <!-- Admin/Mod: Ban User Button -->
           <button 
             v-if="authStore.canBanUser(userRole) && !isBanned"
@@ -551,7 +564,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   UserPlus, UserCheck, Settings, Loader2,
-  FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle, Shield, ShieldOff
+  FileText, Star, Hash, ThumbsUp, ThumbsDown, ChevronRight, X, UserX, Edit2, Trash2, AlertTriangle, Shield, ShieldOff, MessageCircle
 } from 'lucide-vue-next'
 import Header from '@/components/layout/Header.vue'
 import Pagination from '@/components/ui/Pagination.vue'
@@ -849,6 +862,7 @@ async function loadUserData() {
       favoriteCount: response.data.favoriteCount || 0,
       role: response.data.role || 'USER',
       createdAt: response.data.createdAt,
+      generation: response.data.generation,
       isActive: response.data.isActive,
       bannedUntil: response.data.bannedUntil,
       banReason: response.data.banReason
@@ -1055,6 +1069,12 @@ onMounted(() => {
   margin: 0 0 0.25rem;
 }
 
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
@@ -1073,6 +1093,11 @@ onMounted(() => {
 .badge.moderator {
   background: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
+}
+
+.badge.generation {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
 }
 
 /* Stats */

@@ -19,7 +19,7 @@
             <h3>3. VERİ GÜVENLİĞİ</h3>
             <p>Kullanıcı bilgileri 3. şahıslarla paylaşılmaz (yasal zorunluluklar hariç) ve şifreleriniz veritabanında "hash"lenerek (şifrelenerek) saklanır.</p>
 
-            <h3>4. ÇEREZLER (COOKIES)</h3>
+            <h3>4. Çerezler (Cookies)</h3>
             <p>Platform deneyimini iyileştirmek amacıyla çerezler kullanılabilir.</p>
 
             <h3>5. İLETİŞİM</h3>

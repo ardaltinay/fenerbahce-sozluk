@@ -65,9 +65,7 @@ export const topicsApi = {
   search: (keyword, page = 0, size = 20) =>
     api.get(`/api/topics/search`, { params: { keyword, page, size } }),
   create: (topicData) => api.post('/api/topics', topicData),
-  delete: (id, reason) => api.delete(`/api/topics/${id}`, { params: { reason } }),
-  updateTransfermarkt: (id, transfermarktId, topicType) =>
-    api.put(`/api/topics/${id}/transfermarkt`, { transfermarktId, topicType }),
+  delete: (id, reason) => api.delete(`/api/topics/${id}`, { params: { reason } })
 }
 
 // Entries API
@@ -128,20 +126,23 @@ export const statsApi = {
   get: () => api.get('/api/stats'),
 }
 
-// Transfermarkt API
-export const transfermarktApi = {
-  searchPlayers: (name) => api.get(`/api/transfermarkt/search/players/${encodeURIComponent(name)}`),
-  searchClubs: (name) => api.get(`/api/transfermarkt/search/clubs/${encodeURIComponent(name)}`),
-  getPlayer: (id) => api.get(`/api/transfermarkt/player/${id}`),
-  getClub: (id) => api.get(`/api/transfermarkt/club/${id}`),
-  linkToTopic: (topicId, type, transfermarktId) => api.post(`/api/transfermarkt/topics/${topicId}/link`, { type, transfermarktId }),
-  unlinkFromTopic: (topicId) => api.delete(`/api/transfermarkt/topics/${topicId}/unlink`),
-}
-
 // News API
 export const newsApi = {
   getAll: (page = 0, size = 10) =>
     api.get('/api/news', { params: { page, size } }),
+}
+
+// Messages API
+export const messagesApi = {
+  send: (data) => api.post('/api/messages', data),
+  getConversations: () => api.get('/api/messages/conversations'),
+  getMessages: (username, page = 0, size = 50) =>
+    api.get(`/api/messages/conversation/${username}`, { params: { page, size } }),
+  markConversationAsRead: (username) =>
+    api.put(`/api/messages/conversation/${username}/read`),
+  markAsRead: (id) => api.put(`/api/messages/${id}/read`),
+  getUnreadCount: () => api.get('/api/messages/unread-count'),
+  delete: (id) => api.delete(`/api/messages/${id}`),
 }
 
 export default api

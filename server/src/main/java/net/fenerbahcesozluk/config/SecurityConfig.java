@@ -51,7 +51,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/entries/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/transfermarkt/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
                         .anyRequest()
                         .authenticated())

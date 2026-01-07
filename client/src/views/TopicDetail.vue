@@ -55,7 +55,6 @@
 
               <!-- Topic Actions -->
               <div class="topic-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
-                <!-- Add Transfermarkt Button (only if no transfermarkt exists) -->
                 <button 
                   v-if="authStore.isModeratorOrAdmin" 
                   class="topic-edit-btn" 
@@ -208,6 +207,15 @@
                         </button>
                         <button @click="shareEntry(entry.id)">
                           <Share2 class="icon" />
+                        </button>
+                        <!-- Message button for logged in users (not own entry) -->
+                        <button 
+                          v-if="authStore.isAuthenticated && (entry.authorUsername || entry.author?.username) !== authStore.username"
+                          class="message-btn"
+                          @click="sendMessageToAuthor(entry)"
+                          title="mesaj gönder"
+                        >
+                          <MessageCircle class="icon" />
                         </button>
                         <!-- Edit/Delete buttons for authorized users -->
                         <button 
@@ -412,6 +420,15 @@
                                  <button @click="shareEntry(entry.id)">
                                    <Share2 class="icon-sm" />
                                  </button>
+                                 <!-- Message button for logged in users (not own entry) -->
+                                 <button 
+                                   v-if="authStore.isAuthenticated && (entry.authorUsername || entry.author?.username) !== authStore.username"
+                                   class="message-btn"
+                                   @click="sendMessageToAuthor(entry)"
+                                   title="mesaj gönder"
+                                 >
+                                   <MessageCircle class="icon-sm" />
+                                 </button>
                                  <!-- Edit/Delete for authorized users -->
                                  <button v-if="authStore.canEditEntry(entry)" class="edit-btn" @click="startEdit(entry)" title="düzenle">
                                    <Edit2 class="icon-sm" />
@@ -527,7 +544,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
-  ArrowLeft, MessageSquare, Eye, ThumbsUp, ThumbsDown, 
+  ArrowLeft, MessageSquare, MessageCircle, Eye, ThumbsUp, ThumbsDown, 
   Star, Share2, Loader2, PenSquare, Edit2, Edit3, Trash2, X, User
 } from 'lucide-vue-next'
 import Sidebar from '@/components/layout/Sidebar.vue'
@@ -706,6 +723,21 @@ function shareEntry(entryId) {
   toast.success('Link kopyalandı!')
 }
 
+function sendMessageToAuthor(entry) {
+  const authorUsername = entry.authorUsername || entry.author?.username
+  if (!authorUsername) return
+  
+  // Başlık linki ve entry özeti ile mesaj oluştur
+  const topicUrl = `${window.location.origin}/baslik/${topic.value?.id}`
+  const entryPreview = entry.content?.substring(0, 100) || ''
+  const messageText = `"${topic.value?.title}" başlığındaki entry'niz hakkında:\n\n"${entryPreview}..."\n\n`
+  
+  // LocalStorage'a geçici olarak kaydet (mesaj input'u için)
+  localStorage.setItem('prefillMessage', messageText)
+  
+  router.push(`/mesajlar/${authorUsername}`)
+}
+
 // Edit state
 const editingEntryId = ref(null)
 const editContent = ref('')
@@ -882,6 +914,7 @@ onMounted(() => {
   if (route.params.id) {
     const dateFilter = route.query.dateFilter || null
     fetchData(route.params.id, dateFilter)
+    setupWebSocket(route.params.id)
   }
   
   // Check for draft content from NewTopicModal redirect
@@ -938,11 +971,7 @@ watch(() => route.params.id, (newId, oldId) => {
   }
 })
 
-onMounted(() => {
-  if (route.params.id) {
-    setupWebSocket(route.params.id)
-  }
-})
+
 
 onUnmounted(() => {
   if (currentSubscribedTopicId) {

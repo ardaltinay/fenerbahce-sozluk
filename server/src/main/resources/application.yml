@@ -64,7 +64,3 @@ app:
 # CORS Configuration
 cors:
   allowed-origins: http://localhost:5173,http://localhost:3000
-
-# Transfermarkt Integration
-transfermarkt:
-  enabled: ${TRANSFERMARKT_ENABLED:true}

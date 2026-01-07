@@ -192,9 +192,9 @@ async function handleRegister() {
     })
     
     if (result.success) {
-      toast.success('Kayıt başarılı! Giriş yapabilirsiniz.')
+      toast.success('Kayıt başarılı! Hoş geldiniz.')
       emit('close')
-      emit('switch-to-login') // Or auto login?
+      // Otomatik giriş yapıldı, login popup'ına gerek yok
     } else {
       if (typeof result.message === 'object') {
         error.value = Object.values(result.message).join(', ')
