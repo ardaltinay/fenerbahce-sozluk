@@ -124,19 +124,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-fb-dark);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-
-
-
 ::-webkit-scrollbar-thumb {
-  background: var(--color-fb-navy-light);
+  background: rgba(212, 200, 74, 0.4);
   border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-fb-yellow);
+  background: #d4c84a;
 }
 
 /* Utility Classes */

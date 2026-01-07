@@ -1,7 +1,7 @@
 package net.fenerbahcesozluk.service;
 
 import lombok.RequiredArgsConstructor;
-import net.fenerbahcesozluk.dto.CacheablePage;
+import net.fenerbahcesozluk.dto.RestPage;
 import net.fenerbahcesozluk.dto.TopicRequest;
 import net.fenerbahcesozluk.dto.TopicResponse;
 import net.fenerbahcesozluk.entity.Topic;
@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Service
@@ -36,26 +37,26 @@ public class TopicService {
     }
 
     public Page<TopicResponse> getPopularTopics(Pageable pageable) {
-        return getPopularTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
+        return getPopularTopicsCached(pageable.getPageNumber(), pageable.getPageSize());
     }
 
-    @Cacheable(value = "popularTopics", key = "#pageNumber")
-    public CacheablePage<TopicResponse> getPopularTopicsCached(int pageNumber, int pageSize) {
+    @Cacheable(value = "popularTopics_v2", key = "#pageNumber")
+    public Page<TopicResponse> getPopularTopicsCached(int pageNumber, int pageSize) {
         Page<TopicResponse> page = topicRepository.findPopularTopics(PageRequest.of(pageNumber, pageSize))
                 .map(this::toResponse);
-        return CacheablePage.of(page);
+        return new RestPage<>(new ArrayList<>(page.getContent()), page.getPageable(), page.getTotalElements());
     }
 
     public Page<TopicResponse> getTrendingTopics(Pageable pageable) {
-        return getTrendingTopicsCached(pageable.getPageNumber(), pageable.getPageSize()).toPage();
+        return getTrendingTopicsCached(pageable.getPageNumber(), pageable.getPageSize());
     }
 
-    @Cacheable(value = "trendingTopics", key = "#pageNumber")
-    public CacheablePage<TopicResponse> getTrendingTopicsCached(int pageNumber, int pageSize) {
+    @Cacheable(value = "trendingTopics_v2", key = "#pageNumber")
+    public Page<TopicResponse> getTrendingTopicsCached(int pageNumber, int pageSize) {
         LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
         Page<TopicResponse> page = topicRepository.findTrends(thirtyDaysAgo, PageRequest.of(pageNumber, pageSize))
                 .map(this::toResponse);
-        return CacheablePage.of(page);
+        return new RestPage<>(new ArrayList<>(page.getContent()), page.getPageable(), page.getTotalElements());
     }
 
     /**
@@ -238,8 +239,8 @@ public class TopicService {
                 .build();
     }
 
-    @Caching(evict = { @CacheEvict(value = "trendingTopics", allEntries = true),
-            @CacheEvict(value = "popularTopics", allEntries = true) })
+    @Caching(evict = { @CacheEvict(value = "trendingTopics_v2", allEntries = true),
+            @CacheEvict(value = "popularTopics_v2", allEntries = true) })
     public void evictTopicCaches() {
         // Evict topic list caches
     }

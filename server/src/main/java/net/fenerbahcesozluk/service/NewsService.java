@@ -2,7 +2,9 @@ package net.fenerbahcesozluk.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.fenerbahcesozluk.dto.RestPage;
 import net.fenerbahcesozluk.entity.News;
+
 import net.fenerbahcesozluk.repository.NewsRepository;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.CacheEvict;
@@ -41,15 +43,17 @@ public class NewsService {
     private static final List<String> KEYWORDS = List.of("Fenerbahçe", "Fenerbahce", "Sarı Kanarya", "Sarı Lacivert",
             "FB", "Kadıköy");
 
-    @Cacheable(value = "news", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize")
+    @Cacheable(value = "news_v2", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize")
     public Page<News> getNews(Pageable pageable) {
-        return newsRepository.findAllByOrderByPubDateDesc(pageable);
+        Page<News> page = newsRepository.findAllByOrderByPubDateDesc(pageable);
+        return new RestPage<>(new ArrayList<>(page.getContent()), pageable,
+                page.getTotalElements());
     }
 
     @EventListener(ApplicationReadyEvent.class)
     @Scheduled(fixedRate = 3600000) // Every 1 hour
     @Transactional
-    @CacheEvict(value = "news", allEntries = true)
+    @CacheEvict(value = "news_v2", allEntries = true)
     public void fetchNewsTask() {
         log.info("Starting scheduled news fetch task...");
         for (String feedUrl : RSS_FEEDS) {

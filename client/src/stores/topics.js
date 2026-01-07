@@ -98,20 +98,28 @@ export const useTopicsStore = defineStore('topics', () => {
    * Fetch topics by date period for sidebar grouping
    * @param period: 'today', 'yesterday', 'older'
    */
-  async function fetchTopicsByDate(period, page = 0, size = 50, force = false) {
+  async function fetchTopicsByDate(period, page = 0, size = 50, force = false, append = false) {
     const targetRef = period === 'today' ? todayTopics
       : period === 'yesterday' ? yesterdayTopics
         : olderTopics
 
-    if (!force && targetRef.value.length > 0) {
+    if (!force && !append && targetRef.value.length > 0) {
       return
     }
 
     try {
       const response = await topicsApi.getByDate(period, page, size)
-      targetRef.value = response.data.content || response.data
+      const newData = response.data.content || response.data
+
+      if (append) {
+        targetRef.value.push(...newData)
+      } else {
+        targetRef.value = newData
+      }
+      return response.data // Return full response for pagination check
     } catch (err) {
       console.error(`${period} topics fetch error:`, err.message)
+      throw err
     }
   }
 

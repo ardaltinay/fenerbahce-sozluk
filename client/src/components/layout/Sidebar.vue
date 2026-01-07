@@ -15,6 +15,7 @@
           <span class="topic-count">{{ formatCount(topic.todayEntryCount || topic.entryCount) }}</span>
         </button>
       </nav>
+      <button v-if="hasMore.today && topicsStore.todayTopics.length >= 50" class="load-more-btn" @click="loadMore('today')">daha fazla</button>
     </template>
 
     <!-- dün section -->
@@ -32,6 +33,7 @@
           <span class="topic-count">{{ formatCount(topic.todayEntryCount || topic.entryCount) }}</span>
         </button>
       </nav>
+      <button v-if="hasMore.yesterday && topicsStore.yesterdayTopics.length >= 50" class="load-more-btn" @click="loadMore('yesterday')">daha fazla</button>
     </template>
 
     <!-- önceki günler section -->
@@ -49,6 +51,7 @@
           <span class="topic-count">{{ formatCount(topic.olderEntryCount || topic.entryCount) }}</span>
         </button>
       </nav>
+      <button v-if="hasMore.older && topicsStore.olderTopics.length >= 50" class="load-more-btn" @click="loadMore('older')">daha fazla</button>
     </template>
 
     <!-- Fallback if no topics at all -->
@@ -60,7 +63,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTopicsStore } from '@/stores/topics'
 import { useWebSocket } from '@/composables/useWebSocket'
@@ -69,6 +72,30 @@ const router = useRouter()
 const route = useRoute()
 const topicsStore = useTopicsStore()
 const { connect, subscribeToSidebar } = useWebSocket()
+
+const pageState = reactive({
+  today: 0,
+  yesterday: 0,
+  older: 0
+})
+
+const hasMore = reactive({
+  today: true,
+  yesterday: true,
+  older: true
+})
+
+async function loadMore(period) {
+  pageState[period]++
+  try {
+    const response = await topicsStore.fetchTopicsByDate(period, pageState[period], 50, true, true)
+    if (response && (response.last || pageState[period] >= response.totalPages - 1)) {
+       hasMore[period] = false
+    }
+  } catch (e) {
+    pageState[period]-- // Revert on error
+  }
+}
 
 function navigateToTopic(topic, dateFilter = null) {
   if (dateFilter) {
@@ -107,12 +134,34 @@ onMounted(() => {
 <style scoped>
 .sidebar {
   width: 280px;
-  min-height: calc(100vh - 50px);
-  background: rgba(10, 10, 25, 0.4);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid rgba(212, 200, 74, 0.1);
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 237, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 50px;
+  height: calc(100vh - 50px);
+  overflow-y: auto;
+}
+
+.load-more-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  color: #666;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.load-more-btn:hover {
+  background: rgba(255, 237, 0, 0.05);
+  color: #d4c84a;
 }
 
 .sidebar-header {

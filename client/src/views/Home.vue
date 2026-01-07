@@ -193,7 +193,7 @@
           <template v-if="topicsStore.todayTopics.length > 0">
             <div class="mobile-date-header">bugün</div>
             <button
-              v-for="topic in topicsStore.todayTopics"
+              v-for="topic in topicsStore.todayTopics.slice(0, 10)"
               :key="topic.id"
               class="mobile-topic-item"
               @click="openMobileEntriesWithFilter(topic, 'today')"
@@ -207,7 +207,7 @@
           <template v-if="topicsStore.yesterdayTopics.length > 0">
             <div class="mobile-date-header">dün</div>
             <button
-              v-for="topic in topicsStore.yesterdayTopics"
+              v-for="topic in topicsStore.yesterdayTopics.slice(0, 10)"
               :key="topic.id"
               class="mobile-topic-item"
               @click="openMobileEntriesWithFilter(topic, 'yesterday')"
@@ -221,7 +221,7 @@
           <template v-if="topicsStore.olderTopics.length > 0">
             <div class="mobile-date-header">önceki günler</div>
             <button
-              v-for="topic in topicsStore.olderTopics"
+              v-for="topic in topicsStore.olderTopics.slice(0, 10)"
               :key="topic.id"
               class="mobile-topic-item"
               @click="openMobileEntriesWithFilter(topic, 'older')"
@@ -564,15 +564,15 @@ function formatDate(date) {
 }
 
 .popular-card {
-  background: rgba(26, 26, 46, 0.45);
+  background: rgba(20, 20, 35, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 237, 0, 0.05);
+  border: 1px solid rgba(255, 237, 0, 0.1);
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 140px;
+  height: 100px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -580,15 +580,20 @@ function formatDate(date) {
 }
 
 .popular-card:hover {
-  background: rgba(26, 26, 46, 0.6);
-  border-color: #d4c84a;
+  background: rgba(26, 26, 46, 0.8);
+  border-color: rgba(255, 237, 0, 0.3);
   transform: translateY(-4px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.popular-card:hover h3 {
+  color: #d4c84a;
 }
 
 .popular-card h3 {
   font-size: 1rem;
   color: #d4c84a;
+  transition: color 0.2s ease;
   margin: 0.5rem 0 0;
   white-space: nowrap;
   overflow: hidden;
@@ -608,6 +613,10 @@ function formatDate(date) {
   justify-content: space-between;
   font-size: 0.75rem;
   margin-top: 0.75rem;
+}
+
+.card-meta span {
+  color: #666;
 }
 
 .card-meta .author { color: #6fbf6f; }

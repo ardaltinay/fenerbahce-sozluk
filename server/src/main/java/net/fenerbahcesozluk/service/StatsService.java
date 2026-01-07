@@ -23,7 +23,7 @@ public class StatsService {
     private final UserRepository userRepository;
     private final VoteRepository voteRepository;
 
-    @Cacheable(value = "stats", key = "'global'")
+    @Cacheable(value = "stats_v2", key = "'global'")
     public StatsResponse getStats() {
         long totalEntries = entryRepository.count();
         long totalTopics = topicRepository.count();
@@ -50,7 +50,7 @@ public class StatsService {
                 .topAuthors(topAuthors).topTopics(topTopics).build();
     }
 
-    @CacheEvict(value = "stats", allEntries = true)
+    @CacheEvict(value = "stats_v2", allEntries = true)
     public void evictStatsCache() {
         // Cache will be evicted
     }
