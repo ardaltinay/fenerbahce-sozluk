@@ -6,7 +6,7 @@
       <!-- Profile Header -->
       <div class="profile-header">
         <div class="profile-info">
-          <div class="avatar">{{ username.charAt(0).toUpperCase() }}</div>
+          <Avatar :username="username" size="xl" />
           <div class="info">
             <h1>{{ username }}</h1>
             <span class="badge" :class="userRole?.toLowerCase()">
@@ -555,6 +555,7 @@ import {
 } from 'lucide-vue-next'
 import Header from '@/components/layout/Header.vue'
 import Pagination from '@/components/ui/Pagination.vue'
+import Avatar from '@/components/ui/Avatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEntriesStore } from '@/stores/entries'
 import { useTopicsStore } from '@/stores/topics'
@@ -1045,19 +1046,7 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.avatar {
-  width: 72px;
-  height: 72px;
-  background: linear-gradient(135deg, #d4c84a, #b5a93d);
-  color: #1a1a2e;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
+
 
 .info h1 {
   font-size: 1.5rem;

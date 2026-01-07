@@ -1,105 +1,188 @@
 <template>
-  <footer class="glass border-t border-fb-yellow/20 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 py-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <!-- Brand -->
-        <div class="md:col-span-1">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-lg bg-fb-yellow flex items-center justify-center">
-              <span class="text-fb-navy font-bold text-xl">FB</span>
-            </div>
-            <div>
-              <h3 class="text-lg font-bold text-fb-yellow">fenerbahçe sözlük</h3>
-            </div>
-          </div>
-          <p class="text-sm text-text-muted mb-4">
-            fenerbahçeliler için fenerbahçeliler tarafından oluşturulan özgür sözlük platformu.
-          </p>
-          <div class="flex gap-3">
-            <a href="#" class="btn btn-ghost p-2">
-              <Twitter class="w-5 h-5" />
-            </a>
-            <a href="#" class="btn btn-ghost p-2">
-              <Instagram class="w-5 h-5" />
-            </a>
-            <a href="#" class="btn btn-ghost p-2">
-              <Youtube class="w-5 h-5" />
-            </a>
-          </div>
+  <footer class="footer">
+    <div class="footer-container">
+      <!-- Left Side: Brand & Copyright -->
+      <div class="footer-left">
+        <div class="logo-area">
+          <img src="/icon.png" alt="Fenerbahçe Sözlük" class="footer-logo" />
         </div>
-
-        <!-- Links -->
-        <div>
-          <h4 class="text-sm font-semibold text-fb-yellow mb-4">keşfet</h4>
-          <nav class="space-y-2">
-            <router-link to="/" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              gündem
-            </router-link>
-            <router-link to="/debe" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              debe
-            </router-link>
-            <router-link to="/kanallar" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              kanallar
-            </router-link>
-            <router-link to="/rastgele" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              rastgele
-            </router-link>
-          </nav>
-        </div>
-
-        <div>
-          <h4 class="text-sm font-semibold text-fb-yellow mb-4">topluluk</h4>
-          <nav class="space-y-2">
-            <router-link to="/kurallar" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              kurallar
-            </router-link>
-            <router-link to="/yardim" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              yardım
-            </router-link>
-            <router-link to="/iletisim" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              iletişim
-            </router-link>
-            <router-link to="/moderatorler" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              moderatörler
-            </router-link>
-          </nav>
-        </div>
-
-        <div>
-          <h4 class="text-sm font-semibold text-fb-yellow mb-4">yasal</h4>
-          <nav class="space-y-2">
-            <router-link to="/gizlilik" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              gizlilik politikası
-            </router-link>
-            <router-link to="/kullanim-kosullari" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              kullanım koşulları
-            </router-link>
-            <router-link to="/cerez-politikasi" class="block text-sm text-text-muted hover:text-fb-yellow transition-colors">
-              çerez politikası
-            </router-link>
-          </nav>
-        </div>
+        <span class="divider">|</span>
+        <span class="copyright-text">
+          &copy; {{ new Date().getFullYear() }} tüm hakları saklıdır.
+        </span>
       </div>
 
-      <!-- Bottom Bar -->
-      <div class="mt-8 pt-8 border-t border-fb-yellow/10">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-          <p class="text-sm text-text-muted">
-            © {{ currentYear }} fenerbahçe sözlük. tüm hakları saklıdır.
-          </p>
-          <p class="text-sm text-text-muted flex items-center gap-2">
-            <Heart class="w-4 h-4 text-fb-yellow" />
-            <span>sarı lacivert sevgisiyle yapıldı</span>
-          </p>
+      <!-- Right Side: Links & Social -->
+      <div class="footer-right">
+        <nav class="footer-nav">
+          <router-link to="/iletisim">iletişim</router-link>
+          <a href="#" @click.prevent="showTerms = true">kurallar</a>
+          <a href="#" @click.prevent="showPrivacy = true">gizlilik</a>
+        </nav>
+        
+        <div class="separator"></div>
+
+        <div class="social-icons">
+          <a href="#" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
+            <!-- X Logo SVG -->
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="icon fill-current">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+            </svg>
+          </a>
+          <a href="#" target="_blank" rel="noopener" class="social-link instagram">
+            <Instagram class="icon" />
+          </a>
         </div>
       </div>
     </div>
+
+    <!-- Modals -->
+    <TermsModal v-model="showTerms" />
+    <PrivacyModal v-model="showPrivacy" />
   </footer>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Twitter, Instagram, Youtube, Heart } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { Instagram } from 'lucide-vue-next'
+import TermsModal from '@/components/legal/TermsModal.vue'
+import PrivacyModal from '@/components/legal/PrivacyModal.vue'
 
-const currentYear = computed(() => new Date().getFullYear())
+const showTerms = ref(false)
+const showPrivacy = ref(false)
 </script>
+
+<style scoped>
+.footer {
+  background: rgba(13, 13, 26, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 0;
+  margin-top: auto;
+  width: 100%;
+  z-index: 10;
+}
+
+.footer-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Left Side */
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-logo {
+  width: 20px;
+  height: 20px;
+  opacity: 0.9;
+}
+
+.divider {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.8rem;
+}
+
+.copyright-text {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Right Side */
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.footer-nav a {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+
+.footer-nav a:hover {
+  color: #d4c84a;
+}
+
+.separator {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.social-icons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  color: #ccc;
+  transition: all 0.2s;
+}
+
+.social-link:hover {
+  background: #d4c84a;
+  color: #1a1a2e;
+  transform: translateY(-2px);
+}
+
+.icon { width: 16px; height: 16px; }
+.fill-current { fill: currentColor; }
+
+
+/* Mobile */
+@media (max-width: 768px) {
+  .footer-container {
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+  }
+  
+  .footer-left {
+    align-items: center;
+  }
+  
+  .copyright-text {
+    margin-left: 0;
+  }
+  
+  .footer-right {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .separator { display: none; }
+  
+  .footer-nav {
+    gap: 1rem;
+  }
+}
+</style>

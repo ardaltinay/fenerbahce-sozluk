@@ -131,7 +131,7 @@
         </template>
         <template v-else>
           <button class="user-btn" @click="showMenu = !showMenu">
-            <span class="avatar">{{ authStore.username.charAt(0) }}</span>
+            <Avatar :username="authStore.username" size="sm" />
           </button>
           <div v-if="showMenu" class="dropdown">
             <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
@@ -162,7 +162,7 @@
         <template v-else>
 
           <button class="user-btn" @click="showMenu = !showMenu">
-            <span class="avatar">{{ authStore.username.charAt(0) }}</span>
+            <Avatar :username="authStore.username" size="sm" />
           </button>
           <div v-if="showMenu" class="dropdown mobile-dropdown">
             <router-link :to="`/biri/${authStore.username}`" @click="showMenu = false">profilim</router-link>
@@ -224,6 +224,7 @@ import { useUsersStore } from '@/stores/users'
 import NewTopicModal from '@/components/NewTopicModal.vue'
 import LoginModal from '@/components/auth/LoginModal.vue'
 import RegisterModal from '@/components/auth/RegisterModal.vue'
+import Avatar from '@/components/ui/Avatar.vue'
 
 const emit = defineEmits(['tab-change'])
 
@@ -663,19 +664,30 @@ defineExpose({
   cursor: pointer;
 }
 
-.avatar {
-  width: 28px;
-  height: 28px;
-  background: #d4c84a;
-  color: #1a1a2e;
-  border-radius: 50%;
+.desktop-user-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  gap: 0.6rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 30px;
+  transition: background 0.2s;
 }
+
+.desktop-user-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-name {
+  color: #ccc;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.desktop-user-btn:hover .user-name {
+  color: #d4c84a;
+}
+
+
 
 .dropdown {
   position: absolute;

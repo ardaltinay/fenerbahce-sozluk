@@ -34,7 +34,7 @@
 
             <template v-else-if="activeTab === 'gundem'">
               <router-link 
-                v-for="topic in topicsStore.topics" 
+                v-for="topic in topicsStore.topics.slice(0, 10)" 
                 :key="topic.id" 
                 class="popular-card"
                 :to="`/baslik/${topic.id}`"
@@ -404,6 +404,7 @@ function handleTabChange(tab) {
   } else if (tab === 'gundem') {
     mobileView.value = 'gundem'
     topicsStore.fetchAllSidebarTopicsByDate()
+    topicsStore.fetchTrendingTopics(0, 20) // Fetch trends for desktop main view
   } else if (tab === 'random') {
     mobileView.value = 'entries'
     entriesStore.fetchRandomEntries(4)
