@@ -42,20 +42,20 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
         Page<Entry> findByTopicIdBefore(@Param("topicId") UUID topicId, @Param("before") LocalDateTime before,
                         Pageable pageable);
 
-        @Query("SELECT e FROM Entry e WHERE e.isActive = true ORDER BY e.likeCount DESC, e.createdAt DESC")
+        @Query("SELECT e FROM Entry e WHERE e.isActive = true AND e.topic.isActive = true ORDER BY e.likeCount DESC, e.createdAt DESC")
         Page<Entry> findPopularEntries(Pageable pageable);
 
-        @Query("SELECT e FROM Entry e WHERE e.isActive = true ORDER BY e.createdAt DESC")
+        @Query("SELECT e FROM Entry e WHERE e.isActive = true AND e.topic.isActive = true ORDER BY e.createdAt DESC")
         Page<Entry> findLatestEntries(Pageable pageable);
 
         @Query("SELECT COUNT(e) FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true")
         Long countByAuthorId(@Param("authorId") UUID authorId);
 
-        @Query("SELECT e FROM Entry e WHERE EXTRACT(DAY FROM e.createdAt) = :day AND EXTRACT(MONTH FROM e.createdAt) = :month AND EXTRACT(YEAR FROM e.createdAt) < :year AND e.isActive = true ORDER BY e.createdAt DESC")
+        @Query("SELECT e FROM Entry e WHERE EXTRACT(DAY FROM e.createdAt) = :day AND EXTRACT(MONTH FROM e.createdAt) = :month AND EXTRACT(YEAR FROM e.createdAt) < :year AND e.isActive = true AND e.topic.isActive = true ORDER BY e.createdAt DESC")
         Page<Entry> findHistoryEntries(@Param("day") int day, @Param("month") int month, @Param("year") int year,
                         Pageable pageable);
 
-        @Query(value = "SELECT * FROM entries WHERE is_active = true ORDER BY RANDOM()", nativeQuery = true)
+        @Query(value = "SELECT e.* FROM entries e JOIN topics t ON e.topic_id = t.id WHERE e.is_active = true AND t.is_active = true ORDER BY RANDOM()", nativeQuery = true)
         Page<Entry> findRandomEntries(Pageable pageable);
 
         @Modifying
@@ -93,7 +93,7 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
         List<Object[]> findTopAuthors(int limit);
 
         // Popular entries from high-entry-count topics ordered by likes
-        @Query("SELECT e FROM Entry e WHERE e.isActive = true AND e.likeCount > 0 ORDER BY e.topic.entryCount DESC, e.likeCount DESC")
+        @Query("SELECT e FROM Entry e WHERE e.isActive = true AND e.topic.isActive = true AND e.likeCount > 0 ORDER BY e.topic.entryCount DESC, e.likeCount DESC")
         List<Entry> findPopularEntriesFromTopTopics(Pageable pageable);
 
         // Move entries from one topic to another (for merging)

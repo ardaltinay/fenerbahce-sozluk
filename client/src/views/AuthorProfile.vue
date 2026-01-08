@@ -22,7 +22,7 @@
 
         <div class="profile-stats">
           <div class="stat">
-            <span class="value">{{ author.entryCount || 0 }}</span>
+            <span class="value">{{ entriesStore.totalElements }}</span>
             <span class="label">entry</span>
           </div>
           <div class="stat">
@@ -680,7 +680,7 @@ const tabs = computed(() => {
   const result = []
   
   // Always show these tabs
-  result.push({ id: 'entries', label: 'entryler', count: userEntries.value.length || 0 })
+  result.push({ id: 'entries', label: 'entryler', count: entriesStore.totalElements || 0 })
   result.push({ id: 'topics', label: 'başlıklar', count: userTopics.value.length || 0 })
   result.push({ id: 'favorites', label: 'favoriler', count: userFavorites.value.length || 0 })
   result.push({ id: 'topLiked', label: 'en beğenilen', count: topLikedEntries.value.length || 0 })

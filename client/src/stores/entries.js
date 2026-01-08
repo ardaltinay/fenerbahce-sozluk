@@ -8,6 +8,7 @@ export const useEntriesStore = defineStore('entries', () => {
   const loading = ref(false)
   const error = ref(null)
   const totalPages = ref(0)
+  const totalElements = ref(0)
   const currentPage = ref(0)
 
   // Cache context
@@ -83,6 +84,7 @@ export const useEntriesStore = defineStore('entries', () => {
       const response = await entriesApi.getByAuthor(authorId, page, size)
       allEntries.value = response.data.content || response.data
       totalPages.value = response.data.totalPages || 1
+      totalElements.value = response.data.totalElements || allEntries.value.length
       currentPage.value = page
       lastFetchContext.value = { type: 'author', id: authorId, page: page }
     } catch (err) {
@@ -270,6 +272,7 @@ export const useEntriesStore = defineStore('entries', () => {
     loading,
     error,
     totalPages,
+    totalElements,
     currentPage,
     fetchEntriesByTopic,
     fetchEntriesByAuthor,
