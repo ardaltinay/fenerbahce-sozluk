@@ -627,8 +627,31 @@ onUnmounted(() => {
     display: block;
   }
   
+  
   .message-bubble {
     max-width: 85%;
   }
+}
+
+/* Custom Scrollbar */
+.conversation-list::-webkit-scrollbar,
+.messages-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-list::-webkit-scrollbar-track,
+.messages-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.conversation-list::-webkit-scrollbar-thumb,
+.messages-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.conversation-list::-webkit-scrollbar-thumb:hover,
+.messages-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 200, 74, 0.3);
 }
 </style>

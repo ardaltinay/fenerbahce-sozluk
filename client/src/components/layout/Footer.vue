@@ -23,13 +23,13 @@
         <div class="separator"></div>
 
         <div class="social-icons">
-          <a href="#" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
+          <a href="#" @click.prevent="showComingSoon('x (twitter)')" class="social-link" title="x (twitter)">
             <!-- X Logo SVG -->
             <svg viewBox="0 0 24 24" aria-hidden="true" class="icon fill-current">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
             </svg>
           </a>
-          <a href="#" target="_blank" rel="noopener" class="social-link instagram">
+          <a href="#" @click.prevent="showComingSoon('instagram')" class="social-link instagram">
             <Instagram class="icon" />
           </a>
         </div>
@@ -48,8 +48,15 @@ import { Instagram } from 'lucide-vue-next'
 import TermsModal from '@/components/legal/TermsModal.vue'
 import PrivacyModal from '@/components/legal/PrivacyModal.vue'
 
+import { useToast } from '@/composables/useToast'
+
 const showTerms = ref(false)
 const showPrivacy = ref(false)
+const toast = useToast()
+
+function showComingSoon(platform) {
+  toast.info(`${platform} hesabımız yakında açılacaktır`)
+}
 </script>
 
 <style scoped>

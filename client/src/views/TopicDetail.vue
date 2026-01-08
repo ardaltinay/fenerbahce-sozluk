@@ -18,61 +18,65 @@
               <div class="header-row">
                 <h1>{{ topic?.title }}</h1>
               </div>
-              <div class="topic-meta">
-                <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || 0 }} entry</span>
-              </div>
+              <div class="header-controls">
+                <div class="header-controls-left">
+                  <div class="topic-meta">
+                    <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || 0 }} entry</span>
+                  </div>
 
-              <!-- Date Filter Tabs -->
-              <div v-if="topic" class="date-filter-tabs">
-                <button 
-                  :class="{ active: !activeDateFilter }"
-                  @click="setDateFilter(null)"
-                >
-                  tümü ({{ topic.entryCount || 0 }})
-                </button>
-                <button 
-                  v-if="topic.todayEntryCount > 0"
-                  :class="{ active: activeDateFilter === 'today' }"
-                  @click="setDateFilter('today')"
-                >
-                  bugün ({{ topic.todayEntryCount }})
-                </button>
-                <button 
-                  v-if="topic.yesterdayEntryCount > 0"
-                  :class="{ active: activeDateFilter === 'yesterday' }"
-                  @click="setDateFilter('yesterday')"
-                >
-                  dün ({{ topic.yesterdayEntryCount }})
-                </button>
-                <button 
-                  v-if="topic.olderEntryCount > 0"
-                  :class="{ active: activeDateFilter === 'older' }"
-                  @click="setDateFilter('older')"
-                >
-                  önceki günler ({{ topic.olderEntryCount }})
-                </button>
-              </div>
+                  <!-- Date Filter Tabs -->
+                  <div v-if="topic" class="date-filter-tabs">
+                    <button 
+                      :class="{ active: !activeDateFilter }"
+                      @click="setDateFilter(null)"
+                    >
+                      tümü ({{ topic.entryCount || 0 }})
+                    </button>
+                    <button 
+                      v-if="topic.todayEntryCount > 0"
+                      :class="{ active: activeDateFilter === 'today' }"
+                      @click="setDateFilter('today')"
+                    >
+                      bugün ({{ topic.todayEntryCount }})
+                    </button>
+                    <button 
+                      v-if="topic.yesterdayEntryCount > 0"
+                      :class="{ active: activeDateFilter === 'yesterday' }"
+                      @click="setDateFilter('yesterday')"
+                    >
+                      dün ({{ topic.yesterdayEntryCount }})
+                    </button>
+                    <button 
+                      v-if="topic.olderEntryCount > 0"
+                      :class="{ active: activeDateFilter === 'older' }"
+                      @click="setDateFilter('older')"
+                    >
+                      önceki günler ({{ topic.olderEntryCount }})
+                    </button>
+                  </div>
+                </div>
 
-              <!-- Topic Actions -->
-              <div class="topic-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
-                <button 
-                  v-if="authStore.isModeratorOrAdmin" 
-                  class="topic-edit-btn" 
-                  @click="openKunyeModal"
-                  :title="hasKunye ? 'künyeyi düzenle' : 'künye ekle'"
-                >
-                  <Edit3 class="icon-sm" />
-                  <span>{{ hasKunye ? 'künye düzenle' : 'künye ekle' }}</span>
-                </button>
-                <button 
-                  v-if="authStore.canDeleteTopic(topic)" 
-                  class="topic-delete-btn" 
-                  @click="openTopicDeleteModal" 
-                  title="başlığı sil"
-                >
-                  <Trash2 class="icon-sm" />
-                  <span>sil</span>
-                </button>
+                <!-- Topic Actions -->
+                <div class="topic-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
+                  <button 
+                    v-if="authStore.isModeratorOrAdmin" 
+                    class="topic-edit-btn" 
+                    @click="openKunyeModal"
+                    :title="hasKunye ? 'künyeyi düzenle' : 'künye ekle'"
+                  >
+                    <Edit3 class="icon-sm" />
+                    <span class="desktop-text">{{ hasKunye ? 'künye düzenle' : 'künye ekle' }}</span>
+                  </button>
+                  <button 
+                    v-if="authStore.canDeleteTopic(topic)" 
+                    class="topic-delete-btn" 
+                    @click="openTopicDeleteModal" 
+                    title="başlığı sil"
+                  >
+                    <Trash2 class="icon-sm" />
+                    <span>sil</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -102,46 +106,7 @@
               </div>
             </div>
 
-            <!-- Künye Edit Modal -->
-            <div v-if="showKunyeModal" class="modal-overlay" @click.self="showKunyeModal = false">
-              <div class="modal">
-                <div class="modal-header">
-                  <h3>{{ hasKunye ? 'Künye Düzenle' : 'Künye Ekle' }}</h3>
-                  <button class="close-btn" @click="showKunyeModal = false">
-                    <X class="icon" />
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <div class="form-group">
-                    <label>Resim URL</label>
-                    <input 
-                      v-model="kunyeForm.imageUrl" 
-                      type="text" 
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label>Künye Bilgileri (JSON)</label>
-                    <textarea 
-                      v-model="kunyeForm.kunyeData" 
-                      rows="6"
-                      class="form-textarea"
-                      placeholder='{"Doğum Tarihi": "1990-01-01", "Mevki": "Forvet", "Kulüp": "Fenerbahçe"}'
-                    ></textarea>
-                    <small>JSON formatında key-value çiftleri girin</small>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button class="btn-secondary" @click="showKunyeModal = false">İptal</button>
-                  <button 
-                    class="btn-primary" 
-                    @click="saveKunye"
-                  >
-                    Kaydet
-                  </button>
-                </div>
-              </div>
-            </div>
+
       
             <!-- Entries -->
             <div class="entries-container">
@@ -358,8 +323,30 @@
               <div class="header-row">
                 <h1>{{ topic?.title || 'başlık' }}</h1>
               </div>
-              <div class="topic-meta">
-                <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || entries.length }} entry</span>
+              <div class="mobile-meta-actions">
+                <div class="topic-meta">
+                  <span><MessageSquare class="icon-sm" /> {{ topic?.entryCount || entries.length }} entry</span>
+                </div>
+
+                <!-- Mobile Actions -->
+                <div class="topic-actions mobile-actions" v-if="topic && (authStore.canDeleteTopic(topic) || authStore.isModeratorOrAdmin)">
+                  <button 
+                    v-if="authStore.isModeratorOrAdmin" 
+                    class="topic-edit-btn icon-only" 
+                    @click="openKunyeModal"
+                    :title="hasKunye ? 'künyeyi düzenle' : 'künye ekle'"
+                  >
+                    <Edit3 class="icon-sm" />
+                  </button>
+                  <button 
+                    v-if="authStore.canDeleteTopic(topic)" 
+                    class="topic-delete-btn icon-only" 
+                    @click="openTopicDeleteModal" 
+                    title="başlığı sil"
+                  >
+                    <Trash2 class="icon-sm" />
+                  </button>
+                </div>
               </div>
               
               <!-- Date Filter Tabs - Mobile -->
@@ -492,6 +479,48 @@
     </div>
 
     <!-- Modals -->
+    
+    <!-- Künye Edit Modal -->
+    <div v-if="showKunyeModal" class="modal-overlay" @click.self="showKunyeModal = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>{{ hasKunye ? 'Künye Düzenle' : 'Künye Ekle' }}</h3>
+          <button class="close-btn" @click="showKunyeModal = false">
+            <X class="icon" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Resim URL</label>
+            <input 
+              v-model="kunyeForm.imageUrl" 
+              type="text" 
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+          <div class="form-group">
+            <label>Künye Bilgileri (JSON)</label>
+            <textarea 
+              v-model="kunyeForm.kunyeData" 
+              rows="6"
+              class="form-textarea"
+              placeholder='{"Doğum Tarihi": "1990-01-01", "Mevki": "Forvet", "Kulüp": "Fenerbahçe"}'
+            ></textarea>
+            <small>JSON formatında key-value çiftleri girin</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showKunyeModal = false">İptal</button>
+          <button 
+            class="btn-primary" 
+            @click="saveKunye"
+          >
+            Kaydet
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div v-if="deleteModalEntry" class="modal-overlay" @click.self="closeDeleteModal">
       <div class="delete-modal">
@@ -1951,5 +1980,96 @@ textarea:focus {
   font-size: 0.7em;
   margin-left: 2px;
   vertical-align: super;
+}
+
+/* Header Controls Layout */
+.header-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.header-controls-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Desktop styles for header layout */
+@media (min-width: 768px) {
+  .header-controls {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+  
+  .header-controls-left {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+
+  /* Reset separate margins in desktop mode */
+  .topic-meta, 
+  .date-filter-tabs,
+  .topic-actions {
+    margin: 0 !important;
+  }
+}
+
+/* Action Buttons Styles */
+.topic-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.topic-edit-btn,
+.topic-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.topic-edit-btn {
+  background: rgba(212, 200, 74, 0.1);
+  color: #d4c84a;
+  border: 1px solid rgba(212, 200, 74, 0.2);
+}
+
+.topic-edit-btn:hover {
+  background: rgba(212, 200, 74, 0.2);
+}
+
+.topic-delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.topic-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Mobile Specific */
+.mobile-meta-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.icon-only {
+  padding: 0.4rem;
+  justify-content: center;
 }
 </style>
