@@ -3,7 +3,7 @@
     <div class="header-container">
       <!-- Logo -->
       <router-link to="/" class="logo" @click="emitTabChange('home')">
-        <img src="/icon.png" alt="Fenerbahçe Sözlük" class="logo-icon" />
+        <img src="/logo.png" alt="Fenerbahçe Sözlük" class="logo-icon" />
         <span class="logo-text">fenerbahçe sözlük</span>
       </router-link>
 
@@ -230,6 +230,7 @@ import { Search, FileText, User, LogIn, UserPlus, Edit3, MessageCircle } from 'l
 import { useAuthStore } from '@/stores/auth'
 import { useMessagesStore } from '@/stores/messages'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { useToast } from '@/composables/useToast'
 
 import { useTopicsStore } from '@/stores/topics'
 import { useEntriesStore } from '@/stores/entries'
@@ -354,6 +355,14 @@ function handleClickOutside(e) {
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   topicsStore.fetchTopics()
+  
+  // Session expired kontrolü
+  if (localStorage.getItem('sessionExpired') === 'true') {
+    localStorage.removeItem('sessionExpired')
+    const toast = useToast()
+    toast.warning('Oturumunuz sona erdi, lütfen tekrar giriş yapın')
+    showLoginModal.value = true
+  }
   
   // Mesaj bildirimleri için WebSocket
   if (authStore.isAuthenticated && authStore.user?.username) {

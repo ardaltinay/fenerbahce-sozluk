@@ -68,6 +68,15 @@
                     <span class="desktop-text">{{ hasKunye ? 'künye düzenle' : 'künye ekle' }}</span>
                   </button>
                   <button 
+                    v-if="authStore.isModeratorOrAdmin" 
+                    class="topic-merge-btn" 
+                    @click="openMergeModal" 
+                    title="başlığı birleştir"
+                  >
+                    <GitMerge class="icon-sm" />
+                    <span class="desktop-text">birleştir</span>
+                  </button>
+                  <button 
                     v-if="authStore.canDeleteTopic(topic)" 
                     class="topic-delete-btn" 
                     @click="openTopicDeleteModal" 
@@ -339,6 +348,14 @@
                     <Edit3 class="icon-sm" />
                   </button>
                   <button 
+                    v-if="authStore.isModeratorOrAdmin" 
+                    class="topic-merge-btn icon-only" 
+                    @click="openMergeModal"
+                    title="başlığı birleştir"
+                  >
+                    <GitMerge class="icon-sm" />
+                  </button>
+                  <button 
                     v-if="authStore.canDeleteTopic(topic)" 
                     class="topic-delete-btn icon-only" 
                     @click="openTopicDeleteModal" 
@@ -566,6 +583,64 @@
         </div>
       </div>
     </div>
+
+    <!-- Merge Modal -->
+    <div v-if="showMergeModal" class="modal-overlay" @click.self="closeMergeModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Başlığı Birleştir</h3>
+          <button class="close-btn" @click="closeMergeModal">
+            <X class="icon" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Bu başlıktaki tüm entry'ler hedef başlığa taşınacak ve bu başlık silinecektir.</p>
+          <div class="entry-preview" style="margin: 1rem 0;">
+            {{ topic?.title }} ({{ topic?.entryCount }} entry)
+          </div>
+          
+          <div class="form-group">
+            <label>Hedef Başlık</label>
+            <input 
+              v-model="mergeSearchQuery" 
+              type="text" 
+              placeholder="Hedef başlığı ara..."
+              @input="searchMergeTargets"
+            />
+          </div>
+          
+          <!-- Search Results -->
+          <div v-if="mergeSearchResults.length > 0" class="merge-results">
+            <button 
+              v-for="result in mergeSearchResults" 
+              :key="result.id"
+              class="merge-result-item"
+              :class="{ selected: selectedMergeTarget?.id === result.id }"
+              @click="selectMergeTarget(result)"
+            >
+              <span class="title">{{ result.title }}</span>
+              <span class="count">{{ result.entryCount }} entry</span>
+            </button>
+          </div>
+          
+          <!-- Selected Target -->
+          <div v-if="selectedMergeTarget" class="selected-target">
+            <strong>Seçilen:</strong> {{ selectedMergeTarget.title }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeMergeModal">İptal</button>
+          <button 
+            class="btn-primary" 
+            :disabled="!selectedMergeTarget || merging"
+            @click="confirmMerge"
+          >
+            <Loader2 v-if="merging" class="icon-sm spin" />
+            {{ merging ? 'Birleştiriliyor...' : 'Birleştir' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -574,7 +649,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   ArrowLeft, MessageSquare, MessageCircle, Eye, ThumbsUp, ThumbsDown, 
-  Star, Share2, Loader2, PenSquare, Edit2, Edit3, Trash2, X, User
+  Star, Share2, Loader2, PenSquare, Edit2, Edit3, Trash2, X, User, GitMerge
 } from 'lucide-vue-next'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Header from '@/components/layout/Header.vue'
@@ -584,7 +659,7 @@ import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useWebSocket } from '@/composables/useWebSocket'
-import api from '@/services/api'
+import api, { topicsApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -846,6 +921,73 @@ async function confirmDeleteTopic() {
   }
 }
 
+// Topic merge modal
+const showMergeModal = ref(false)
+const mergeSearchQuery = ref('')
+const mergeSearchResults = ref([])
+const selectedMergeTarget = ref(null)
+const merging = ref(false)
+let mergeSearchTimeout = null
+
+function openMergeModal() {
+  showMergeModal.value = true
+  mergeSearchQuery.value = ''
+  mergeSearchResults.value = []
+  selectedMergeTarget.value = null
+}
+
+function closeMergeModal() {
+  showMergeModal.value = false
+  mergeSearchQuery.value = ''
+  mergeSearchResults.value = []
+  selectedMergeTarget.value = null
+}
+
+async function searchMergeTargets() {
+  if (mergeSearchTimeout) clearTimeout(mergeSearchTimeout)
+  
+  if (mergeSearchQuery.value.length < 2) {
+    mergeSearchResults.value = []
+    return
+  }
+  
+  mergeSearchTimeout = setTimeout(async () => {
+    try {
+      const response = await topicsApi.search(mergeSearchQuery.value, 0, 10)
+      // Filter out current topic
+      mergeSearchResults.value = (response.data?.content || []).filter(
+        t => t.id !== topic.value?.id
+      )
+    } catch (err) {
+      console.error('Merge target search error:', err)
+      mergeSearchResults.value = []
+    }
+  }, 300)
+}
+
+function selectMergeTarget(target) {
+  selectedMergeTarget.value = target
+  mergeSearchResults.value = []
+}
+
+async function confirmMerge() {
+  if (!selectedMergeTarget.value || !topic.value) return
+  
+  const targetTopicId = selectedMergeTarget.value.id
+  
+  merging.value = true
+  try {
+    await topicsApi.merge(topic.value.id, targetTopicId)
+    toast.success('Başlık başarıyla birleştirildi')
+    showMergeModal.value = false
+    await router.push(`/baslik/${targetTopicId}`)
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Birleştirme işlemi başarısız')
+  } finally {
+    merging.value = false
+  }
+}
+
 function truncateText(text, maxLength) {
   if (!text) return ''
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
@@ -916,8 +1058,8 @@ async function fetchData(id, dateFilter = null) {
     activeDateFilter.value = dateFilter
     await entriesStore.fetchEntriesByTopic(topic.value.id, 0, 10, false, dateFilter)
   } else {
-    // Topic not found or invalid ID, redirect to 404
-    router.push('/404')
+    // Topic not found or invalid ID, redirect to 404 (replace to avoid history loop)
+    router.replace('/404')
   }
   loading.value = false
 }
@@ -2027,7 +2169,8 @@ textarea:focus {
 }
 
 .topic-edit-btn,
-.topic-delete-btn {
+.topic-delete-btn,
+.topic-merge-btn {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -2071,5 +2214,76 @@ textarea:focus {
 .icon-only {
   padding: 0.4rem;
   justify-content: center;
+}
+
+/* Merge Button */
+.topic-merge-btn {
+  background: rgba(88, 166, 255, 0.1);
+  color: #58a6ff;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+}
+
+.topic-merge-btn:hover {
+  background: rgba(88, 166, 255, 0.2);
+}
+
+/* Merge Modal Styles */
+.merge-results {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.merge-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #2a2a4a;
+  color: #e0e0e0;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.merge-result-item:last-child {
+  border-bottom: none;
+}
+
+.merge-result-item:hover {
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.merge-result-item.selected {
+  background: rgba(88, 166, 255, 0.2);
+}
+
+.merge-result-item .title {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.merge-result-item .count {
+  font-size: 0.75rem;
+  color: #888;
+  margin-left: 1rem;
+}
+
+.selected-target {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.selected-target strong {
+  color: #58a6ff;
 }
 </style>

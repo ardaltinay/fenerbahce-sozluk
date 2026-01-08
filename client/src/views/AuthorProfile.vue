@@ -95,12 +95,14 @@
           </button>
         </div>
 
-        <div v-if="isBanned && (authStore.isAdmin || authStore.isModerator)" class="ban-info-box">
+        <div v-if="isBanned" class="ban-info-box">
            <AlertTriangle class="icon-sm" />
            <div class="ban-details">
              <span class="ban-status">Kullanıcı Yasaklı</span>
-             <span class="ban-date">Bitiş: {{ formatBanDate(author.bannedUntil) }}</span>
-             <span class="ban-reason">Sebep: {{ author.banReason }}</span>
+             <template v-if="authStore.isAdmin || authStore.isModerator">
+               <span class="ban-date">Bitiş: {{ formatBanDate(author.bannedUntil) }}</span>
+               <span class="ban-reason">Sebep: {{ author.banReason }}</span>
+             </template>
            </div>
         </div>
 
@@ -657,17 +659,19 @@ async function executeUnban() {
 
 
 
-// Filter entries by username
+// Filter entries by username (exclude deleted entries)
 const userEntries = computed(() => {
   return entriesStore.entries.filter(e => 
-    e.authorUsername === username.value || e.author?.username === username.value
+    (e.authorUsername === username.value || e.author?.username === username.value) &&
+    e.isActive !== false
   )
 })
 
-// User topics from API - filtered by username
+// User topics from API - filtered by username (exclude deleted topics)
 const userTopics = computed(() => {
   return topicsStore.topics.filter(t => 
-    t.authorUsername === username.value || t.author?.username === username.value
+    (t.authorUsername === username.value || t.author?.username === username.value) &&
+    t.isActive !== false
   )
 })
 
@@ -676,7 +680,7 @@ const tabs = computed(() => {
   const result = []
   
   // Always show these tabs
-  result.push({ id: 'entries', label: 'entryler', count: author.value.entryCount || 0 })
+  result.push({ id: 'entries', label: 'entryler', count: userEntries.value.length || 0 })
   result.push({ id: 'topics', label: 'başlıklar', count: userTopics.value.length || 0 })
   result.push({ id: 'favorites', label: 'favoriler', count: userFavorites.value.length || 0 })
   result.push({ id: 'topLiked', label: 'en beğenilen', count: topLikedEntries.value.length || 0 })
@@ -686,12 +690,8 @@ const tabs = computed(() => {
 })
 
 function getRoleBadge(role) {
-  const badges = {
-    'ADMIN': 'yönetici',
-    'MODERATOR': 'moderatör',
-    'USER': 'yazar',
-  }
-  return badges[role] || 'yazar'
+  // Sadece admin "admin" olarak görünsün, diğer herkes "yazar"
+  return role === 'ADMIN' ? 'admin' : 'yazar'
 }
 
 function changeTab(tabId) {

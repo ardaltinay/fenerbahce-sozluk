@@ -31,6 +31,7 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final EntryRepository entryRepository;
     private final StatsService statsService;
+    private final WebSocketService webSocketService;
 
     public Page<TopicResponse> getAllTopics(Pageable pageable) {
         return topicRepository.findByIsActiveTrueOrderByCreatedAtDesc(pageable).map(this::toResponse);
@@ -237,6 +238,50 @@ public class TopicService {
                 .updatedAt(topic.getUpdatedAt())
                 .lastActivityAt(topic.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Merge source topic into target topic.
+     * Moves all entries from source to target and deletes source topic.
+     */
+    @Transactional
+    public void mergeTopic(UUID sourceId, UUID targetId, User currentUser) {
+        if (sourceId.equals(targetId)) {
+            throw new BusinessException("Bir başlık kendisiyle birleştirilemez", HttpStatus.BAD_REQUEST);
+        }
+
+        Topic sourceTopic = topicRepository.findById(sourceId)
+                .orElseThrow(() -> new BusinessException("Kaynak başlık bulunamadı", HttpStatus.NOT_FOUND));
+
+        Topic targetTopic = topicRepository.findById(targetId)
+                .orElseThrow(() -> new BusinessException("Hedef başlık bulunamadı", HttpStatus.NOT_FOUND));
+
+        // Yetki kontrolü
+        boolean isModerator = currentUser.getRole().name().equals("MODERATOR");
+        boolean isAdmin = currentUser.getRole().name().equals("ADMIN");
+
+        if (!isModerator && !isAdmin) {
+            throw new BusinessException("Bu işlem için yetkiniz yok", HttpStatus.FORBIDDEN);
+        }
+
+        // Entry'leri taşı
+        int movedEntries = entryRepository.moveEntriesToTopic(sourceId, targetId);
+
+        // Hedef başlığın entry sayısını güncelle
+        targetTopic.setEntryCount(targetTopic.getEntryCount() + movedEntries);
+        topicRepository.save(targetTopic);
+
+        // Kaynak başlığı soft delete
+        sourceTopic.setActive(false);
+        sourceTopic.setDeleteReason("Birleştirildi: " + targetTopic.getTitle());
+        topicRepository.save(sourceTopic);
+
+        // Cache'leri temizle
+        evictTopicCaches();
+        statsService.evictStatsCache();
+
+        // WebSocket ile sidebar güncellemesi
+        webSocketService.broadcastSidebarUpdate();
     }
 
     @Caching(evict = { @CacheEvict(value = "trendingTopics_v2", allEntries = true),

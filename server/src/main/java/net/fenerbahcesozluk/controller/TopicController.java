@@ -3,6 +3,7 @@ package net.fenerbahcesozluk.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import net.fenerbahcesozluk.dto.TopicMergeRequest;
 import net.fenerbahcesozluk.dto.TopicRequest;
 import net.fenerbahcesozluk.dto.TopicResponse;
 import net.fenerbahcesozluk.entity.User;
@@ -90,6 +91,18 @@ public class TopicController {
             @AuthenticationPrincipal User currentUser) {
         topicService.deleteTopic(id, reason, currentUser);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{sourceId}/merge")
+    public ResponseEntity<Map<String, Object>> mergeTopic(
+            @PathVariable UUID sourceId,
+            @Valid @RequestBody TopicMergeRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        topicService.mergeTopic(sourceId, request.getTargetTopicId(), currentUser);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Başlık başarıyla birleştirildi",
+                "targetTopicId", request.getTargetTopicId()));
     }
 
 }

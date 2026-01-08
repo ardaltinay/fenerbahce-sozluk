@@ -18,7 +18,10 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
 
         Page<Entry> findByTopicIdAndIsActiveTrueOrderByCreatedAtAsc(UUID topicId, Pageable pageable);
 
-        Page<Entry> findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(UUID authorId, Pageable pageable);
+        // Entries by author - only active entries with active topics
+        @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.topic.isActive = true ORDER BY e.createdAt DESC")
+        Page<Entry> findByAuthorIdAndIsActiveTrueOrderByCreatedAtDesc(@Param("authorId") UUID authorId,
+                        Pageable pageable);
 
         // Date-filtered entries for a topic
         @Query("SELECT e FROM Entry e LEFT JOIN FETCH e.author WHERE e.topic.id = :topicId AND e.isActive = true AND e.createdAt >= :start AND e.createdAt < :end ORDER BY e.createdAt ASC")
@@ -79,11 +82,11 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
         @Query("UPDATE Entry e SET e.favoriteCount = e.favoriteCount - 1 WHERE e.id = :entryId AND e.favoriteCount > 0")
         void decrementFavoriteCount(@Param("entryId") UUID entryId);
 
-        // Top entries by author - only entries with counts > 0
-        @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.likeCount > 0 ORDER BY e.likeCount DESC")
+        // Top entries by author - only entries with counts > 0 and active topics
+        @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.topic.isActive = true AND e.likeCount > 0 ORDER BY e.likeCount DESC")
         List<Entry> findTopLikedByAuthor(@Param("authorId") UUID authorId, Pageable pageable);
 
-        @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.favoriteCount > 0 ORDER BY e.favoriteCount DESC")
+        @Query("SELECT e FROM Entry e WHERE e.author.id = :authorId AND e.isActive = true AND e.topic.isActive = true AND e.favoriteCount > 0 ORDER BY e.favoriteCount DESC")
         List<Entry> findTopFavoritedByAuthor(@Param("authorId") UUID authorId, Pageable pageable);
 
         @Query("SELECT e.author.username, COUNT(e) FROM Entry e WHERE e.isActive = true GROUP BY e.author.username ORDER BY COUNT(e) DESC")
@@ -92,4 +95,9 @@ public interface EntryRepository extends JpaRepository<Entry, UUID> {
         // Popular entries from high-entry-count topics ordered by likes
         @Query("SELECT e FROM Entry e WHERE e.isActive = true AND e.likeCount > 0 ORDER BY e.topic.entryCount DESC, e.likeCount DESC")
         List<Entry> findPopularEntriesFromTopTopics(Pageable pageable);
+
+        // Move entries from one topic to another (for merging)
+        @Modifying
+        @Query("UPDATE Entry e SET e.topic.id = :targetTopicId WHERE e.topic.id = :sourceTopicId")
+        int moveEntriesToTopic(@Param("sourceTopicId") UUID sourceTopicId, @Param("targetTopicId") UUID targetTopicId);
 }

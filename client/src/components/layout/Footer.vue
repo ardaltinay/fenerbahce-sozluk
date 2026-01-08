@@ -4,7 +4,7 @@
       <!-- Left Side: Brand & Copyright -->
       <div class="footer-left">
         <div class="logo-area">
-          <img src="/icon.png" alt="Fenerbahçe Sözlük" class="footer-logo" />
+          <img src="/logo.png" alt="Fenerbahçe Sözlük" class="footer-logo" />
         </div>
         <span class="divider">|</span>
         <span class="copyright-text">
@@ -94,8 +94,8 @@ function showComingSoon(platform) {
 }
 
 .footer-logo {
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
   opacity: 0.9;
 }
 

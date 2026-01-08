@@ -35,14 +35,16 @@ export const useAuthStore = defineStore('auth', () => {
     if (timeUntilExpiry <= 0) {
       // Token already expired
       logout()
-      window.location.href = '/giris?expired=true'
+      localStorage.setItem('sessionExpired', 'true')
+      window.location.href = '/'
       return
     }
 
     // Set timer to logout when token expires
     expirationTimer = setTimeout(() => {
       logout()
-      window.location.href = '/giris?expired=true'
+      localStorage.setItem('sessionExpired', 'true')
+      window.location.href = '/'
     }, timeUntilExpiry)
   }
 

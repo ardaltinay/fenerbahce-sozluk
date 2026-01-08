@@ -37,18 +37,30 @@ public class AuthService {
     private final EmailService emailService;
 
     public AuthResponse register(RegisterRequest request) {
+        String usernameLower = request.getUsername().toLowerCase();
+        String emailLower = request.getEmail().toLowerCase();
+
+        // Yasaklı kelimeleri kontrol et
+        String[] forbiddenWords = { "admin", "moderator", "moderatör", "mod", "yönetici", "yonetici", "sistem",
+                "system" };
+        for (String word : forbiddenWords) {
+            if (usernameLower.contains(word)) {
+                throw new BusinessException("Bu kullanıcı adı kullanılamaz", HttpStatus.BAD_REQUEST);
+            }
+        }
+
         // Check if username already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (userRepository.existsByUsername(usernameLower)) {
             throw new BusinessException("Bu kullanıcı adı zaten kullanılıyor", HttpStatus.CONFLICT);
         }
 
         // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(emailLower)) {
             throw new BusinessException("Bu email adresi zaten kullanılıyor", HttpStatus.CONFLICT);
         }
 
         // Create new user
-        var user = User.builder().username(request.getUsername()).email(request.getEmail())
+        var user = User.builder().username(usernameLower).email(emailLower)
                 .password(passwordEncoder.encode(request.getPassword())).role(Role.USER).build();
 
         userRepository.save(user);
@@ -56,7 +68,7 @@ public class AuthService {
         // Generate JWT token
         var token = jwtService.generateToken(user);
 
-        return AuthResponse.builder().token(token).username(user.getUsername()).email(user.getEmail())
+        return AuthResponse.builder().token(token).username(usernameLower).email(emailLower)
                 .role(user.getRole().name()).message("Kayıt başarılı").build();
     }
 

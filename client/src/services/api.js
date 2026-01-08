@@ -65,7 +65,8 @@ export const topicsApi = {
   search: (keyword, page = 0, size = 20) =>
     api.get(`/api/topics/search`, { params: { keyword, page, size } }),
   create: (topicData) => api.post('/api/topics', topicData),
-  delete: (id, reason) => api.delete(`/api/topics/${id}`, { params: { reason } })
+  delete: (id, reason) => api.delete(`/api/topics/${id}`, { params: { reason } }),
+  merge: (sourceId, targetTopicId) => api.post(`/api/topics/${sourceId}/merge`, { targetTopicId })
 }
 
 // Entries API

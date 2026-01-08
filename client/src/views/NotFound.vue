@@ -1,33 +1,45 @@
 <template>
-  <div class="not-found-page">
-    <div class="glass-container">
-      <div class="error-code">404</div>
-      <div class="error-icon">
-        <AlertCircle class="icon-lg" />
+  <div class="not-found-wrapper">
+    <Header />
+    <div class="not-found-page">
+      <div class="glass-container">
+        <div class="error-code">404</div>
+        <div class="error-icon">
+          <AlertCircle class="icon-lg" />
+        </div>
+        <h2>sayfa bulunamadı</h2>
+        <p>aradığınız sayfa kaldırılmış veya hiç var olmamış olabilir.</p>
+        
+        <router-link to="/" class="home-btn">
+          <Home class="icon-sm" />
+          ana sayfaya dön
+        </router-link>
       </div>
-      <h2>sayfa bulunamadı</h2>
-      <p>aradığınız sayfa kaldırılmış veya hiç var olmamış olabilir.</p>
-      
-      <router-link to="/" class="home-btn">
-        <Home class="icon-sm" />
-        ana sayfaya dön
-      </router-link>
     </div>
+    <Footer />
   </div>
 </template>
 
 <script setup>
 import { AlertCircle, Home } from 'lucide-vue-next'
+import Header from '@/components/layout/Header.vue'
+import Footer from '@/components/layout/Footer.vue'
 </script>
 
 <style scoped>
-.not-found-page {
+.not-found-wrapper {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.not-found-page {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: radial-gradient(circle at center, #1a1a2e 0%, #0d0d1a 100%);
+  padding-top: 80px; /* Header için boşluk */
 }
 
 .glass-container {

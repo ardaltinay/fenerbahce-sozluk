@@ -806,7 +806,7 @@ function formatDate(date) {
     background: none;
     border: none;
     border-bottom: 1px solid #1a1a2e;
-    color: #6fbf6f;
+    color: #d4c84a;
     font-size: 0.9rem;
     text-align: left;
   }
