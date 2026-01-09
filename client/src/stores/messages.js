@@ -153,6 +153,25 @@ export const useMessagesStore = defineStore('messages', () => {
     currentPartner.value = null
   }
 
+  /**
+   * Konuşmayı sil
+   */
+  async function deleteConversation(username) {
+    try {
+      await messagesApi.deleteConversation(username)
+      // Listeden kaldır
+      conversations.value = conversations.value.filter(c => c.username !== username)
+      // Eğer açık konuşmaysa temizle
+      if (currentPartner.value === username) {
+        clearCurrentConversation()
+      }
+      return { success: true }
+    } catch (err) {
+      console.error('Delete conversation error:', err)
+      return { success: false, message: err.response?.data?.message || 'Konuşma silinemedi' }
+    }
+  }
+
   return {
     conversations,
     currentMessages,
@@ -167,6 +186,7 @@ export const useMessagesStore = defineStore('messages', () => {
     fetchUnreadCount,
     handleIncomingMessage,
     updateUnreadCount,
-    clearCurrentConversation
+    clearCurrentConversation,
+    deleteConversation
   }
 })

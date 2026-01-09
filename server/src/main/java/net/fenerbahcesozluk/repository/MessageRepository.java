@@ -82,4 +82,12 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
   @Modifying
   @Query("DELETE FROM Message m WHERE m.createdAt < :cutoffDate")
   int deleteMessagesOlderThan(@Param("cutoffDate") LocalDateTime cutoffDate);
+
+  /**
+   * Belirli gönderen ve alıcı arasındaki silinmemiş mesajları getirir
+   */
+  @Query("SELECT m FROM Message m " +
+      "WHERE m.sender = :sender AND m.receiver = :receiver " +
+      "AND m.isDeleted = false")
+  List<Message> findBySenderAndReceiverAndDeletedFalse(@Param("sender") User sender, @Param("receiver") User receiver);
 }

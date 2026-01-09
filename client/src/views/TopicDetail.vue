@@ -135,7 +135,7 @@
               <!-- Entry List -->
               <template v-else>
                 <article v-for="(entry, index) in entries" :key="entry.id" class="entry-card">
-                  <div class="entry-number">#{{ index + 1 }}</div>
+                  <div class="entry-number">#{{ entriesStore.currentPage * 10 + index + 1 }}</div>
                   
                   <!-- Edit Mode -->
                   <div v-if="editingEntryId === entry.id" class="edit-mode">

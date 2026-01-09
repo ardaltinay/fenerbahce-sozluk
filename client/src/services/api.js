@@ -144,6 +144,7 @@ export const messagesApi = {
   markAsRead: (id) => api.put(`/api/messages/${id}/read`),
   getUnreadCount: () => api.get('/api/messages/unread-count'),
   delete: (id) => api.delete(`/api/messages/${id}`),
+  deleteConversation: (username) => api.delete(`/api/messages/conversation/${username}`),
 }
 
 export default api

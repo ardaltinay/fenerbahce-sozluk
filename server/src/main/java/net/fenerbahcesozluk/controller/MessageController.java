@@ -99,4 +99,15 @@ public class MessageController {
     messageService.deleteMessage(currentUser, id);
     return ResponseEntity.ok().build();
   }
+
+  /**
+   * Konuşmayı sil (kullanıcının tüm mesajlarını sil)
+   */
+  @DeleteMapping("/conversation/{username}")
+  public ResponseEntity<Void> deleteConversation(
+      @AuthenticationPrincipal User currentUser,
+      @PathVariable String username) {
+    messageService.deleteConversation(currentUser, username);
+    return ResponseEntity.ok().build();
+  }
 }

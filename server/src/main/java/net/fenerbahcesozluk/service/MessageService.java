@@ -184,6 +184,39 @@ public class MessageService {
     messageRepository.save(message);
   }
 
+  /**
+   * Belirli bir kullanıcıyla olan konuşmayı siler (soft delete - sadece kullanıcı
+   * tarafı)
+   */
+  @Transactional
+  public void deleteConversation(User currentUser, String partnerUsername) {
+    User partner = userRepository.findByUsername(partnerUsername)
+        .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + partnerUsername));
+
+    // Tüm mesajları al
+    List<Message> sentMessages = messageRepository.findBySenderAndReceiverAndDeletedFalse(currentUser, partner);
+    List<Message> receivedMessages = messageRepository.findBySenderAndReceiverAndDeletedFalse(partner, currentUser);
+
+    // Gönderilen mesajları sil
+    for (Message message : sentMessages) {
+      message.setDeletedBySender(true);
+      if (message.isDeletedByReceiver()) {
+        message.setDeleted(true);
+      }
+    }
+
+    // Alınan mesajları sil
+    for (Message message : receivedMessages) {
+      message.setDeletedByReceiver(true);
+      if (message.isDeletedBySender()) {
+        message.setDeleted(true);
+      }
+    }
+
+    messageRepository.saveAll(sentMessages);
+    messageRepository.saveAll(receivedMessages);
+  }
+
   private MessageResponse toResponse(Message message, User currentUser) {
     return MessageResponse.builder()
         .id(message.getId())

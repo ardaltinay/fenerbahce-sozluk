@@ -18,6 +18,8 @@
           <router-link to="/iletisim">iletişim</router-link>
           <a href="#" @click.prevent="showTerms = true">kurallar</a>
           <a href="#" @click.prevent="showPrivacy = true">gizlilik</a>
+          <a href="#" @click.prevent="showCommunity = true">topluluk yapısı</a>
+          <a href="#" @click.prevent="showFormat = true">sözlük formatı</a>
         </nav>
         
         <div class="separator"></div>
@@ -39,6 +41,8 @@
     <!-- Modals -->
     <TermsModal v-model="showTerms" />
     <PrivacyModal v-model="showPrivacy" />
+    <CommunityModal v-model="showCommunity" />
+    <FormatModal v-model="showFormat" />
   </footer>
 </template>
 
@@ -47,11 +51,15 @@ import { ref } from 'vue'
 import { Instagram } from 'lucide-vue-next'
 import TermsModal from '@/components/legal/TermsModal.vue'
 import PrivacyModal from '@/components/legal/PrivacyModal.vue'
+import CommunityModal from '@/components/legal/CommunityModal.vue'
+import FormatModal from '@/components/legal/FormatModal.vue'
 
 import { useToast } from '@/composables/useToast'
 
 const showTerms = ref(false)
 const showPrivacy = ref(false)
+const showCommunity = ref(false)
+const showFormat = ref(false)
 const toast = useToast()
 
 function showComingSoon(platform) {
