@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -50,7 +51,6 @@ public class NewsService {
 
     @EventListener(ApplicationReadyEvent.class)
     @Scheduled(fixedRate = 3600000) // Every 1 hour
-    @Transactional
     @CacheEvict(value = "news_v2", allEntries = true)
     public void fetchNewsTask() {
         log.info("Starting scheduled news fetch task...");
@@ -76,7 +76,8 @@ public class NewsService {
         }
     }
 
-    private void fetchAndProcessFeed(String url) throws Exception {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void fetchAndProcessFeed(String url) throws Exception {
         String sourceName = getSourceName(url);
         log.debug("Fetching from source: {}", sourceName);
 
@@ -107,10 +108,20 @@ public class NewsService {
             }
         }
 
-        // Batch save all news at once
-        if (!newsToSave.isEmpty()) {
-            newsRepository.saveAll(newsToSave);
-            log.info("Saved {} news items from {}", newsToSave.size(), sourceName);
+        // Save news one by one to handle duplicates gracefully
+        int savedCount = 0;
+        for (News news : newsToSave) {
+            try {
+                newsRepository.save(news);
+                savedCount++;
+            } catch (Exception e) {
+                // Likely duplicate - skip and continue
+                log.debug("Skipping duplicate news: {} - {}", news.getGuid(), e.getMessage());
+            }
+        }
+
+        if (savedCount > 0) {
+            log.info("Saved {} news items from {}", savedCount, sourceName);
         }
     }
 
