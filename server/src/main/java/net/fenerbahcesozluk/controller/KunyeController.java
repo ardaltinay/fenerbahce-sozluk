@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import net.fenerbahcesozluk.entity.Topic;
 import net.fenerbahcesozluk.exception.BusinessException;
 import net.fenerbahcesozluk.repository.TopicRepository;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,33 +21,33 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class KunyeController {
 
-  private final TopicRepository topicRepository;
+    private final TopicRepository topicRepository;
 
-  @PostMapping("/topics/{topicId}")
-  public ResponseEntity<?> saveKunye(@PathVariable UUID topicId, @RequestBody Map<String, String> request) {
+    @PostMapping("/topics/{topicId}")
+    public ResponseEntity<?> saveKunye(@PathVariable UUID topicId, @RequestBody Map<String, String> request) {
 
-    String imageUrl = request.get("imageUrl");
-    String kunyeData = request.get("kunyeData");
+        String imageUrl = request.get("imageUrl");
+        String kunyeData = request.get("kunyeData");
 
-    Topic topic = topicRepository.findById(topicId)
-        .orElseThrow(() -> new BusinessException("Topic bulunamadı", HttpStatus.NOT_FOUND));
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new BusinessException("Topic bulunamadı", HttpStatus.NOT_FOUND));
 
-    topic.setKunyeImageUrl(imageUrl);
-    topic.setKunyeData(kunyeData);
-    topicRepository.save(topic);
+        topic.setKunyeImageUrl(imageUrl);
+        topic.setKunyeData(kunyeData);
+        topicRepository.save(topic);
 
-    return ResponseEntity.ok(Map.of("success", true));
-  }
+        return ResponseEntity.ok(Map.of("success", true));
+    }
 
-  @DeleteMapping("/topics/{topicId}")
-  public ResponseEntity<?> deleteKunye(@PathVariable UUID topicId) {
-    Topic topic = topicRepository.findById(topicId)
-        .orElseThrow(() -> new BusinessException("Topic bulunamadı", HttpStatus.NOT_FOUND));
+    @DeleteMapping("/topics/{topicId}")
+    public ResponseEntity<?> deleteKunye(@PathVariable UUID topicId) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new BusinessException("Topic bulunamadı", HttpStatus.NOT_FOUND));
 
-    topic.setKunyeImageUrl(null);
-    topic.setKunyeData(null);
-    topicRepository.save(topic);
+        topic.setKunyeImageUrl(null);
+        topic.setKunyeData(null);
+        topicRepository.save(topic);
 
-    return ResponseEntity.ok(Map.of("success", true));
-  }
+        return ResponseEntity.ok(Map.of("success", true));
+    }
 }

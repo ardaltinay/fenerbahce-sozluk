@@ -41,8 +41,8 @@ public class AuthService {
         String emailLower = request.getEmail().toLowerCase();
 
         // Yasaklı kelimeleri kontrol et
-        String[] forbiddenWords = { "admin", "moderator", "moderatör", "mod", "yönetici", "yonetici", "sistem",
-                "system" };
+        String[] forbiddenWords = {"admin", "moderator", "moderatör", "mod", "yönetici", "yonetici", "sistem",
+                "system"};
         for (String word : forbiddenWords) {
             if (usernameLower.contains(word)) {
                 throw new BusinessException("Bu kullanıcı adı kullanılamaz", HttpStatus.BAD_REQUEST);
@@ -68,8 +68,8 @@ public class AuthService {
         // Generate JWT token
         var token = jwtService.generateToken(user);
 
-        return AuthResponse.builder().token(token).username(usernameLower).email(emailLower)
-                .role(user.getRole().name()).message("Kayıt başarılı").build();
+        return AuthResponse.builder().token(token).username(usernameLower).email(emailLower).role(user.getRole().name())
+                .message("Kayıt başarılı").build();
     }
 
     public AuthResponse login(LoginRequest request) {

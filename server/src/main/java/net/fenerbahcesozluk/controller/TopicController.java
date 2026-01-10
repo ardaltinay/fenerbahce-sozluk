@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -94,15 +93,11 @@ public class TopicController {
     }
 
     @PostMapping("/{sourceId}/merge")
-    public ResponseEntity<Map<String, Object>> mergeTopic(
-            @PathVariable UUID sourceId,
-            @Valid @RequestBody TopicMergeRequest request,
-            @AuthenticationPrincipal User currentUser) {
+    public ResponseEntity<Map<String, Object>> mergeTopic(@PathVariable UUID sourceId,
+            @Valid @RequestBody TopicMergeRequest request, @AuthenticationPrincipal User currentUser) {
         topicService.mergeTopic(sourceId, request.getTargetTopicId(), currentUser);
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Başlık başarıyla birleştirildi",
-                "targetTopicId", request.getTargetTopicId()));
+        return ResponseEntity.ok(Map.of("success", true, "message", "Başlık başarıyla birleştirildi", "targetTopicId",
+                request.getTargetTopicId()));
     }
 
 }

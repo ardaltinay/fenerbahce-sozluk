@@ -29,8 +29,8 @@ public class VoteController {
     private final RateLimitService rateLimitService;
 
     @PostMapping
-    public ResponseEntity<Void> vote(@Valid @RequestBody VoteRequest request,
-            @AuthenticationPrincipal User currentUser, HttpServletRequest httpRequest) {
+    public ResponseEntity<Void> vote(@Valid @RequestBody VoteRequest request, @AuthenticationPrincipal User currentUser,
+            HttpServletRequest httpRequest) {
         String clientIp = HttpUtils.getClientIp(httpRequest);
 
         if (!rateLimitService.isAllowed("vote", clientIp)) {

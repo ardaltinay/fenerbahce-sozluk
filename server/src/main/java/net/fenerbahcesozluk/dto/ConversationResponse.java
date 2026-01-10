@@ -14,11 +14,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ConversationResponse {
 
-  private String username;
-  private String lastMessage;
+    private String username;
+    private String lastMessage;
 
-  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-  private LocalDateTime lastMessageAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime lastMessageAt;
 
-  private int unreadCount;
+    private int unreadCount;
 }

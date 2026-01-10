@@ -8,8 +8,8 @@ import net.fenerbahcesozluk.dto.EntryResponse;
 import net.fenerbahcesozluk.entity.User;
 import net.fenerbahcesozluk.exception.RateLimitExceededException;
 import net.fenerbahcesozluk.service.EntryService;
-import net.fenerbahcesozluk.util.HttpUtils;
 import net.fenerbahcesozluk.service.RateLimitService;
+import net.fenerbahcesozluk.util.HttpUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -40,8 +40,7 @@ public class EntryController {
 
     @GetMapping("/topic/{topicId}")
     public ResponseEntity<Page<EntryResponse>> getEntriesByTopic(@PathVariable UUID topicId,
-            @RequestParam(required = false) String dateFilter,
-            @AuthenticationPrincipal User currentUser,
+            @RequestParam(required = false) String dateFilter, @AuthenticationPrincipal User currentUser,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity
                 .ok(entryService.getEntriesByTopicWithDateFilter(topicId, dateFilter, currentUser, pageable));

@@ -50,8 +50,7 @@ public class UserService {
     }
 
     /**
-     * Kullanıcının nesil numarasını hesaplar.
-     * Uygulama açılış tarihi: 1 Şubat 2026
+     * Kullanıcının nesil numarasını hesaplar. Uygulama açılış tarihi: 1 Şubat 2026
      * Her 6 ay bir nesil = 1. nesil (0-6 ay), 2. nesil (6-12 ay), vb.
      */
     public int calculateGeneration(LocalDateTime createdAt) {

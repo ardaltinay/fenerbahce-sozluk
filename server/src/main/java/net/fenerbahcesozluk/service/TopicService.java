@@ -147,66 +147,36 @@ public class TopicService {
     }
 
     private TopicResponse toResponse(Topic topic) {
-        return TopicResponse.builder()
-                .id(topic.getId())
-                .title(topic.getTitle())
-                .authorId(topic.getAuthor().getId())
-                .authorUsername(topic.getAuthor().getUsername())
-                .entryCount(topic.getEntryCount())
-                .viewCount(topic.getViewCount())
-                .isLocked(topic.isLocked())
-                .isPinned(topic.isPinned())
+        return TopicResponse.builder().id(topic.getId()).title(topic.getTitle()).authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername()).entryCount(topic.getEntryCount())
+                .viewCount(topic.getViewCount()).isLocked(topic.isLocked()).isPinned(topic.isPinned())
 
-                .kunyeImageUrl(topic.getKunyeImageUrl())
-                .kunyeData(topic.getKunyeData())
-                .createdAt(topic.getCreatedAt())
-                .updatedAt(topic.getUpdatedAt())
-                .lastActivityAt(topic.getUpdatedAt())
-                .build();
+                .kunyeImageUrl(topic.getKunyeImageUrl()).kunyeData(topic.getKunyeData()).createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt()).lastActivityAt(topic.getUpdatedAt()).build();
     }
 
     private TopicResponse toResponseWithDateCounts(Topic topic, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Integer periodCount = entryRepository.countByTopicIdAndDateRange(topic.getId(), periodStart, periodEnd);
 
-        return TopicResponse.builder()
-                .id(topic.getId())
-                .title(topic.getTitle())
-                .authorId(topic.getAuthor().getId())
-                .authorUsername(topic.getAuthor().getUsername())
-                .entryCount(topic.getEntryCount())
+        return TopicResponse.builder().id(topic.getId()).title(topic.getTitle()).authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername()).entryCount(topic.getEntryCount())
                 .todayEntryCount(periodCount) // For sidebar, we show the period count in todayEntryCount
-                .viewCount(topic.getViewCount())
-                .isLocked(topic.isLocked())
-                .isPinned(topic.isPinned())
+                .viewCount(topic.getViewCount()).isLocked(topic.isLocked()).isPinned(topic.isPinned())
 
-                .kunyeImageUrl(topic.getKunyeImageUrl())
-                .kunyeData(topic.getKunyeData())
-                .createdAt(topic.getCreatedAt())
-                .updatedAt(topic.getUpdatedAt())
-                .lastActivityAt(topic.getUpdatedAt())
-                .build();
+                .kunyeImageUrl(topic.getKunyeImageUrl()).kunyeData(topic.getKunyeData()).createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt()).lastActivityAt(topic.getUpdatedAt()).build();
     }
 
     private TopicResponse toResponseWithOlderCounts(Topic topic, LocalDateTime before) {
         Integer olderCount = entryRepository.countByTopicIdBefore(topic.getId(), before);
 
-        return TopicResponse.builder()
-                .id(topic.getId())
-                .title(topic.getTitle())
-                .authorId(topic.getAuthor().getId())
-                .authorUsername(topic.getAuthor().getUsername())
-                .entryCount(topic.getEntryCount())
-                .olderEntryCount(olderCount)
-                .viewCount(topic.getViewCount())
-                .isLocked(topic.isLocked())
+        return TopicResponse.builder().id(topic.getId()).title(topic.getTitle()).authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername()).entryCount(topic.getEntryCount())
+                .olderEntryCount(olderCount).viewCount(topic.getViewCount()).isLocked(topic.isLocked())
                 .isPinned(topic.isPinned())
 
-                .kunyeImageUrl(topic.getKunyeImageUrl())
-                .kunyeData(topic.getKunyeData())
-                .createdAt(topic.getCreatedAt())
-                .updatedAt(topic.getUpdatedAt())
-                .lastActivityAt(topic.getUpdatedAt())
-                .build();
+                .kunyeImageUrl(topic.getKunyeImageUrl()).kunyeData(topic.getKunyeData()).createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt()).lastActivityAt(topic.getUpdatedAt()).build();
     }
 
     private TopicResponse toResponseWithAllDateCounts(Topic topic) {
@@ -219,30 +189,18 @@ public class TopicService {
         Integer yesterdayCount = entryRepository.countByTopicIdAndDateRange(topic.getId(), yesterdayStart, todayStart);
         Integer olderCount = entryRepository.countByTopicIdBefore(topic.getId(), yesterdayStart);
 
-        return TopicResponse.builder()
-                .id(topic.getId())
-                .title(topic.getTitle())
-                .authorId(topic.getAuthor().getId())
-                .authorUsername(topic.getAuthor().getUsername())
-                .entryCount(topic.getEntryCount())
-                .todayEntryCount(todayCount)
-                .yesterdayEntryCount(yesterdayCount)
-                .olderEntryCount(olderCount)
-                .viewCount(topic.getViewCount())
-                .isLocked(topic.isLocked())
-                .isPinned(topic.isPinned())
+        return TopicResponse.builder().id(topic.getId()).title(topic.getTitle()).authorId(topic.getAuthor().getId())
+                .authorUsername(topic.getAuthor().getUsername()).entryCount(topic.getEntryCount())
+                .todayEntryCount(todayCount).yesterdayEntryCount(yesterdayCount).olderEntryCount(olderCount)
+                .viewCount(topic.getViewCount()).isLocked(topic.isLocked()).isPinned(topic.isPinned())
 
-                .kunyeImageUrl(topic.getKunyeImageUrl())
-                .kunyeData(topic.getKunyeData())
-                .createdAt(topic.getCreatedAt())
-                .updatedAt(topic.getUpdatedAt())
-                .lastActivityAt(topic.getUpdatedAt())
-                .build();
+                .kunyeImageUrl(topic.getKunyeImageUrl()).kunyeData(topic.getKunyeData()).createdAt(topic.getCreatedAt())
+                .updatedAt(topic.getUpdatedAt()).lastActivityAt(topic.getUpdatedAt()).build();
     }
 
     /**
-     * Merge source topic into target topic.
-     * Moves all entries from source to target and deletes source topic.
+     * Merge source topic into target topic. Moves all entries from source to target
+     * and deletes source topic.
      */
     @Transactional
     public void mergeTopic(UUID sourceId, UUID targetId, User currentUser) {
@@ -284,8 +242,8 @@ public class TopicService {
         webSocketService.broadcastSidebarUpdate();
     }
 
-    @Caching(evict = { @CacheEvict(value = "trendingTopics_v2", allEntries = true),
-            @CacheEvict(value = "popularTopics_v2", allEntries = true) })
+    @Caching(evict = {@CacheEvict(value = "trendingTopics_v2", allEntries = true),
+            @CacheEvict(value = "popularTopics_v2", allEntries = true)})
     public void evictTopicCaches() {
         // Evict topic list caches
     }

@@ -10,7 +10,15 @@ import net.fenerbahcesozluk.service.MessageService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -21,93 +29,82 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MessageController {
 
-  private final MessageService messageService;
+    private final MessageService messageService;
 
-  /**
-   * Yeni mesaj gönder
-   */
-  @PostMapping
-  public ResponseEntity<MessageResponse> sendMessage(
-      @AuthenticationPrincipal User currentUser,
-      @Valid @RequestBody MessageRequest request) {
-    MessageResponse response = messageService.sendMessage(currentUser, request);
-    return ResponseEntity.ok(response);
-  }
+    /**
+     * Yeni mesaj gönder
+     */
+    @PostMapping
+    public ResponseEntity<MessageResponse> sendMessage(@AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody MessageRequest request) {
+        MessageResponse response = messageService.sendMessage(currentUser, request);
+        return ResponseEntity.ok(response);
+    }
 
-  /**
-   * Konuşma listesini getir
-   */
-  @GetMapping("/conversations")
-  public ResponseEntity<List<ConversationResponse>> getConversations(
-      @AuthenticationPrincipal User currentUser) {
-    List<ConversationResponse> conversations = messageService.getConversations(currentUser);
-    return ResponseEntity.ok(conversations);
-  }
+    /**
+     * Konuşma listesini getir
+     */
+    @GetMapping("/conversations")
+    public ResponseEntity<List<ConversationResponse>> getConversations(@AuthenticationPrincipal User currentUser) {
+        List<ConversationResponse> conversations = messageService.getConversations(currentUser);
+        return ResponseEntity.ok(conversations);
+    }
 
-  /**
-   * Belirli bir kullanıcıyla olan mesajları getir
-   */
-  @GetMapping("/conversation/{username}")
-  public ResponseEntity<Page<MessageResponse>> getMessages(
-      @AuthenticationPrincipal User currentUser,
-      @PathVariable String username,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "50") int size) {
-    Page<MessageResponse> messages = messageService.getMessages(currentUser, username, page, size);
-    return ResponseEntity.ok(messages);
-  }
+    /**
+     * Belirli bir kullanıcıyla olan mesajları getir
+     */
+    @GetMapping("/conversation/{username}")
+    public ResponseEntity<Page<MessageResponse>> getMessages(@AuthenticationPrincipal User currentUser,
+            @PathVariable String username, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Page<MessageResponse> messages = messageService.getMessages(currentUser, username, page, size);
+        return ResponseEntity.ok(messages);
+    }
 
-  /**
-   * Konuşmadaki tüm mesajları okundu olarak işaretle
-   */
-  @PutMapping("/conversation/{username}/read")
-  public ResponseEntity<Void> markConversationAsRead(
-      @AuthenticationPrincipal User currentUser,
-      @PathVariable String username) {
-    messageService.markConversationAsRead(currentUser, username);
-    return ResponseEntity.ok().build();
-  }
+    /**
+     * Konuşmadaki tüm mesajları okundu olarak işaretle
+     */
+    @PutMapping("/conversation/{username}/read")
+    public ResponseEntity<Void> markConversationAsRead(@AuthenticationPrincipal User currentUser,
+            @PathVariable String username) {
+        messageService.markConversationAsRead(currentUser, username);
+        return ResponseEntity.ok().build();
+    }
 
-  /**
-   * Tek bir mesajı okundu olarak işaretle
-   */
-  @PutMapping("/{id}/read")
-  public ResponseEntity<Void> markAsRead(
-      @AuthenticationPrincipal User currentUser,
-      @PathVariable UUID id) {
-    messageService.markAsRead(currentUser, id);
-    return ResponseEntity.ok().build();
-  }
+    /**
+     * Tek bir mesajı okundu olarak işaretle
+     */
+    @PutMapping("/{id}/read")
+    public ResponseEntity<Void> markAsRead(@AuthenticationPrincipal User currentUser, @PathVariable UUID id) {
+        messageService.markAsRead(currentUser, id);
+        return ResponseEntity.ok().build();
+    }
 
-  /**
-   * Toplam okunmamış mesaj sayısını getir
-   */
-  @GetMapping("/unread-count")
-  public ResponseEntity<Map<String, Integer>> getUnreadCount(
-      @AuthenticationPrincipal User currentUser) {
-    int count = messageService.getUnreadCount(currentUser);
-    return ResponseEntity.ok(Map.of("count", count));
-  }
+    /**
+     * Toplam okunmamış mesaj sayısını getir
+     */
+    @GetMapping("/unread-count")
+    public ResponseEntity<Map<String, Integer>> getUnreadCount(@AuthenticationPrincipal User currentUser) {
+        int count = messageService.getUnreadCount(currentUser);
+        return ResponseEntity.ok(Map.of("count", count));
+    }
 
-  /**
-   * Mesajı sil
-   */
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteMessage(
-      @AuthenticationPrincipal User currentUser,
-      @PathVariable UUID id) {
-    messageService.deleteMessage(currentUser, id);
-    return ResponseEntity.ok().build();
-  }
+    /**
+     * Mesajı sil
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMessage(@AuthenticationPrincipal User currentUser, @PathVariable UUID id) {
+        messageService.deleteMessage(currentUser, id);
+        return ResponseEntity.ok().build();
+    }
 
-  /**
-   * Konuşmayı sil (kullanıcının tüm mesajlarını sil)
-   */
-  @DeleteMapping("/conversation/{username}")
-  public ResponseEntity<Void> deleteConversation(
-      @AuthenticationPrincipal User currentUser,
-      @PathVariable String username) {
-    messageService.deleteConversation(currentUser, username);
-    return ResponseEntity.ok().build();
-  }
+    /**
+     * Konuşmayı sil (kullanıcının tüm mesajlarını sil)
+     */
+    @DeleteMapping("/conversation/{username}")
+    public ResponseEntity<Void> deleteConversation(@AuthenticationPrincipal User currentUser,
+            @PathVariable String username) {
+        messageService.deleteConversation(currentUser, username);
+        return ResponseEntity.ok().build();
+    }
 }

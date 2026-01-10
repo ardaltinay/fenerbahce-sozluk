@@ -48,4 +48,5 @@ client/*.local
 
 fenerbahce-sozluk.service
 nginx.conf
+deployment.md
 

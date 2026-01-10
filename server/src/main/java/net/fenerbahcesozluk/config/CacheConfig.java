@@ -20,33 +20,27 @@ import java.time.Duration;
 @EnableCaching
 public class CacheConfig {
 
-        @Bean
-        public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.registerModule(new JavaTimeModule());
-                objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
-                                ObjectMapper.DefaultTyping.NON_FINAL,
-                                JsonTypeInfo.As.PROPERTY);
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY);
 
-                GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
-                RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(5))
-                                .serializeKeysWith(
-                                                RedisSerializationContext.SerializationPair
-                                                                .fromSerializer(new StringRedisSerializer()))
-                                .serializeValuesWith(
-                                                RedisSerializationContext.SerializationPair.fromSerializer(serializer));
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(5))
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
 
-                RedisCacheConfiguration defaultTtlConfig = config.entryTtl(Duration.ofHours(1));
-                RedisCacheConfiguration shortTtlConfig = config.entryTtl(Duration.ofMinutes(15));
+        RedisCacheConfiguration defaultTtlConfig = config.entryTtl(Duration.ofHours(1));
+        RedisCacheConfiguration shortTtlConfig = config.entryTtl(Duration.ofMinutes(15));
 
-                return RedisCacheManager.builder(connectionFactory)
-                                .cacheDefaults(defaultTtlConfig)
-                                .withCacheConfiguration("stats_v2", defaultTtlConfig)
-                                .withCacheConfiguration("trendingTopics_v2", shortTtlConfig)
-                                .withCacheConfiguration("popularTopics_v2", shortTtlConfig)
-                                .withCacheConfiguration("news_v2", defaultTtlConfig)
-                                .build();
-        }
+        return RedisCacheManager.builder(connectionFactory).cacheDefaults(defaultTtlConfig)
+                .withCacheConfiguration("stats_v2", defaultTtlConfig)
+                .withCacheConfiguration("trendingTopics_v2", shortTtlConfig)
+                .withCacheConfiguration("popularTopics_v2", shortTtlConfig)
+                .withCacheConfiguration("news_v2", defaultTtlConfig).build();
+    }
 }

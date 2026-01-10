@@ -29,8 +29,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket endpoint that clients will connect to
         // Use CORS origins from application.yml
-        registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigins.split(","))
-                .withSockJS();
+        registry.addEndpoint("/ws").setAllowedOrigins(allowedOrigins.split(",")).withSockJS();
     }
 }

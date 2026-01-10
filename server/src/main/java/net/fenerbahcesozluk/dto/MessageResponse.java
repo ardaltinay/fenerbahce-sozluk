@@ -15,17 +15,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class MessageResponse {
 
-  private UUID id;
-  private String senderUsername;
-  private String receiverUsername;
-  private String content;
+    private UUID id;
+    private String senderUsername;
+    private String receiverUsername;
+    private String content;
 
-  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-  private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
 
-  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-  private LocalDateTime readAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime readAt;
 
-  private boolean isOwn;
-  private boolean isRead;
+    private boolean isOwn;
+    private boolean isRead;
 }

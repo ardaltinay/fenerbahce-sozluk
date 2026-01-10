@@ -24,9 +24,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "topics", indexes = { @Index(name = "idx_topic_active_entrycount", columnList = "is_active, entry_count"),
+@Table(name = "topics", indexes = {@Index(name = "idx_topic_active_entrycount", columnList = "is_active, entry_count"),
         @Index(name = "idx_topic_active_created", columnList = "is_active, created_time"),
-        @Index(name = "idx_topic_title", columnList = "title") })
+        @Index(name = "idx_topic_title", columnList = "title")})
 public class Topic extends BaseEntity {
 
     @Column(nullable = false, length = 50)

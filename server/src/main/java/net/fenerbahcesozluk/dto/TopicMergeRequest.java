@@ -7,6 +7,6 @@ import java.util.UUID;
 
 @Data
 public class TopicMergeRequest {
-  @NotNull(message = "Hedef başlık ID'si gereklidir")
-  private UUID targetTopicId;
+    @NotNull(message = "Hedef başlık ID'si gereklidir")
+    private UUID targetTopicId;
 }

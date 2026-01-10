@@ -17,8 +17,8 @@ public class RateLimitService {
     private final Map<String, RequestInfo> requestCounts = new ConcurrentHashMap<>();
 
     // Rate limit configurations
-    private static final Map<String, RateLimitConfig> RATE_LIMITS = Map.of(
-            "login", new RateLimitConfig(5, 1), // 5 per minute
+    private static final Map<String, RateLimitConfig> RATE_LIMITS = Map.of("login", new RateLimitConfig(5, 1), // 5 per
+                                                                                                               // minute
             "register", new RateLimitConfig(3, 60), // 3 per hour
             "forgot-password", new RateLimitConfig(3, 60), // 3 per hour
             "contact", new RateLimitConfig(3, 60), // 3 per hour
@@ -30,8 +30,10 @@ public class RateLimitService {
     /**
      * Check if the request should be rate limited.
      * 
-     * @param endpoint The endpoint type
-     * @param ip       The client IP address
+     * @param endpoint
+     *            The endpoint type
+     * @param ip
+     *            The client IP address
      * @return true if the request is allowed, false if rate limited
      */
     public boolean isAllowed(String endpoint, String ip) {

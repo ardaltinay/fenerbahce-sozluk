@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.fenerbahcesozluk.dto.RestPage;
 import net.fenerbahcesozluk.entity.News;
-
 import net.fenerbahcesozluk.repository.NewsRepository;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.CacheEvict;
@@ -46,8 +45,7 @@ public class NewsService {
     @Cacheable(value = "news_v2", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize")
     public Page<News> getNews(Pageable pageable) {
         Page<News> page = newsRepository.findAllByOrderByPubDateDesc(pageable);
-        return new RestPage<>(new ArrayList<>(page.getContent()), pageable,
-                page.getTotalElements());
+        return new RestPage<>(new ArrayList<>(page.getContent()), pageable, page.getTotalElements());
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -163,15 +161,8 @@ public class NewsService {
                 pubDate = LocalDateTime.now();
             }
 
-            return News.builder()
-                    .title(title)
-                    .link(link)
-                    .description(cleanHtml(description))
-                    .imageUrl(imageUrl)
-                    .source(sourceName)
-                    .pubDate(pubDate)
-                    .guid(guid)
-                    .build();
+            return News.builder().title(title).link(link).description(cleanHtml(description)).imageUrl(imageUrl)
+                    .source(sourceName).pubDate(pubDate).guid(guid).build();
 
         } catch (Exception e) {
             log.error("Error processing item", e);

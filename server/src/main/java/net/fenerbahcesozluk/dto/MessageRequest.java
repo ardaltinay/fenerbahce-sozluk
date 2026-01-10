@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MessageRequest {
 
-  @NotBlank(message = "Alıcı kullanıcı adı boş olamaz")
-  private String receiverUsername;
+    @NotBlank(message = "Alıcı kullanıcı adı boş olamaz")
+    private String receiverUsername;
 
-  @NotBlank(message = "Mesaj içeriği boş olamaz")
-  @Size(max = 2000, message = "Mesaj en fazla 2000 karakter olabilir")
-  private String content;
+    @NotBlank(message = "Mesaj içeriği boş olamaz")
+    @Size(max = 2000, message = "Mesaj en fazla 2000 karakter olabilir")
+    private String content;
 }

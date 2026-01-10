@@ -46,7 +46,8 @@ public class EntryService {
     /**
      * Get entries by topic with optional date filter
      * 
-     * @param dateFilter: "today", "yesterday", "older", or null for all
+     * @param dateFilter:
+     *            "today", "yesterday", "older", or null for all
      */
     public Page<EntryResponse> getEntriesByTopicWithDateFilter(UUID topicId, String dateFilter, User currentUser,
             Pageable pageable) {
