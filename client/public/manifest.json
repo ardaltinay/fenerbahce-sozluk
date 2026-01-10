@@ -1,0 +1,26 @@
+{
+  "name": "Fenerbahçe Sözlük",
+  "short_name": "FB Sözlük",
+  "description": "Fenerbahçeliler için özgür sözlük platformu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#001845",
+  "theme_color": "#001845",
+  "orientation": "portrait-primary",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "news", "sports"]
+}

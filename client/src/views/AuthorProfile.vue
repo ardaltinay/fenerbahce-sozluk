@@ -576,12 +576,14 @@ import { useEntriesStore } from '@/stores/entries'
 import { useTopicsStore } from '@/stores/topics'
 import { usersApi, entriesApi } from '@/services/api'
 import { useToast } from '@/composables/useToast'
+import { useSeoMeta } from '@/composables/useSeoMeta'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const entriesStore = useEntriesStore()
 const topicsStore = useTopicsStore()
 const toast = useToast()
+const { setAuthorMeta } = useSeoMeta()
 
 const loading = ref(true)
 const isFollowing = ref(false)
@@ -1027,6 +1029,16 @@ async function handleChangePassword() {
 onMounted(() => {
   loadUserData()
 })
+
+// Update SEO when author data loads
+watch(() => author.value, (newAuthor) => {
+  if (newAuthor && newAuthor.username) {
+    setAuthorMeta({ 
+      username: username.value, 
+      entryCount: entriesStore.totalElements 
+    })
+  }
+}, { deep: true })
 </script>
 
 <style scoped>

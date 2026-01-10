@@ -5,6 +5,10 @@ spring:
   application:
     name: fenerbahce-sozluk
   
+  # Timezone Configuration (Turkey)
+  jackson:
+    time-zone: Europe/Istanbul
+  
   datasource:
     url: ${DATASOURCE_URL}
     username: ${DATASOURCE_USER}
@@ -13,8 +17,8 @@ spring:
   
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -59,8 +63,8 @@ app:
   
   # Frontend URL for password reset links
   frontend:
-    url: ${FRONTEND_URL:http://localhost:5173}
+    url: ${FRONTEND_URL:http://localhost:5173,https://fenerbahcesozluk.net}
 
 # CORS Configuration
 cors:
-  allowed-origins: http://localhost:5173,http://localhost:3000
+  allowed-origins: http://localhost:5173,http://localhost:3000,https://fenerbahcesozluk.net

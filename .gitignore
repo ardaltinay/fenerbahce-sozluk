@@ -45,3 +45,7 @@ client/*.local
 *.njsproj
 *.sln
 *.sw?
+
+fenerbahce-sozluk.service
+nginx.conf
+

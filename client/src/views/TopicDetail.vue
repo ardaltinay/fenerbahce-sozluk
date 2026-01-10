@@ -659,6 +659,7 @@ import { useEntriesStore } from '@/stores/entries'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { useSeoMeta } from '@/composables/useSeoMeta'
 import api, { topicsApi } from '@/services/api'
 
 const route = useRoute()
@@ -668,6 +669,7 @@ const entriesStore = useEntriesStore()
 const authStore = useAuthStore()
 const toast = useToast()
 const { connect, subscribeToTopic, unsubscribeFromTopic } = useWebSocket()
+const { setTopicMeta, resetMeta } = useSeoMeta()
 
 function goBack() {
   if (window.history.length > 2) {
@@ -1087,6 +1089,13 @@ onMounted(() => {
     fetchData(route.params.id, dateFilter)
     setupWebSocket(route.params.id)
   }
+  
+  // Update SEO meta when topic loads
+  watch(() => topic.value, (newTopic) => {
+    if (newTopic) {
+      setTopicMeta(newTopic)
+    }
+  }, { immediate: true })
   
   // Check for draft content from NewTopicModal redirect
   if (route.query.draft) {

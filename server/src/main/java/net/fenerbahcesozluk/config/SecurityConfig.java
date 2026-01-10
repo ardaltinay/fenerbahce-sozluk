@@ -44,7 +44,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource())).csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/public/**", "/ws/**", "/error", "/actuator/health")
+                        .requestMatchers("/api/auth/**", "/api/public/**", "/ws/**", "/error", "/actuator/health",
+                                "/sitemap.xml", "/robots.txt")
                         .permitAll()
                         // Public read endpoints (GET only)
                         .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()

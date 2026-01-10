@@ -1,0 +1,19 @@
+# Fenerbahçe Sözlük - robots.txt
+# https://fenerbahcesozluk.net/robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://fenerbahcesozluk.net/sitemap.xml
+
+# Crawl-delay (isteğe bağlı, bazı botlar için)
+Crawl-delay: 1
+
+# Disallow private/auth pages
+Disallow: /giris
+Disallow: /kayit
+Disallow: /sifremi-unuttum
+Disallow: /sifre-sifirla
+Disallow: /mesajlar
+Disallow: /api/

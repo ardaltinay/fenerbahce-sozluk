@@ -2,6 +2,9 @@ import { ref, onUnmounted } from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081'
+const WS_URL = `${API_BASE_URL}/ws`
+
 const client = ref(null)
 const connected = ref(false)
 const subscriptions = ref(new Map())
@@ -12,7 +15,7 @@ export function useWebSocket() {
     if (client.value?.connected) return
 
     client.value = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
+      webSocketFactory: () => new SockJS(WS_URL),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
